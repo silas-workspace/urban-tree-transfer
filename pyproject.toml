@@ -27,6 +27,8 @@ dev = [
     "ruff>=0.8.0",
     "pyright>=1.1.0",
     "nox>=2024.0.0",
+    "pytest>=9.0.2",
+    "pytest-timeout>=2.4.0",
 ]
 
 [build-system]
@@ -70,3 +72,10 @@ reportMissingImports = true
 reportMissingTypeStubs = false
 reportUnusedVariable = true
 reportUnusedImport = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
+markers = [
+    "integration: marks tests that hit external APIs (deselect with '-m \"not integration\"')",
+]
