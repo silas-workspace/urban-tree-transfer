@@ -4,10 +4,9 @@ role: source
 crs: EPSG:25833
 
 boundaries:
-  source: BKG VG250 WFS
-  url: https://sgx.geodatenzentrum.de/wfs_vg250
-  layer: vg250_gem
-  filter: "GEN = 'Berlin'"
+  source: Berlin GDI ALKIS
+  url: https://gdi.berlin.de/services/wfs/alkis_land
+  layer: alkis_land:landesgrenze
 
 trees:
   source: Berlin WFS
