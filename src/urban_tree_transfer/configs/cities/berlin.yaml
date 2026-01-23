@@ -9,17 +9,17 @@ boundaries:
   layer: alkis_land:landesgrenze
 
 trees:
-  source: Berlin WFS
-  url: https://fbinter.stadt-berlin.de/fb/wfs/data/senstadt/s_wfs_baumbestand
+  source: Berlin GDI Baumbestand
+  url: https://gdi.berlin.de/services/wfs/baumbestand
   layers:
-    - s_wfs_baumbestand_an
-    - s_wfs_baumbestand
+    - baumbestand:anlagenbaeume
+    - baumbestand:strassenbaeume
   mapping:
     tree_id: gisid
     genus_latin: gattung
     species_latin: art_bot
     genus_german: gattung_deutsch
-    species_german: art_deutsch
+    species_german: art_dtsch
     plant_year: pflanzjahr
     height_m: baumhoehe
     tree_type: source_layer
@@ -29,11 +29,11 @@ elevation:
   dom:
     source: Berlin GDI
     type: atom_feed
-    url: https://fbinter.stadt-berlin.de/fb/feed/senstadt/a_dom1
+    url: https://gdi.berlin.de/data/dom/atom/
   dgm:
     source: Berlin GDI
     type: atom_feed
-    url: https://gdi.berlin.de/data/dgm1/atom
+    url: https://gdi.berlin.de/data/dgm1/atom/
 
 sentinel2:
   year: 2021

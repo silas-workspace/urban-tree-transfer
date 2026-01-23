@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add 500m buffer to all boundary-based clipping operations
 - Add `outputs/` directory for Colab-generated metadata and logs
 - Add runtime settings section to runner notebook (CPU, High-RAM recommended)
+- Add integration and unit tests for data processing endpoints and helpers
 
 ### Changed
 - Change documentation structure to include Phase 1 methodology
