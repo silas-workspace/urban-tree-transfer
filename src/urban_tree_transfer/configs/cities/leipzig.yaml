@@ -4,10 +4,14 @@ role: target
 crs: EPSG:25833
 
 boundaries:
-  source: BKG VG250 WFS
-  url: https://sgx.geodatenzentrum.de/wfs_vg250
-  layer: vg250_gem
-  filter: "GEN = 'Leipzig'"
+  source: Sachsen GDI ALKIS
+  url: https://geodienste.sachsen.de/aaa/public_alkis/vereinf/wfs
+  layer: ave:VerwaltungsEinheit
+  version: "1.1.0"
+  filter_ogc:
+    property: name
+    value: Stadt Leipzig
+    namespace: ave
 
 trees:
   source: Leipzig WFS

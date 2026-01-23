@@ -46,27 +46,93 @@ def _largest_polygon(geom):
     return geom
 
 
+def _build_ogc_filter(property_name: str, value: str, namespace: str | None = None) -> str:
+    """Build an OGC XML Filter for property equality.
+
+    Args:
+        property_name: Property name to filter on.
+        value: Value to match.
+        namespace: Optional namespace prefix for the property (e.g., 'ave').
+
+    Returns:
+        OGC Filter XML string.
+    """
+    ns_decl = ""
+    prop = property_name
+    if namespace:
+        # Common namespace URIs for German geodata
+        ns_uris = {
+            "ave": "http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0",
+        }
+        if namespace in ns_uris:
+            ns_decl = f' xmlns:{namespace}="{ns_uris[namespace]}"'
+        prop = f"{namespace}:{property_name}"
+
+    return f"""<Filter xmlns="http://www.opengis.net/ogc"{ns_decl}>
+<PropertyIsEqualTo>
+<PropertyName>{prop}</PropertyName>
+<Literal>{value}</Literal>
+</PropertyIsEqualTo>
+</Filter>"""
+
+
 def download_city_boundary(city_config: dict[str, Any]) -> gpd.GeoDataFrame:
-    """Download city boundary from WFS."""
+    """Download city boundary from WFS.
+
+    Supports both CQL_FILTER (for services like Berlin GDI) and OGC XML Filter
+    (for services like Saxony GDI that don't support CQL).
+
+    Config options:
+        url: WFS base URL
+        layer: Layer/typename to request
+        filter: CQL filter expression (optional)
+        filter_ogc: Dict with {property, value, namespace} for OGC XML filter (optional)
+        version: WFS version, defaults to "2.0.0"
+    """
     boundary_cfg = city_config.get("boundaries", {})
     url = boundary_cfg.get("url")
     layer = boundary_cfg.get("layer")
-    filter_expr = boundary_cfg.get("filter")
+    cql_filter = boundary_cfg.get("filter")
+    ogc_filter_cfg = boundary_cfg.get("filter_ogc")
+    version = boundary_cfg.get("version", "2.0.0")
+
     if not url or not layer:
         raise ValueError("Boundary config requires url and layer.")
 
-    params = {
-        "SERVICE": "WFS",
-        "VERSION": "2.0.0",
-        "REQUEST": "GetFeature",
-        "TYPENAMES": layer,
-        "OUTPUTFORMAT": "gml3",
-    }
-    if filter_expr:
-        params["CQL_FILTER"] = filter_expr
+    # Build request parameters based on WFS version
+    if version.startswith("1."):
+        params: dict[str, str] = {
+            "SERVICE": "WFS",
+            "VERSION": version,
+            "REQUEST": "GetFeature",
+            "TYPENAME": layer,  # WFS 1.x uses TYPENAME (singular)
+        }
+    else:
+        params = {
+            "SERVICE": "WFS",
+            "VERSION": version,
+            "REQUEST": "GetFeature",
+            "TYPENAMES": layer,  # WFS 2.x uses TYPENAMES (plural)
+            "OUTPUTFORMAT": "gml3",
+        }
+
+    # Add filter (CQL or OGC XML)
+    if cql_filter:
+        params["CQL_FILTER"] = cql_filter
+    elif ogc_filter_cfg:
+        ogc_xml = _build_ogc_filter(
+            property_name=ogc_filter_cfg["property"],
+            value=ogc_filter_cfg["value"],
+            namespace=ogc_filter_cfg.get("namespace"),
+        )
+        params["FILTER"] = ogc_xml
 
     response = requests.get(f"{url}?{urlencode(params)}", timeout=60)
     response.raise_for_status()
+
+    # Check for WFS exception in response
+    if b"ExceptionReport" in response.content[:500]:
+        raise RuntimeError(f"WFS error: {response.text[:500]}")
 
     return gpd.read_file(BytesIO(response.content))
 
