@@ -7,6 +7,14 @@ from typing import Any
 
 import yaml
 
+# Package root directory (where configs/ lives)
+_PACKAGE_ROOT = Path(__file__).parent.parent
+
+
+def get_config_dir() -> Path:
+    """Get the configs directory path within the package."""
+    return _PACKAGE_ROOT / "configs"
+
 
 def load_yaml(path: Path) -> dict[str, Any]:
     """Load a YAML file into a dictionary."""
@@ -20,8 +28,18 @@ def load_yaml(path: Path) -> dict[str, Any]:
 
 
 def load_city_config(city: str, config_dir: Path | None = None) -> dict[str, Any]:
-    """Load a single city configuration from configs/cities."""
-    config_dir = config_dir or Path("configs/cities")
+    """Load a single city configuration.
+
+    Args:
+        city: City name (e.g., "berlin", "leipzig")
+        config_dir: Optional override for config directory.
+                   Defaults to package's configs/cities/ directory.
+
+    Returns:
+        City configuration dictionary.
+    """
+    if config_dir is None:
+        config_dir = get_config_dir() / "cities"
     path = config_dir / f"{city.lower()}.yaml"
     return load_yaml(path)
 

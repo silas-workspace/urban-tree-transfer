@@ -36,6 +36,16 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/urban_tree_transfer"]
 
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+# Include config files in the package
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/urban_tree_transfer/**/*.yaml",
+    "src/urban_tree_transfer/**/*.txt",
+]
+
 [tool.ruff]
 target-version = "py310"
 line-length = 100

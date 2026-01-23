@@ -30,11 +30,11 @@ elevation:
   dom:
     source: Sachsen GeoSN
     type: zip_list
-    urls_file: configs/cities/leipzig_dom_urls.txt
+    urls_file: leipzig_dom_urls.txt
   dgm:
     source: Sachsen GeoSN
     type: zip_list
-    urls_file: configs/cities/leipzig_dgm_urls.txt
+    urls_file: leipzig_dgm_urls.txt
 
 sentinel2:
   year: 2021

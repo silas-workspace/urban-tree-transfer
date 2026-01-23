@@ -19,7 +19,7 @@ from rasterio.merge import merge
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 from shapely.geometry import box
 
-from urban_tree_transfer.config import PROJECT_CRS
+from urban_tree_transfer.config import PROJECT_CRS, get_config_dir
 
 DEFAULT_NODATA = -9999.0
 ATOM_NS = {"atom": "http://www.w3.org/2005/Atom", "georss": "http://www.georss.org/georss"}
@@ -369,7 +369,9 @@ def download_elevation(
         urls_file = elev_cfg.get("urls_file")
         if not urls_file:
             raise ValueError(f"Elevation config for {data_type} requires urls_file.")
-        urls = _load_urls_from_file(Path(urls_file))
+        # Resolve urls_file relative to config/cities directory
+        urls_path = get_config_dir() / "cities" / urls_file
+        urls = _load_urls_from_file(urls_path)
         raw_dir = output_dir / f"{data_type}_tiles"
         tile_paths = _download_zip_list(urls, raw_dir)
         mosaic_path = output_dir / f"{data_type}_mosaic.tif"
