@@ -7,6 +7,7 @@ import re
 import time
 import warnings
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 from zipfile import ZipFile, is_zipfile
@@ -19,6 +20,7 @@ from rasterio.mask import mask
 from rasterio.merge import merge
 from rasterio.transform import from_origin
 from rasterio.warp import Resampling, calculate_default_transform, reproject
+from requests.exceptions import RequestException
 from shapely.geometry import box
 
 from urban_tree_transfer.config import PROJECT_CRS, get_config_dir
@@ -31,6 +33,12 @@ DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Accept": "*/*",
 }
+
+# Download settings
+DEFAULT_TIMEOUT = 300  # 5 minutes per file
+MAX_RETRIES = 3
+RETRY_DELAY_BASE = 10  # Base delay in seconds (exponential backoff)
+DEFAULT_PARALLEL_WORKERS = 4
 
 
 def _xyz_to_geotiff(xyz_path: Path, output_path: Path | None = None) -> Path:
@@ -300,20 +308,77 @@ def _filter_tiles_by_boundary(
     return filtered
 
 
+def _process_single_tile(
+    tile: dict[str, str],
+    output_dir: Path,
+    idx: int,
+    total: int,
+    progress: bool = True,
+) -> list[Path]:
+    """Download and process a single tile. Returns list of extracted TIF paths."""
+    url = tile["url"]
+    filename = url.split("/")[-1]
+    if not filename.endswith(".zip"):
+        filename = f"{tile['title']}.zip"
+
+    zip_path = output_dir / filename
+    extracted: list[Path] = []
+
+    # Check if already processed - look for corresponding TIF files
+    existing_tifs = list(output_dir.glob(f"{zip_path.stem.lower()}*.tif"))
+    if not existing_tifs:
+        # Also check without lowercase (Berlin uses mixed case)
+        existing_tifs = list(output_dir.glob(f"{zip_path.stem}*.tif"))
+
+    if existing_tifs:
+        if progress:
+            print(f"[{idx}/{total}] {filename} (cached)")
+        return existing_tifs
+
+    if progress:
+        print(f"[{idx}/{total}] {filename}")
+
+    _download_file(url, zip_path, progress_label=filename if not progress else None)
+
+    if not is_zipfile(zip_path):
+        raise ValueError(f"Downloaded file is not a ZIP archive: {url}")
+
+    with ZipFile(zip_path, "r") as zf:
+        zf.extractall(output_dir)
+        for name in zf.namelist():
+            file_path = output_dir / name
+            name_lower = name.lower()
+            if name_lower.endswith((".tif", ".tiff")):
+                extracted.append(file_path)
+            elif name_lower.endswith((".txt", ".xyz")):
+                # Berlin provides XYZ ASCII format - convert to GeoTIFF
+                tif_path = file_path.with_suffix(".tif")
+                if not tif_path.exists():
+                    if progress:
+                        print(f"  Converting {name} to GeoTIFF...")
+                    tif_path = _xyz_to_geotiff(file_path)
+                extracted.append(tif_path)
+
+    return extracted
+
+
 def _download_atom_feed_tiles(
     feed_url: str,
     output_dir: Path,
     boundary_gdf: gpd.GeoDataFrame | None = None,
     buffer_m: float = 500.0,
     progress: bool = True,
+    parallel_workers: int = DEFAULT_PARALLEL_WORKERS,
 ) -> list[Path]:
-    """Download tiles from Berlin Atom feed.
+    """Download tiles from Berlin Atom feed with parallel downloads and resume support.
 
     Args:
         feed_url: Main Atom feed URL.
         output_dir: Directory for downloaded tiles.
         boundary_gdf: Optional boundary for spatial filtering.
         buffer_m: Buffer distance for spatial filtering.
+        progress: Whether to show progress output.
+        parallel_workers: Number of parallel download workers (1 = sequential).
 
     Returns:
         List of paths to extracted raster tiles.
@@ -333,38 +398,70 @@ def _download_atom_feed_tiles(
             raise ValueError("No tiles intersect the provided boundary")
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    extracted: list[Path] = []
-
     total_tiles = len(tiles)
+
     if progress:
         print(f"Downloading {total_tiles} elevation tiles to {output_dir}...")
+        print(f"Using {parallel_workers} parallel workers (set parallel_workers=1 for sequential)")
 
-    for idx, tile in enumerate(tiles, start=1):
-        url = tile["url"]
-        filename = url.split("/")[-1]
-        if not filename.endswith(".zip"):
-            filename = f"{tile['title']}.zip"
+    extracted: list[Path] = []
+    failed: list[tuple[int, str, str]] = []  # (idx, filename, error)
 
-        zip_path = output_dir / filename
-        if progress:
-            print(f"[{idx}/{total_tiles}] {filename}")
-        _download_file(url, zip_path, progress_label=filename)
-        if not is_zipfile(zip_path):
-            raise ValueError(f"Downloaded file is not a ZIP archive: {url}")
+    if parallel_workers <= 1:
+        # Sequential download
+        for idx, tile in enumerate(tiles, start=1):
+            try:
+                tile_paths = _process_single_tile(tile, output_dir, idx, total_tiles, progress)
+                extracted.extend(tile_paths)
+            except Exception as e:
+                filename = tile["url"].split("/")[-1]
+                failed.append((idx, filename, str(e)))
+                if progress:
+                    print(f"  ERROR: {filename} - {e}")
+    else:
+        # Parallel download
+        with ThreadPoolExecutor(max_workers=parallel_workers) as executor:
+            futures = {
+                executor.submit(
+                    _process_single_tile, tile, output_dir, idx, total_tiles, progress=False
+                ): (idx, tile)
+                for idx, tile in enumerate(tiles, start=1)
+            }
 
-        with ZipFile(zip_path, "r") as zf:
-            zf.extractall(output_dir)
-            for name in zf.namelist():
-                file_path = output_dir / name
-                name_lower = name.lower()
-                if name_lower.endswith((".tif", ".tiff")):
-                    extracted.append(file_path)
-                elif name_lower.endswith((".txt", ".xyz")):
-                    # Berlin provides XYZ ASCII format - convert to GeoTIFF
+            for future in as_completed(futures):
+                idx, tile = futures[future]
+                filename = tile["url"].split("/")[-1]
+                try:
+                    tile_paths = future.result()
+                    extracted.extend(tile_paths)
                     if progress:
-                        print(f"  Converting {name} to GeoTIFF...")
-                    tif_path = _xyz_to_geotiff(file_path)
-                    extracted.append(tif_path)
+                        print(f"[{idx}/{total_tiles}] {filename} OK")
+                except Exception as e:
+                    failed.append((idx, filename, str(e)))
+                    if progress:
+                        print(f"[{idx}/{total_tiles}] {filename} FAILED: {e}")
+
+    # Report summary
+    if progress:
+        print(f"\nDownload complete: {len(extracted)} tiles, {len(failed)} failed")
+
+    if failed:
+        if progress:
+            print("Failed tiles:")
+            for idx, filename, error in failed[:10]:  # Show first 10
+                print(f"  [{idx}] {filename}: {error}")
+            if len(failed) > 10:
+                print(f"  ... and {len(failed) - 10} more")
+        # Don't fail completely if we have some tiles - the mosaic can work with partial data
+        if not extracted:
+            raise ValueError(
+                f"All {len(failed)} tile downloads failed. First error: {failed[0][2]}"
+            )
+        warnings.warn(
+            f"{len(failed)} of {total_tiles} tiles failed to download. "
+            "Proceeding with partial data.",
+            stacklevel=2,
+        )
 
     if not extracted:
         raise ValueError("No raster tiles extracted from Atom feed downloads.")
@@ -377,31 +474,81 @@ def _download_file(
     output_path: Path,
     progress_label: str | None = None,
     log_every_seconds: int = 30,
+    timeout: int = DEFAULT_TIMEOUT,
+    max_retries: int = MAX_RETRIES,
 ) -> Path:
+    """Download a file with retry logic and progress reporting.
+
+    Args:
+        url: URL to download from.
+        output_path: Path to save the file.
+        progress_label: Label for progress output.
+        log_every_seconds: How often to log progress.
+        timeout: Request timeout in seconds.
+        max_retries: Maximum number of retry attempts.
+
+    Returns:
+        Path to the downloaded file.
+
+    Raises:
+        RequestException: If download fails after all retries.
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with requests.get(url, stream=True, timeout=300, headers=DEFAULT_HEADERS) as response:
-        response.raise_for_status()
-        total_bytes = response.headers.get("Content-Length")
-        total_mb = (
-            int(total_bytes) / (1024 * 1024) if total_bytes and total_bytes.isdigit() else None
-        )
-        downloaded = 0
-        last_log = time.time()
-        with output_path.open("wb") as handle:
-            for chunk in response.iter_content(chunk_size=1024 * 1024):
-                if chunk:
-                    handle.write(chunk)
-                    downloaded += len(chunk)
-                    if progress_label and log_every_seconds > 0:
-                        now = time.time()
-                        if now - last_log >= log_every_seconds:
-                            downloaded_mb = downloaded / (1024 * 1024)
-                            if total_mb:
-                                print(f"  {progress_label}: {downloaded_mb:.1f}/{total_mb:.1f} MB")
-                            else:
-                                print(f"  {progress_label}: {downloaded_mb:.1f} MB")
-                            last_log = now
-    return output_path
+
+    last_error: Exception | None = None
+    for attempt in range(max_retries):
+        try:
+            # Clean up partial download from previous attempt
+            if output_path.exists() and attempt > 0:
+                output_path.unlink()
+
+            with requests.get(
+                url, stream=True, timeout=timeout, headers=DEFAULT_HEADERS
+            ) as response:
+                response.raise_for_status()
+                total_bytes = response.headers.get("Content-Length")
+                total_mb = (
+                    int(total_bytes) / (1024 * 1024)
+                    if total_bytes and total_bytes.isdigit()
+                    else None
+                )
+                downloaded = 0
+                last_log = time.time()
+                with output_path.open("wb") as handle:
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        if chunk:
+                            handle.write(chunk)
+                            downloaded += len(chunk)
+                            if progress_label and log_every_seconds > 0:
+                                now = time.time()
+                                if now - last_log >= log_every_seconds:
+                                    downloaded_mb = downloaded / (1024 * 1024)
+                                    if total_mb:
+                                        print(
+                                            f"  {progress_label}: "
+                                            f"{downloaded_mb:.1f}/{total_mb:.1f} MB"
+                                        )
+                                    else:
+                                        print(f"  {progress_label}: {downloaded_mb:.1f} MB")
+                                    last_log = now
+            return output_path
+
+        except RequestException as e:
+            last_error = e
+            if attempt < max_retries - 1:
+                delay = RETRY_DELAY_BASE * (2**attempt)  # Exponential backoff
+                if progress_label:
+                    print(
+                        f"  {progress_label}: Download failed (attempt {attempt + 1}/{max_retries}), "
+                        f"retrying in {delay}s..."
+                    )
+                time.sleep(delay)
+            else:
+                # Clean up partial file on final failure
+                if output_path.exists():
+                    output_path.unlink()
+
+    raise last_error or RequestException(f"Download failed after {max_retries} attempts")
 
 
 def _load_urls_from_file(urls_file: Path) -> list[str]:
@@ -491,23 +638,129 @@ def _mosaic_tiles(tile_paths: list[Path], output_path: Path) -> Path:
     return output_path
 
 
-def _download_zip_list(urls: list[str], output_dir: Path) -> list[Path]:
-    output_dir.mkdir(parents=True, exist_ok=True)
+def _process_zip_url(
+    url: str,
+    output_dir: Path,
+    idx: int,
+    total: int,
+    progress: bool = True,
+) -> list[Path]:
+    """Download and extract a single ZIP file. Returns list of extracted TIF paths."""
+    filename = url.split("/")[-1]
+    zip_path = output_dir / filename
     extracted: list[Path] = []
 
-    for url in urls:
-        filename = url.split("/")[-1]
-        zip_path = output_dir / filename
-        _download_file(url, zip_path)
+    # Check if already processed - look for corresponding TIF files
+    stem = zip_path.stem.replace("_tiff", "").replace("_2_sn", "")
+    existing_tifs = list(output_dir.glob(f"*{stem}*.tif"))
 
-        with ZipFile(zip_path, "r") as zf:
-            zf.extractall(output_dir)
-            for name in zf.namelist():
-                if name.lower().endswith(".tif") or name.lower().endswith(".tiff"):
-                    extracted.append(output_dir / name)
+    if existing_tifs:
+        if progress:
+            print(f"[{idx}/{total}] {filename} (cached)")
+        return existing_tifs
+
+    if progress:
+        print(f"[{idx}/{total}] {filename}")
+
+    _download_file(url, zip_path, progress_label=filename if not progress else None)
+
+    if not is_zipfile(zip_path):
+        raise ValueError(f"Downloaded file is not a ZIP archive: {url}")
+
+    with ZipFile(zip_path, "r") as zf:
+        zf.extractall(output_dir)
+        for name in zf.namelist():
+            if name.lower().endswith((".tif", ".tiff")):
+                extracted.append(output_dir / name)
+
+    return extracted
+
+
+def _download_zip_list(
+    urls: list[str],
+    output_dir: Path,
+    progress: bool = True,
+    parallel_workers: int = DEFAULT_PARALLEL_WORKERS,
+) -> list[Path]:
+    """Download tiles from URL list with parallel downloads and resume support.
+
+    Args:
+        urls: List of ZIP file URLs.
+        output_dir: Directory for downloaded tiles.
+        progress: Whether to show progress output.
+        parallel_workers: Number of parallel download workers.
+
+    Returns:
+        List of paths to extracted raster tiles.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    total_urls = len(urls)
+
+    if progress:
+        print(f"Downloading {total_urls} elevation tiles to {output_dir}...")
+        print(f"Using {parallel_workers} parallel workers")
+
+    extracted: list[Path] = []
+    failed: list[tuple[int, str, str]] = []
+
+    if parallel_workers <= 1:
+        # Sequential download
+        for idx, url in enumerate(urls, start=1):
+            try:
+                tile_paths = _process_zip_url(url, output_dir, idx, total_urls, progress)
+                extracted.extend(tile_paths)
+            except Exception as e:
+                filename = url.split("/")[-1]
+                failed.append((idx, filename, str(e)))
+                if progress:
+                    print(f"  ERROR: {filename} - {e}")
+    else:
+        # Parallel download
+        with ThreadPoolExecutor(max_workers=parallel_workers) as executor:
+            futures = {
+                executor.submit(
+                    _process_zip_url, url, output_dir, idx, total_urls, progress=False
+                ): (idx, url)
+                for idx, url in enumerate(urls, start=1)
+            }
+
+            for future in as_completed(futures):
+                idx, url = futures[future]
+                filename = url.split("/")[-1]
+                try:
+                    tile_paths = future.result()
+                    extracted.extend(tile_paths)
+                    if progress:
+                        print(f"[{idx}/{total_urls}] {filename} OK")
+                except Exception as e:
+                    failed.append((idx, filename, str(e)))
+                    if progress:
+                        print(f"[{idx}/{total_urls}] {filename} FAILED: {e}")
+
+    # Report summary
+    if progress:
+        print(f"\nDownload complete: {len(extracted)} tiles, {len(failed)} failed")
+
+    if failed:
+        if progress:
+            print("Failed tiles:")
+            for idx, filename, error in failed[:10]:
+                print(f"  [{idx}] {filename}: {error}")
+            if len(failed) > 10:
+                print(f"  ... and {len(failed) - 10} more")
+        if not extracted:
+            raise ValueError(
+                f"All {len(failed)} tile downloads failed. First error: {failed[0][2]}"
+            )
+        warnings.warn(
+            f"{len(failed)} of {total_urls} tiles failed to download. "
+            "Proceeding with partial data.",
+            stacklevel=2,
+        )
 
     if not extracted:
         raise ValueError("No raster tiles extracted from ZIP list.")
+
     return extracted
 
 
@@ -517,8 +770,21 @@ def download_elevation(
     boundary_gdf: gpd.GeoDataFrame | None = None,
     buffer_m: float = 500.0,
     progress: bool = True,
+    parallel_workers: int = DEFAULT_PARALLEL_WORKERS,
 ) -> Path:
-    """Download DOM or DGM for city."""
+    """Download DOM or DGM for city with parallel downloads and resume support.
+
+    Args:
+        city_config: City configuration dictionary.
+        data_type: Type of elevation data ("dom" or "dgm").
+        boundary_gdf: Optional boundary for spatial filtering.
+        buffer_m: Buffer distance for spatial filtering.
+        progress: Whether to show progress output.
+        parallel_workers: Number of parallel download workers (1 = sequential).
+
+    Returns:
+        Path to the final processed elevation raster.
+    """
     elev_cfg = city_config.get("elevation", {}).get(data_type)
     if not isinstance(elev_cfg, dict):
         raise ValueError(f"Elevation config for {data_type} is missing.")
@@ -541,7 +807,7 @@ def download_elevation(
         urls_path = get_config_dir() / "cities" / urls_file
         urls = _load_urls_from_file(urls_path)
         raw_dir = output_dir / f"{data_type}_tiles"
-        tile_paths = _download_zip_list(urls, raw_dir)
+        tile_paths = _download_zip_list(urls, raw_dir, progress, parallel_workers)
         mosaic_path = output_dir / f"{data_type}_mosaic.tif"
         raster_path = _mosaic_tiles(tile_paths, mosaic_path)
         raster_path = _ensure_project_crs(raster_path)
@@ -552,7 +818,9 @@ def download_elevation(
         if not url:
             raise ValueError(f"Elevation config for {data_type} requires a url.")
         raw_dir = output_dir / f"{data_type}_tiles"
-        tile_paths = _download_atom_feed_tiles(url, raw_dir, boundary_gdf, buffer_m, progress)
+        tile_paths = _download_atom_feed_tiles(
+            url, raw_dir, boundary_gdf, buffer_m, progress, parallel_workers
+        )
         mosaic_path = output_dir / f"{data_type}_mosaic.tif"
         raster_path = _mosaic_tiles(tile_paths, mosaic_path)
         raster_path = _ensure_project_crs(raster_path)
