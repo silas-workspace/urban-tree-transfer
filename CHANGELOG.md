@@ -52,6 +52,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - VIF validation (target < 10) for retained features
   - Clustered heatmaps with bold borders for |r| > 0.95
   - Output: `correlation_removal.json` with complete temporal removal list
+- Add exploratory notebook `notebooks/exploratory/exp_04_outlier_thresholds.ipynb` for outlier detection threshold validation:
+  - Tripartite detection system (Z-score, Mahalanobis D², IQR/Tukey)
+  - Sensitivity analysis for threshold parameters (Z=3.0, α=0.001, k=1.5)
+  - Genus-specific Mahalanobis detection with chi² critical values
+  - Genus×city-specific IQR detection for structural outliers
+  - Severity-based flagging system (high/medium/low/none) for ablation studies
+  - Method overlap analysis via Venn diagram
+  - Genus-wise impact validation (uniformity check)
+  - No automatic removal - all trees retained with flags for Phase 3 experiments
+  - 7 publication-quality plots (sensitivity, distributions, Venn, rates, severity, genus)
+  - Output: `outlier_thresholds.json` with validated parameters and flagging statistics
+- Add outlier detection methodology documentation: `docs/documentation/02_Feature_Engineering/02_Exploratory_04_Outlier_Detection.md`
 - Add correlation analysis methodology documentation: `docs/documentation/02_Feature_Engineering/02_Exploratory_03_Correlation_Analysis.md`
 - Add `feature_engineering/extraction.py` module stub with function signatures:
   - `correct_tree_positions()` - Snap trees to CHM local maxima

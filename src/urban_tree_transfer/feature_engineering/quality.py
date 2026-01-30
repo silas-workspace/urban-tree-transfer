@@ -229,7 +229,6 @@ def interpolate_features_within_tree(
 
     References:
         - PRD 002b Section 1.6 (Within-Tree Interpolation)
-        - Jönsson & Eklundh (2004): max 1-2 edge gaps for vegetation time series
 
     Example:
         >>> # Interior NaN: NDVI_04=0.5, NDVI_05=NaN, NDVI_06=0.7 → NDVI_05=0.6
