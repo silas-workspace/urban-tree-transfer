@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add exploratory notebook `notebooks/exploratory/exp_01_temporal_analysis.ipynb` for temporal feature selection via JM distance
 - Add runner notebook `notebooks/runners/02a_feature_extraction.ipynb` for CHM and Sentinel-2 feature extraction
 - Add exploratory notebook `notebooks/exploratory/exp_01_temporal_analysis.ipynb` for JM-based temporal feature selection
+- Add exploratory notebook `notebooks/exploratory/exp_02_chm_assessment.ipynb` for CHM assessment (eta², Cohen's d, plant-year threshold, genus classification)
+- Add CHM assessment methodology documentation: `docs/documentation/02_Feature_Engineering/02_Exploratory_02_CHM_Assessment.md`
 - Add `configs/features/feature_config.yaml` with complete feature engineering configuration:
   - Metadata columns (9 fields preserved through pipeline)
   - CHM features (1m resolution, engineered z-score/percentile)
