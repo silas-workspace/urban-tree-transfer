@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add exploratory notebook `notebooks/exploratory/exp_01_temporal_analysis.ipynb` for temporal feature selection via JM distance
 - Add runner notebook `notebooks/runners/02a_feature_extraction.ipynb` for CHM and Sentinel-2 feature extraction
+- Add runner notebook `notebooks/runners/02b_data_quality.ipynb` for Phase 2b quality control pipeline:
+  - 12-step sequential quality pipeline (genus filter, plant year filter, temporal selection, NaN handling, interpolation, CHM engineering, NDVI plausibility)
+  - Within-tree temporal interpolation (no data leakage)
+  - Per-city skip logic with retention rate validation (>85%)
+  - Dual execution logs (JSON + plain text format)
+  - Metadata preservation throughout pipeline (11 columns)
+  - Output: `trees_clean_{city}.gpkg` (0 NaN, quality-assured datasets)
 - Add exploratory notebook `notebooks/exploratory/exp_01_temporal_analysis.ipynb` for JM-based temporal feature selection
 - Add exploratory notebook `notebooks/exploratory/exp_02_chm_assessment.ipynb` for CHM assessment (eta², Cohen's d, plant-year threshold, genus classification)
 - Add CHM assessment methodology documentation: `docs/documentation/02_Feature_Engineering/02_Exploratory_02_CHM_Assessment.md`
