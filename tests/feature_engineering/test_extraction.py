@@ -70,22 +70,32 @@ def test_correct_tree_positions_weighted_score():
             crs=PROJECT_CRS,
         )
 
-        corrected = correct_tree_positions(
+        corrected, metadata = correct_tree_positions(
             trees_gdf=trees,
             chm_path=chm_path,
-            search_radius_m=3.0,
+            percentile=75.0,
             height_weight=0.7,
+            safety_factor=1.0,
+            sample_size=2,
         )
 
         first_geom = corrected.geometry.iloc[0]
         assert np.isclose(first_geom.x, 3.5)
         assert np.isclose(first_geom.y, 3.5)
         assert corrected["position_corrected"].iloc[0]
+        assert corrected["correction_distance"].iloc[0] > 0.0
 
         second_geom = corrected.geometry.iloc[1]
-        assert np.isclose(second_geom.x, 10.0)
-        assert np.isclose(second_geom.y, 10.0)
-        assert not corrected["position_corrected"].iloc[1]
+        if corrected["position_corrected"].iloc[1]:
+            assert corrected["correction_distance"].iloc[1] > 0.0
+        else:
+            assert np.isclose(second_geom.x, 10.0)
+            assert np.isclose(second_geom.y, 10.0)
+            assert corrected["correction_distance"].iloc[1] == 0.0
+
+        assert "adaptive_max_radius" in metadata
+        assert "p75_distance" in metadata
+        assert (corrected["correction_distance"] <= metadata["adaptive_max_radius"]).all()
 
 
 def test_correct_tree_positions_null_geometry():
@@ -103,15 +113,57 @@ def test_correct_tree_positions_null_geometry():
             crs=PROJECT_CRS,
         )
 
-        corrected = correct_tree_positions(
+        corrected, _metadata = correct_tree_positions(
             trees_gdf=trees,
             chm_path=chm_path,
-            search_radius_m=2.0,
+            percentile=75.0,
             height_weight=0.7,
+            safety_factor=1.0,
+            sample_size=2,
         )
 
         assert len(corrected) == 2
         assert not corrected["position_corrected"].iloc[1]
+        assert corrected["correction_distance"].iloc[1] == 0.0
+
+
+def test_correct_tree_positions_adaptive_radius():
+    with TemporaryDirectory() as tmpdir:
+        chm_path = Path(tmpdir) / "chm.tif"
+        data = np.zeros((6, 6), dtype=np.float32)
+        data[1, 1] = 10.0
+        data[4, 4] = 12.0
+        _write_single_band_raster(chm_path, data)
+
+        trees = gpd.GeoDataFrame(
+            {
+                "tree_id": [1, 2],
+                "geometry": [Point(1.5, 4.5), Point(4.5, 1.5)],
+            },
+            crs=PROJECT_CRS,
+        )
+
+        corrected, metadata = correct_tree_positions(
+            trees_gdf=trees,
+            chm_path=chm_path,
+            percentile=75.0,
+            height_weight=0.7,
+            safety_factor=1.5,
+            sample_size=2,
+        )
+
+        assert "adaptive_max_radius" in metadata
+        assert "p75_distance" in metadata
+        assert metadata["adaptive_max_radius"] > 0
+        assert "correction_distance" in corrected.columns
+        assert (corrected["correction_distance"] >= 0).all()
+
+        corrected_mask = corrected["position_corrected"]
+        if corrected_mask.any():
+            assert (corrected.loc[corrected_mask, "correction_distance"] >= 0).all()
+
+        max_radius = metadata["adaptive_max_radius"]
+        assert (corrected["correction_distance"] <= max_radius).all()
 
 
 def test_extract_chm_features_point_sample():
@@ -249,8 +301,10 @@ def test_extract_all_features_summary():
 
         feature_config = load_feature_config()
         feature_config["temporal"]["extraction_months"] = [month]
-        feature_config["tree_correction"]["search_radius_m"] = 2.0
-        feature_config["tree_correction"]["height_weight"] = 0.7
+        feature_config["tree_position_correction"]["percentile"] = 75.0
+        feature_config["tree_position_correction"]["height_weight"] = 0.7
+        feature_config["tree_position_correction"]["safety_factor"] = 1.0
+        feature_config["tree_position_correction"]["sample_size"] = 1
 
         result_gdf, summary = extract_all_features(
             trees_gdf=trees,

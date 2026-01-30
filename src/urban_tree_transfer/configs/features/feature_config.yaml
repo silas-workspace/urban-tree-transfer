@@ -15,6 +15,8 @@ metadata_columns:
   - plant_year     # Year planted (for filtering young trees)
   - height_m       # Cadastre height (different from CHM!)
   - tree_type      # anlagenbaeume/strassenbaeume (Berlin only)
+  - position_corrected  # Boolean: was position corrected?
+  - correction_distance # Distance in meters (0.0 if not corrected)
 
 # =============================================================================
 # CHM FEATURES
@@ -180,8 +182,10 @@ genus_classification:
   min_samples_for_analysis: 500
 
 # =============================================================================
-# TREE POSITION CORRECTION
+# TREE POSITION CORRECTION (Hybrid Approach: Adaptive Radius + Scoring)
 # =============================================================================
-tree_correction:
-  search_radius_m: 5.0          # Max distance to search for CHM peak
-  height_weight: 0.7            # Weight for height vs distance in peak selection
+tree_position_correction:
+  percentile: 75.0           # Use P75 of peak distances for adaptive radius
+  height_weight: 0.7         # Weight for height vs distance in scoring
+  safety_factor: 1.5         # Multiplier for adaptive radius (P75 × 1.5)
+  sample_size: 1000          # Trees to sample for radius estimation

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added - Phase 2: Feature Engineering
 
+- Add runner notebook `notebooks/runners/02a_feature_extraction.ipynb` for CHM and Sentinel-2 feature extraction
 - Add `configs/features/feature_config.yaml` with complete feature engineering configuration:
   - Metadata columns (9 fields preserved through pipeline)
   - CHM features (1m resolution, engineered z-score/percentile)
@@ -96,6 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update Phase 1 methodology with complete processing steps, parameters, and quality criteria
 - Change data processing runner notebook to skip sections when outputs already exist
 - Change elevation downloads to log per-tile progress
+- Refactor tree position correction to adaptive radius + scoring, including correction distance metadata
 
 ### Fixed
 - Fix Berlin Atom feed downloads by resolving section links to ZIP tiles and validating ZIP responses
