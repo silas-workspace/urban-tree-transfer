@@ -48,7 +48,7 @@ Each prompt should contain:
 | 7 | Runner notebook `02b_data_quality.ipynb` | 002b | `notebooks/runners/` | Done |
 | 8 | Exploratory `exp_03_correlation_analysis.ipynb` | 002_exploratory | `notebooks/exploratory/` | Done |
 | 9 | Exploratory `exp_04_outlier_thresholds.ipynb` | 002_exploratory | `notebooks/exploratory/` | Done |
-| 10 | Exploratory `exp_05_spatial_autocorrelation.ipynb` | 002_exploratory | `notebooks/exploratory/` | Pending |
+| 10 | Exploratory `exp_05_spatial_autocorrelation.ipynb` | 002_exploratory | `notebooks/exploratory/` | Done |
 | 11 | Implement `selection.py`, `outliers.py`, `splits.py` | 002c | `feature_engineering/` | Pending |
 | 12 | Runner notebook `02c_final_preparation.ipynb` | 002c | `notebooks/runners/` | Pending |
 
