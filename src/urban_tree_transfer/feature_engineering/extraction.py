@@ -26,6 +26,7 @@ from urban_tree_transfer.config.loader import (
     get_metadata_columns,
 )
 from urban_tree_transfer.utils.geo import ensure_project_crs
+from urban_tree_transfer.utils.schema_validation import validate_phase2a_output
 
 _DEFAULT_BATCH_SIZE = 50000
 _DEFAULT_SAMPLING_RADIUS_M = 10.0
@@ -232,7 +233,14 @@ def correct_tree_positions(
             corrected_point = Point(float(xx[best_row, best_col]), float(yy[best_row, best_col]))
             corrected_geometries.append(corrected_point)
             position_corrected.append(True)
-            correction_distances.append(float(geom.distance(corrected_point)))
+            correction_distance = float(geom.distance(corrected_point))
+            if correction_distance > adaptive_max_radius + 1e-6:
+                raise RuntimeError(
+                    "Correction distance exceeds adaptive radius. "
+                    f"distance={correction_distance:.2f}m, "
+                    f"adaptive_max_radius={adaptive_max_radius:.2f}m"
+                )
+            correction_distances.append(correction_distance)
 
     trees_gdf["position_corrected"] = pd.Series(position_corrected, dtype=bool)
     trees_gdf["correction_distance"] = pd.Series(correction_distances, dtype=float)
@@ -254,6 +262,7 @@ def correct_tree_positions(
 def extract_chm_features(
     trees_gdf: gpd.GeoDataFrame,
     chm_path: Path,
+    batch_size: int = _DEFAULT_BATCH_SIZE,
 ) -> gpd.GeoDataFrame:
     """Extract CHM_1m value at each tree location.
 
@@ -263,6 +272,7 @@ def extract_chm_features(
     Args:
         trees_gdf: Tree points (should be position-corrected).
         chm_path: Path to 1m CHM GeoTIFF.
+        batch_size: Batch size for raster sampling.
 
     Returns:
         GeoDataFrame with new column 'CHM_1m' (float, may contain NaN for NoData).
@@ -275,12 +285,15 @@ def extract_chm_features(
     trees_gdf["CHM_1m"] = np.nan
     valid_mask = ~trees_gdf.geometry.is_empty & trees_gdf.geometry.notnull()
 
+    if batch_size <= 0:
+        raise ValueError("batch_size must be > 0.")
+
     with rasterio.open(chm_path) as src:
         nodata_value = src.nodata
         valid_indices = np.where(valid_mask)[0]
 
-        for start in range(0, len(valid_indices), _DEFAULT_BATCH_SIZE):
-            batch_indices = valid_indices[start : start + _DEFAULT_BATCH_SIZE]
+        for start in range(0, len(valid_indices), batch_size):
+            batch_indices = valid_indices[start : start + batch_size]
             batch_coords = [
                 (trees_gdf.geometry.iloc[idx].x, trees_gdf.geometry.iloc[idx].y)
                 for idx in batch_indices
@@ -349,9 +362,22 @@ def extract_sentinel_features(
             continue
 
         with rasterio.open(file_path) as src:
-            if src.count < len(s2_features):
+            if src.count != len(s2_features):
                 raise ValueError(
                     f"Expected {len(s2_features)} bands in {file_path}, found {src.count}."
+                )
+            descriptions = list(src.descriptions or [])
+            if descriptions and any(desc is not None for desc in descriptions):
+                expected = s2_features
+                actual = [desc or "" for desc in descriptions]
+                if actual != expected:
+                    raise ValueError(
+                        f"Sentinel-2 band order mismatch. Expected {expected}, found {actual}."
+                    )
+            elif descriptions:
+                warnings.warn(
+                    f"Band descriptions missing in {file_path}; unable to validate band order.",
+                    stacklevel=2,
                 )
             nodata_value = src.nodata
 
@@ -422,7 +448,10 @@ def extract_all_features(
         sample_size=sample_size,
     )
 
-    chm_gdf = extract_chm_features(corrected_gdf, chm_path=chm_path)
+    processing_cfg = feature_config.get("processing", {})
+    batch_size = int(processing_cfg.get("batch_size", _DEFAULT_BATCH_SIZE))
+
+    chm_gdf = extract_chm_features(corrected_gdf, chm_path=chm_path, batch_size=batch_size)
 
     temporal_cfg = feature_config.get("temporal", {})
     months = temporal_cfg.get("extraction_months", list(range(1, 13)))
@@ -434,7 +463,10 @@ def extract_all_features(
         city=city,
         year=year,
         months=months,
+        batch_size=batch_size,
     )
+
+    validate_phase2a_output(full_gdf, feature_config)
 
     metadata_columns = get_metadata_columns(feature_config)
     expected_features = get_all_feature_names(months=months, config=feature_config)

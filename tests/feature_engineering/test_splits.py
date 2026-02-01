@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import geopandas as gpd
+import pytest
 from shapely.geometry import Point
 
 from urban_tree_transfer.config import PROJECT_CRS
@@ -77,3 +78,27 @@ def test_create_stratified_splits_leipzig_disjoint():
 
     assert validation["spatial_overlap"] == 0
     assert validation["kl_divergences"]["finetune_vs_test"] < 0.01
+
+
+def test_create_stratified_splits_berlin_requires_blocks():
+    gdf = _make_blocked_gdf("berlin", ["b0", "b1"])
+
+    with pytest.raises(ValueError, match="Not enough blocks"):
+        create_stratified_splits_berlin(gdf, train_ratio=0.6, val_ratio=0.2, test_ratio=0.2)
+
+
+def test_create_stratified_splits_leipzig_single_genus_fails():
+    records = [
+        {
+            "tree_id": f"t{i}",
+            "city": "leipzig",
+            "genus_latin": "TILIA",
+            "block_id": f"b{i // 2}",
+            "geometry": Point(float(i), float(i)),
+        }
+        for i in range(6)
+    ]
+    gdf = gpd.GeoDataFrame(records, crs=PROJECT_CRS)
+
+    with pytest.raises(ValueError):
+        create_stratified_splits_leipzig(gdf, finetune_ratio=0.8, test_ratio=0.2)

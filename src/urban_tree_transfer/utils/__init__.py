@@ -29,6 +29,20 @@ else:
             ) from _PLOTTING_IMPORT_ERROR
 
 
+from .final_validation import validate_zero_nan
+from .json_validation import (
+    validate_chm_assessment,
+    validate_correlation_removal,
+    validate_outlier_thresholds,
+    validate_proximity_filter,
+    validate_spatial_autocorrelation,
+    validate_temporal_selection,
+)
+from .schema_validation import (
+    validate_phase2a_output,
+    validate_phase2b_output,
+    validate_phase2c_output,
+)
 from .validation import (
     generate_validation_report,
     validate_crs,
@@ -50,10 +64,20 @@ __all__ = [
     "log_warning",
     "save_figure",
     "setup_plotting",
+    "validate_chm_assessment",
+    "validate_correlation_removal",
     "validate_crs",
     "validate_dataset",
     "validate_geometries",
     "validate_no_null_geometries",
+    "validate_outlier_thresholds",
+    "validate_phase2a_output",
+    "validate_phase2b_output",
+    "validate_phase2c_output",
+    "validate_proximity_filter",
     "validate_schema",
+    "validate_spatial_autocorrelation",
+    "validate_temporal_selection",
     "validate_within_boundary",
+    "validate_zero_nan",
 ]

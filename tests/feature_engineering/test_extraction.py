@@ -1,10 +1,13 @@
-"""Unit tests for Phase 2 feature extraction."""
+"""Unit tests for Phase 2 extraction functions."""
 
+from __future__ import annotations
+
+import warnings
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import pytest
 import rasterio
 from rasterio.transform import from_origin
@@ -20,301 +23,297 @@ from urban_tree_transfer.feature_engineering.extraction import (
 )
 
 
-def _write_single_band_raster(path: Path, data: np.ndarray, nodata: float = -9999.0) -> None:
-    transform = from_origin(0.0, float(data.shape[0]), 1.0, 1.0)
+def _make_trees(points: list[Point]) -> gpd.GeoDataFrame:
+    n = len(points)
+    return gpd.GeoDataFrame(
+        {
+            "tree_id": [f"T{i:03d}" for i in range(n)],
+            "city": ["berlin"] * n,
+            "genus_latin": ["TILIA"] * n,
+            "species_latin": [pd.NA] * n,
+            "genus_german": [pd.NA] * n,
+            "species_german": [pd.NA] * n,
+            "plant_year": pd.Series([pd.NA] * n, dtype="Int64"),
+            "height_m": np.zeros(n, dtype=float),
+            "tree_type": [pd.NA] * n,
+            "geometry": points,
+        },
+        crs=PROJECT_CRS,
+    )
+
+
+def _write_raster(
+    path: Path,
+    data: np.ndarray,
+    *,
+    nodata: float | None = None,
+    descriptions: list[str] | None = None,
+) -> None:
+    height, width = data.shape[-2], data.shape[-1]
+    count = data.shape[0] if data.ndim == 3 else 1
+    transform = from_origin(0.0, 10.0, 1.0, 1.0)
+
     with rasterio.open(
         path,
         "w",
         driver="GTiff",
-        height=data.shape[0],
-        width=data.shape[1],
-        count=1,
+        height=height,
+        width=width,
+        count=count,
         dtype=data.dtype,
         crs=PROJECT_CRS,
         transform=transform,
         nodata=nodata,
     ) as dst:
-        dst.write(data, 1)
-
-
-def _write_multiband_raster(path: Path, data: np.ndarray, nodata: float = -9999.0) -> None:
-    transform = from_origin(0.0, float(data.shape[1]), 1.0, 1.0)
-    with rasterio.open(
-        path,
-        "w",
-        driver="GTiff",
-        height=data.shape[1],
-        width=data.shape[2],
-        count=data.shape[0],
-        dtype=data.dtype,
-        crs=PROJECT_CRS,
-        transform=transform,
-        nodata=nodata,
-    ) as dst:
-        dst.write(data)
-
-
-def test_correct_tree_positions_weighted_score():
-    with TemporaryDirectory() as tmpdir:
-        chm_path = Path(tmpdir) / "chm.tif"
-        data = np.zeros((5, 5), dtype=np.float32)
-        data[1, 1] = 10.0
-        data[1, 3] = 12.0
-        _write_single_band_raster(chm_path, data)
-
-        trees = gpd.GeoDataFrame(
-            {
-                "tree_id": [1, 2],
-                "geometry": [Point(1.5, 3.5), Point(10.0, 10.0)],
-            },
-            crs=PROJECT_CRS,
-        )
-
-        corrected, metadata = correct_tree_positions(
-            trees_gdf=trees,
-            chm_path=chm_path,
-            percentile=75.0,
-            height_weight=0.7,
-            safety_factor=1.0,
-            sample_size=2,
-        )
-
-        first_geom = corrected.geometry.iloc[0]
-        assert np.isclose(first_geom.x, 3.5)
-        assert np.isclose(first_geom.y, 3.5)
-        assert corrected["position_corrected"].iloc[0]
-        assert corrected["correction_distance"].iloc[0] > 0.0
-
-        second_geom = corrected.geometry.iloc[1]
-        if corrected["position_corrected"].iloc[1]:
-            assert corrected["correction_distance"].iloc[1] > 0.0
+        if count == 1:
+            data_to_write = data[0] if data.ndim == 3 else data
+            dst.write(data_to_write, 1)
         else:
-            assert np.isclose(second_geom.x, 10.0)
-            assert np.isclose(second_geom.y, 10.0)
-            assert corrected["correction_distance"].iloc[1] == 0.0
-
-        assert "adaptive_max_radius" in metadata
-        assert "p75_distance" in metadata
-        assert (corrected["correction_distance"] <= metadata["adaptive_max_radius"]).all()
+            dst.write(data)
+        if descriptions is not None:
+            dst.descriptions = tuple(descriptions)
 
 
-def test_correct_tree_positions_null_geometry():
-    with TemporaryDirectory() as tmpdir:
-        chm_path = Path(tmpdir) / "chm.tif"
-        data = np.zeros((3, 3), dtype=np.float32)
-        data[1, 1] = 5.0
-        _write_single_band_raster(chm_path, data)
+def test_correct_tree_positions_handles_empty_geometry(tmp_path: Path) -> None:
+    gdf = _make_trees([Point()])
+    chm_path = tmp_path / "chm.tif"
+    _write_raster(chm_path, np.ones((2, 2), dtype=np.float32))
 
-        trees = gpd.GeoDataFrame(
-            {
-                "tree_id": [1, 2],
-                "geometry": [Point(1.5, 1.5), None],
-            },
-            crs=PROJECT_CRS,
-        )
+    result, metadata = correct_tree_positions(gdf, chm_path)
 
-        corrected, _metadata = correct_tree_positions(
-            trees_gdf=trees,
-            chm_path=chm_path,
-            percentile=75.0,
-            height_weight=0.7,
-            safety_factor=1.0,
-            sample_size=2,
-        )
-
-        assert len(corrected) == 2
-        assert not corrected["position_corrected"].iloc[1]
-        assert corrected["correction_distance"].iloc[1] == 0.0
+    assert bool(result.loc[0, "position_corrected"]) is False
+    assert result.loc[0, "correction_distance"] == 0.0
+    assert "adaptive_max_radius" in metadata
 
 
-def test_correct_tree_positions_adaptive_radius():
-    with TemporaryDirectory() as tmpdir:
-        chm_path = Path(tmpdir) / "chm.tif"
-        data = np.zeros((6, 6), dtype=np.float32)
-        data[1, 1] = 10.0
-        data[4, 4] = 12.0
-        _write_single_band_raster(chm_path, data)
+def test_correct_tree_positions_scoring_prefers_height(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    chm = np.array([[5.0, 20.0], [1.0, 2.0]], dtype=np.float32)
+    chm_path = tmp_path / "chm.tif"
+    _write_raster(chm_path, chm)
 
-        trees = gpd.GeoDataFrame(
-            {
-                "tree_id": [1, 2],
-                "geometry": [Point(1.5, 4.5), Point(4.5, 1.5)],
-            },
-            crs=PROJECT_CRS,
-        )
+    result, _ = correct_tree_positions(
+        gdf,
+        chm_path,
+        height_weight=1.0,
+        sample_size=1,
+    )
 
-        corrected, metadata = correct_tree_positions(
-            trees_gdf=trees,
-            chm_path=chm_path,
-            percentile=75.0,
-            height_weight=0.7,
-            safety_factor=1.5,
-            sample_size=2,
-        )
-
-        assert "adaptive_max_radius" in metadata
-        assert "p75_distance" in metadata
-        assert metadata["adaptive_max_radius"] > 0
-        assert "correction_distance" in corrected.columns
-        assert (corrected["correction_distance"] >= 0).all()
-
-        corrected_mask = corrected["position_corrected"]
-        if corrected_mask.any():
-            assert (corrected.loc[corrected_mask, "correction_distance"] >= 0).all()
-
-        max_radius = metadata["adaptive_max_radius"]
-        assert (corrected["correction_distance"] <= max_radius).all()
+    corrected_point = result.geometry.iloc[0]
+    assert np.isclose(corrected_point.x, 1.5)
+    assert np.isclose(corrected_point.y, 9.5)
 
 
-def test_extract_chm_features_point_sample():
-    with TemporaryDirectory() as tmpdir:
-        chm_path = Path(tmpdir) / "chm.tif"
-        nodata_value = -9999.0
-        data = np.arange(1, 10, dtype=np.float32).reshape(3, 3)
-        data[1, 1] = nodata_value
-        _write_single_band_raster(chm_path, data, nodata=nodata_value)
+def test_correct_tree_positions_scoring_prefers_distance(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    chm = np.array([[5.0, 20.0], [1.0, 2.0]], dtype=np.float32)
+    chm_path = tmp_path / "chm.tif"
+    _write_raster(chm_path, chm)
 
-        trees = gpd.GeoDataFrame(
-            {
-                "tree_id": [1, 2],
-                "height_m": [5.0, 6.0],
-                "geometry": [Point(0.5, 2.5), Point(1.5, 1.5)],
-            },
-            crs=PROJECT_CRS,
-        )
+    result, _ = correct_tree_positions(
+        gdf,
+        chm_path,
+        height_weight=0.0,
+        sample_size=1,
+    )
 
-        extracted = extract_chm_features(trees, chm_path=chm_path)
-
-        assert np.isclose(extracted.loc[0, "CHM_1m"], 1.0)
-        assert np.isnan(extracted.loc[1, "CHM_1m"])
-        assert np.isclose(extracted.loc[0, "height_m"], 5.0)
-        assert np.isclose(extracted.loc[1, "height_m"], 6.0)
+    corrected_point = result.geometry.iloc[0]
+    assert np.isclose(corrected_point.x, 0.5)
+    assert np.isclose(corrected_point.y, 9.5)
 
 
-def test_extract_chm_empty_geodataframe():
-    with TemporaryDirectory() as tmpdir:
-        chm_path = Path(tmpdir) / "chm.tif"
-        data = np.ones((2, 2), dtype=np.float32)
-        _write_single_band_raster(chm_path, data)
+def test_correct_tree_positions_metadata_keys(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    chm = np.array([[5.0, 2.0], [1.0, 2.0]], dtype=np.float32)
+    chm_path = tmp_path / "chm.tif"
+    _write_raster(chm_path, chm)
 
-        empty_gdf = gpd.GeoDataFrame({"tree_id": [], "geometry": []}, crs=PROJECT_CRS)
-        extracted = extract_chm_features(empty_gdf, chm_path=chm_path)
+    _, metadata = correct_tree_positions(gdf, chm_path, sample_size=1, percentile=75.0)
 
-        assert extracted.empty
-        assert "CHM_1m" in extracted.columns
-
-
-def test_extract_sentinel_features_multiband():
-    with TemporaryDirectory() as tmpdir:
-        sentinel_dir = Path(tmpdir)
-        city = "berlin"
-        year = 2021
-        month = 1
-        file_path = sentinel_dir / f"S2_{city}_{year}_{month:02d}_median.tif"
-
-        s2_features = get_all_s2_features()
-        band_count = len(s2_features)
-        data = np.stack(
-            [np.full((2, 2), idx + 1, dtype=np.float32) for idx in range(band_count)],
-            axis=0,
-        )
-        _write_multiband_raster(file_path, data)
-
-        trees = gpd.GeoDataFrame(
-            {"tree_id": [1], "geometry": [Point(0.5, 1.5)]},
-            crs=PROJECT_CRS,
-        )
-
-        extracted = extract_sentinel_features(
-            trees_gdf=trees,
-            sentinel_dir=sentinel_dir,
-            city=city,
-            year=year,
-            months=[month],
-            batch_size=10,
-        )
-
-        for idx, feature in enumerate(s2_features):
-            col = f"{feature}_{month:02d}"
-            assert col in extracted.columns
-            assert np.isclose(extracted.loc[0, col], idx + 1)
+    assert "adaptive_max_radius" in metadata
+    assert "p75_distance" in metadata
 
 
-def test_extract_sentinel_missing_file_warns():
-    with TemporaryDirectory() as tmpdir:
-        sentinel_dir = Path(tmpdir)
-        trees = gpd.GeoDataFrame(
-            {"tree_id": [1], "geometry": [Point(0.5, 1.5)]},
-            crs=PROJECT_CRS,
-        )
-        month = 1
+def test_correct_tree_positions_no_valid_chm(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    chm = np.full((2, 2), np.nan, dtype=np.float32)
+    chm_path = tmp_path / "chm.tif"
+    _write_raster(chm_path, chm, nodata=np.nan)
 
-        with pytest.warns(UserWarning):
-            extracted = extract_sentinel_features(
-                trees_gdf=trees,
-                sentinel_dir=sentinel_dir,
-                city="berlin",
-                year=2021,
-                months=[month],
-                batch_size=10,
-            )
+    result, _ = correct_tree_positions(gdf, chm_path, sample_size=1)
 
-        s2_features = get_all_s2_features()
-        for feature in s2_features:
-            col = f"{feature}_{month:02d}"
-            assert col in extracted.columns
-            assert extracted[col].isna().all()
+    assert bool(result.loc[0, "position_corrected"]) is False
+    assert result.loc[0, "correction_distance"] == 0.0
 
 
-def test_extract_all_features_summary():
-    with TemporaryDirectory() as tmpdir:
-        tmp_path = Path(tmpdir)
-        chm_path = tmp_path / "chm.tif"
-        sentinel_dir = tmp_path / "sentinel"
-        sentinel_dir.mkdir()
+def test_extract_chm_features_batch_processing(tmp_path: Path) -> None:
+    points = [Point(0.5, 9.5), Point(1.5, 9.5), Point(0.5, 8.5)]
+    gdf = _make_trees(points)
+    chm = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+    chm_path = tmp_path / "chm.tif"
+    _write_raster(chm_path, chm)
 
-        chm_data = np.ones((3, 3), dtype=np.float32)
-        _write_single_band_raster(chm_path, chm_data)
+    result = extract_chm_features(gdf, chm_path, batch_size=2)
 
-        s2_features = get_all_s2_features()
-        band_count = len(s2_features)
-        s2_data = np.stack(
-            [np.full((3, 3), idx + 1, dtype=np.float32) for idx in range(band_count)],
-            axis=0,
-        )
-        city = "berlin"
-        year = 2021
-        month = 1
-        s2_path = sentinel_dir / f"S2_{city}_{year}_{month:02d}_median.tif"
-        _write_multiband_raster(s2_path, s2_data)
+    assert np.isclose(result.loc[0, "CHM_1m"], 1.0)
+    assert np.isclose(result.loc[1, "CHM_1m"], 2.0)
+    assert np.isclose(result.loc[2, "CHM_1m"], 3.0)
 
-        trees = gpd.GeoDataFrame(
-            {
-                "tree_id": [1],
-                "city": [city],
-                "genus_latin": ["ACER"],
-                "height_m": [10.0],
-                "geometry": [Point(1.5, 1.5)],
-            },
-            crs=PROJECT_CRS,
-        )
 
-        feature_config = load_feature_config()
-        feature_config["temporal"]["extraction_months"] = [month]
-        feature_config["tree_position_correction"]["percentile"] = 75.0
-        feature_config["tree_position_correction"]["height_weight"] = 0.7
-        feature_config["tree_position_correction"]["safety_factor"] = 1.0
-        feature_config["tree_position_correction"]["sample_size"] = 1
+def test_extract_chm_features_nodata(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    chm = np.array([[0.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+    chm_path = tmp_path / "chm.tif"
+    _write_raster(chm_path, chm, nodata=0.0)
 
-        result_gdf, summary = extract_all_features(
-            trees_gdf=trees,
-            chm_path=chm_path,
-            sentinel_dir=sentinel_dir,
-            city=city,
-            feature_config=feature_config,
-        )
+    result = extract_chm_features(gdf, chm_path)
 
-        assert "CHM_1m" in result_gdf.columns
-        assert f"{s2_features[0]}_{month:02d}" in result_gdf.columns
-        assert summary["total_trees"] == 1
-        assert summary["trees_corrected"] == 1
+    assert pd.isna(result.loc[0, "CHM_1m"])
+
+
+def test_extract_sentinel_features_multi_month(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    sentinel_dir = tmp_path / "s2"
+    sentinel_dir.mkdir()
+
+    s2_features = get_all_s2_features()
+    band_count = len(s2_features)
+    data = np.stack([np.full((2, 2), i + 1, dtype=np.float32) for i in range(band_count)], axis=0)
+
+    for month in [1, 2]:
+        path = sentinel_dir / f"S2_berlin_2021_{month:02d}_median.tif"
+        _write_raster(path, data, descriptions=s2_features)
+
+    result = extract_sentinel_features(gdf, sentinel_dir, city="berlin", year=2021, months=[1, 2])
+
+    assert f"{s2_features[0]}_01" in result.columns
+    assert f"{s2_features[0]}_02" in result.columns
+    assert np.isclose(result.loc[0, f"{s2_features[0]}_01"], 1.0)
+    assert np.isclose(result.loc[0, f"{s2_features[1]}_02"], 2.0)
+
+
+def test_extract_sentinel_features_nodata(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    sentinel_dir = tmp_path / "s2"
+    sentinel_dir.mkdir()
+
+    s2_features = get_all_s2_features()
+    band_count = len(s2_features)
+    data = np.stack([np.full((2, 2), i + 1, dtype=np.float32) for i in range(band_count)], axis=0)
+    data[:, 0, 0] = 0.0
+    path = sentinel_dir / "S2_berlin_2021_01_median.tif"
+    _write_raster(path, data, descriptions=s2_features, nodata=0.0)
+
+    result = extract_sentinel_features(gdf, sentinel_dir, city="berlin", year=2021, months=[1])
+
+    assert pd.isna(result.loc[0, f"{s2_features[0]}_01"])
+
+
+def test_extract_sentinel_features_band_count_validation(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    sentinel_dir = tmp_path / "s2"
+    sentinel_dir.mkdir()
+
+    data = np.ones((1, 2, 2), dtype=np.float32)
+    path = sentinel_dir / "S2_berlin_2021_01_median.tif"
+    _write_raster(path, data)
+
+    with pytest.raises(ValueError, match="Expected"):
+        extract_sentinel_features(gdf, sentinel_dir, city="berlin", year=2021, months=[1])
+
+
+def test_extract_sentinel_features_band_order_validation(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    sentinel_dir = tmp_path / "s2"
+    sentinel_dir.mkdir()
+
+    s2_features = get_all_s2_features()
+    band_count = len(s2_features)
+    data = np.stack([np.full((2, 2), i + 1, dtype=np.float32) for i in range(band_count)], axis=0)
+    wrong_order = list(reversed(s2_features))
+
+    path = sentinel_dir / "S2_berlin_2021_01_median.tif"
+    _write_raster(path, data, descriptions=wrong_order)
+
+    with pytest.raises(ValueError, match="band order"):
+        extract_sentinel_features(gdf, sentinel_dir, city="berlin", year=2021, months=[1])
+
+
+def test_extract_sentinel_features_missing_file_warns(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    sentinel_dir = tmp_path / "s2"
+    sentinel_dir.mkdir()
+
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always")
+        result = extract_sentinel_features(gdf, sentinel_dir, city="berlin", year=2021, months=[1])
+
+    assert any("Sentinel-2 composite missing" in str(w.message) for w in records)
+    s2_features = get_all_s2_features()
+    assert pd.isna(result.loc[0, f"{s2_features[0]}_01"])
+
+
+def test_extract_all_features_pipeline(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    chm_path = tmp_path / "chm.tif"
+    _write_raster(chm_path, np.array([[5.0, 2.0], [1.0, 2.0]], dtype=np.float32))
+
+    sentinel_dir = tmp_path / "s2"
+    sentinel_dir.mkdir()
+    s2_features = get_all_s2_features()
+    band_count = len(s2_features)
+    data = np.stack([np.full((2, 2), i + 1, dtype=np.float32) for i in range(band_count)], axis=0)
+    for month in [1, 2]:
+        path = sentinel_dir / f"S2_berlin_2021_{month:02d}_median.tif"
+        _write_raster(path, data, descriptions=s2_features)
+
+    feature_config = load_feature_config()
+    feature_config["temporal"]["extraction_months"] = [1, 2]
+
+    result, summary = extract_all_features(
+        gdf,
+        chm_path=chm_path,
+        sentinel_dir=sentinel_dir,
+        city="berlin",
+        feature_config=feature_config,
+    )
+
+    assert "CHM_1m" in result.columns
+    assert f"{s2_features[0]}_01" in result.columns
+    assert summary["total_trees"] == 1
+
+
+def test_extract_all_features_single_tree(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    chm_path = tmp_path / "chm.tif"
+    _write_raster(chm_path, np.array([[5.0, 2.0], [1.0, 2.0]], dtype=np.float32))
+
+    sentinel_dir = tmp_path / "s2"
+    sentinel_dir.mkdir()
+    s2_features = get_all_s2_features()
+    band_count = len(s2_features)
+    data = np.stack([np.full((2, 2), i + 1, dtype=np.float32) for i in range(band_count)], axis=0)
+    path = sentinel_dir / "S2_berlin_2021_01_median.tif"
+    _write_raster(path, data, descriptions=s2_features)
+
+    feature_config = load_feature_config()
+    feature_config["temporal"]["extraction_months"] = [1]
+
+    result, _ = extract_all_features(
+        gdf,
+        chm_path=chm_path,
+        sentinel_dir=sentinel_dir,
+        city="berlin",
+        feature_config=feature_config,
+    )
+
+    assert len(result) == 1
+
+
+def test_extract_chm_features_raises_on_invalid_batch_size(tmp_path: Path) -> None:
+    gdf = _make_trees([Point(0.5, 9.5)])
+    chm_path = tmp_path / "chm.tif"
+    _write_raster(chm_path, np.ones((2, 2), dtype=np.float32))
+
+    with pytest.raises(ValueError, match="batch_size"):
+        extract_chm_features(gdf, chm_path, batch_size=0)

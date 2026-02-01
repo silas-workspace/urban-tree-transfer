@@ -26,11 +26,14 @@ from .quality import (
     filter_nan_trees,
     filter_ndvi_plausibility,
     interpolate_features_within_tree,
+    run_quality_pipeline,
 )
 from .selection import (
     compute_feature_correlations,
+    compute_vif,
     identify_redundant_features,
     remove_redundant_features,
+    validate_final_preparation_output,
 )
 from .splits import (
     create_spatial_blocks,
@@ -48,6 +51,7 @@ __all__ = [
     "compute_chm_engineered_features",
     "compute_feature_correlations",
     "compute_nearest_different_genus_distance",
+    "compute_vif",
     "correct_tree_positions",
     "create_spatial_blocks",
     "create_stratified_splits_berlin",
@@ -65,5 +69,7 @@ __all__ = [
     "identify_redundant_features",
     "interpolate_features_within_tree",
     "remove_redundant_features",
+    "run_quality_pipeline",
+    "validate_final_preparation_output",
     "validate_split_stratification",
 ]

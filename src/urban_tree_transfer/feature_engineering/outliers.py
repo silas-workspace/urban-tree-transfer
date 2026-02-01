@@ -9,6 +9,7 @@ This module handles:
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterable
 from typing import Any
 
@@ -18,6 +19,8 @@ import pandas as pd
 from scipy.stats import chi2, zscore
 
 from urban_tree_transfer.config import PROJECT_CRS
+
+logger = logging.getLogger(__name__)
 
 
 def _require_project_crs(trees_gdf: gpd.GeoDataFrame) -> None:
@@ -81,6 +84,7 @@ def detect_mahalanobis_outliers(
     trees_gdf: gpd.GeoDataFrame,
     feature_columns: list[str],
     alpha: float = 0.001,
+    min_samples_per_genus: int | None = None,
 ) -> pd.Series:
     """Detect outliers using Mahalanobis distance.
 
@@ -88,9 +92,19 @@ def detect_mahalanobis_outliers(
         trees_gdf: Input GeoDataFrame.
         feature_columns: Columns for multivariate distance.
         alpha: Significance level for chi-squared critical value.
+        min_samples_per_genus: Minimum samples required per genus.
 
     Returns:
         Boolean Series indicating outlier status per tree.
+
+    Data Leakage Note:
+        Covariance matrices are computed per genus across ALL trees (train+val+test).
+        This is acceptable because:
+        - Outlier detection is meta-information about data quality, not predictive features
+        - Flags are used for ablation experiments in Phase 3, NOT as model features
+        - Alternative (split-specific covariance) would cause inconsistent outlier definitions
+
+        IMPORTANT: Phase 3 experiments should NOT use outlier flags as input features.
     """
     _require_project_crs(trees_gdf)
     feature_columns = _validate_columns(trees_gdf, feature_columns, label="feature_columns")
@@ -98,20 +112,35 @@ def detect_mahalanobis_outliers(
         raise ValueError("Missing required column: genus_latin")
     if alpha <= 0 or alpha >= 1:
         raise ValueError("alpha must be between 0 and 1.")
+    if min_samples_per_genus is not None and min_samples_per_genus < 1:
+        raise ValueError("min_samples_per_genus must be >= 1.")
 
     flags = pd.Series(False, index=trees_gdf.index, dtype=bool, name="outlier_mahalanobis")
     critical_value = float(chi2.ppf(1 - alpha, df=len(feature_columns)))
+    min_required = (
+        min_samples_per_genus if min_samples_per_genus is not None else len(feature_columns) + 2
+    )
 
     for _genus, group in trees_gdf.groupby("genus_latin"):
         if group.empty:
             continue
         data = group[feature_columns].to_numpy(dtype=float)
         valid_mask = ~np.isnan(data).any(axis=1)
-        if valid_mask.sum() < len(feature_columns) + 2:
+        if valid_mask.sum() < min_required:
             continue
         valid_data = data[valid_mask]
         mean = np.mean(valid_data, axis=0)
         cov = np.cov(valid_data, rowvar=False)
+        try:
+            cond = float(np.linalg.cond(cov))
+            if cond > 1e10:
+                logger.warning(
+                    "Genus %s: covariance matrix near-singular (cond=%.2e).",
+                    _genus,
+                    cond,
+                )
+        except np.linalg.LinAlgError:
+            logger.warning("Genus %s: covariance matrix condition check failed.", _genus)
         inv_cov = np.linalg.pinv(cov)
 
         diff = valid_data - mean

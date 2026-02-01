@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added - Phase 2: Feature Engineering
 
 - Add redundancy removal, outlier flagging, and spatial split implementations for final preparation
+- Add JSON schema files and validation utilities for Phase 2 exploratory outputs
+- Add Phase 2 schema validation helpers for 02a/02b/02c pipeline stages
+- Add zero-NaN validation utility for final outputs
+- Add extraction, selection, and Phase 2 integration test suites
+- Add runner notebook execution smoke tests (opt-in via env var)
+- Add Phase 2 final output schema documentation
 - Add unit tests for selection, outlier detection, and spatial splits modules
 - Add exploratory notebook `notebooks/exploratory/exp_01_temporal_analysis.ipynb` for temporal feature selection via JM distance
 - Add runner notebook `notebooks/runners/02a_feature_extraction.ipynb` for CHM and Sentinel-2 feature extraction
@@ -133,6 +139,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `create_stratified_spatial_splits()` - Stratified splitting with spatial disjointness
   - `validate_splits()` - Check disjointness and stratification quality
 - Implement feature extraction module functions for tree correction, CHM sampling, Sentinel-2 extraction, and extraction summaries
+- Add comprehensive unit test suite for `feature_engineering/extraction.py` (15 tests, 319 lines):
+  - Tree position correction tests (empty geometry, scoring, adaptive radius, metadata validation)
+  - CHM feature extraction tests (batch processing, NoData handling, missing files)
+  - Sentinel-2 extraction tests (multi-month, band validation, missing file warnings)
+  - Full pipeline integration tests
+- Add comprehensive unit test suite for `feature_engineering/selection.py` (9 tests, 127 lines):
+  - Correlation matrix computation tests
+  - Redundancy identification tests (with/without feature importance)
+  - VIF validation tests
+  - Geometry column preservation tests
+- Add integration test suite `tests/integration/test_phase2_pipeline.py`:
+  - 02a → 02b → 02c pipeline schema compatibility tests
+  - JSON schema consumption validation (exploratory → runner notebooks)
+  - Metadata preservation tests across pipeline stages
+  - Final GeoPackage schema validation (10 output files)
+- Add schema validation utilities in `utils/`:
+  - `schema_validation.py` - Phase 2a/2b/2c output validators with CRS and column checks
+  - `json_validation.py` - JSON schema validation for 6 exploratory outputs
+  - `final_validation.py` - Zero-NaN validation for ML-ready datasets
+- Add 6 JSON schema files in `src/urban_tree_transfer/schemas/`:
+  - `temporal_selection.schema.json` - exp_01 output validation
+  - `chm_assessment.schema.json` - exp_02 output validation
+  - `correlation_removal.schema.json` - exp_03 output validation
+  - `outlier_thresholds.schema.json` - exp_04 output validation
+  - `spatial_autocorrelation.schema.json` - exp_05 output validation
+  - `proximity_filter.schema.json` - exp_06 output validation
+- Add notebook idempotency tests in `tests/notebooks/test_runner_idempotency.py`:
+  - Validate skip-if-exists logic for 02a, 02b, 02c runner notebooks
+  - Ensure notebooks skip execution when outputs already exist
+- Add data leakage documentation to Mahalanobis outlier detection (outliers.py):
+  - Clarify why genus-level covariance across splits is acceptable
+  - Document that outlier flags are metadata, not predictive features
+  - Note for Phase 3: outlier flags should NOT be used as model inputs
+- Add uniformity check warning to proximity filter analysis (proximity.py):
+  - Validate genus-specific removal rates have max deviation < 10%
+  - Warn when proximity filter disproportionately affects certain genera
+  - Ensures filter maintains balanced genus representation
+- Add methodological improvements PRD: `docs/documentation/02_Feature_Engineering/PRD_002d_Methodological_Improvements.md`:
+  - Cross-city JM distance consistency validation
+  - Spatial independence validation for block splits
+  - Genus-specific CHM normalization (planned for future)
+  - Biological context analysis for outlier interpretation
+  - Geometric clarity in proximity filter
+- Add technical review documentation: `docs/documentation/02_Feature_Engineering/reviews/Technical_Review_Phase2.md`:
+  - Comprehensive review of all Phase 2 modules, tests, notebooks, and data flow
+  - 30 identified issues (3 Critical, 8 High, 12 Medium, 7 Low)
+  - Complete resolution tracking with implementation status
+  - Grade: A (excellent implementation after fixes)
 
 ### Changed - Phase 2: Feature Engineering
 
@@ -184,6 +238,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix Berlin Atom feed downloads by resolving section links to ZIP tiles and validating ZIP responses
 - Fix Berlin DOM/DGM extraction by adding XYZ ASCII to GeoTIFF conversion (Berlin provides .txt/.xyz point clouds, not GeoTIFF)
+- Fix Phase 2 interpolation to validate interior NaN resolution (quality.py:292-324)
+  - Add post-interpolation validation that interior NaNs = 0
+  - Raise RuntimeError if interpolation fails for non-edge positions
+  - Prevents silent bugs in temporal interpolation logic
+- Fix CHM engineered percentile edge cases with clamping (quality.py:382)
+  - Add .clip(0.0, 100.0) to percentile computation to handle edge cases
+  - Prevents percentileofscore returning values outside [0, 100] range
+- Fix redundant feature identification with importance-based selection (selection.py:91-96)
+  - Add feature_importance parameter to identify_redundant_features()
+  - Remove less important feature when correlations exceed threshold
+  - Previously always removed feature_b regardless of importance
+- Fix feature base extraction brittleness in filter_nan_trees (quality.py:183-189)
+  - Validate suffix is exactly 2 digits before treating as month suffix
+  - Handles multi-underscore features like CHM_1m_zscore_05 correctly
+  - Previously failed with rsplit("_", 1) on features with multiple underscores
+- Fix split stratification validation to enforce KL threshold
+- Fix mixed-genus proximity computation performance with STRtree (O(n²) → O(n log n))
+- Fix VIF validation availability for selection outputs
+- Fix tree position correction by validating correction distances
+- Fix Sentinel-2 extraction by validating band count and order
+  - Add runtime validation that band count matches expected features
+  - Add band order validation to catch Phase 1 output mismatches
 - Fix Leipzig DOM/DGM downloads by using browser-like headers for Nextcloud/WebDAV server
 - Fix harmonize_elevation block size error by setting explicit 256x256 tile blocks (TIFF requires multiples of 16)
 - Fix large raster file handling by adding BIGTIFF=IF_SAFER to mosaic, clip, and reproject operations

@@ -8,13 +8,17 @@ This module handles:
 
 from __future__ import annotations
 
+import logging
 from typing import Any, cast
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+from shapely.strtree import STRtree
 
 from urban_tree_transfer.config import PROJECT_CRS
+
+logger = logging.getLogger(__name__)
 
 
 def compute_nearest_different_genus_distance(
@@ -57,10 +61,26 @@ def compute_nearest_different_genus_distance(
             distances.loc[same_genus.index] = np.inf
             continue
 
-        diff_geom = diff_genus.geometry
-        distances.loc[same_genus.index] = same_genus.geometry.apply(
-            lambda geom, diff_geom=diff_geom: diff_geom.distance(geom).min()
-        )
+        diff_geom = list(diff_genus.geometry)
+        diff_tree = STRtree(diff_geom)
+
+        def _nearest_distance(
+            geom,
+            tree: STRtree = diff_tree,
+            geometries: list = diff_geom,
+        ) -> float:
+            if geom is None or geom.is_empty:
+                return float("nan")
+            nearest = tree.nearest(geom)
+            if nearest is None:
+                return np.inf
+            if isinstance(nearest, (int, np.integer)):
+                nearest_geom = geometries[int(nearest)]
+            else:
+                nearest_geom = nearest
+            return float(geom.distance(nearest_geom))
+
+        distances.loc[same_genus.index] = same_genus.geometry.apply(_nearest_distance)
 
     return distances
 
@@ -170,5 +190,14 @@ def analyze_genus_specific_impact(
     )
     genus_stats = genus_stats.rename(columns={genus_column: "genus"})
     genus_stats["removal_rate"] = genus_stats["removed_trees"] / genus_stats["total_trees"]
+
+    mean_rate = float(genus_stats["removal_rate"].mean())
+    max_deviation = float((genus_stats["removal_rate"] - mean_rate).abs().max())
+    if max_deviation > 0.10:
+        print(
+            "⚠️  Warning: Genus removal rates not uniform. "
+            f"Max deviation: {max_deviation:.2%} (threshold: 10%). "
+            "Some genera may be disproportionately affected by proximity filter."
+        )
 
     return genus_stats

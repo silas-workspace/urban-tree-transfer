@@ -246,3 +246,25 @@ def test_crs_preservation():
 
     result = interpolate_features_within_tree(gdf, ["NDVI_04", "NDVI_05"], [4, 5])
     assert result.crs == original_crs
+
+
+def test_interpolate_within_tree_empty_gdf():
+    gdf = create_test_trees(0)
+    gdf["NDVI_04"] = pd.Series(dtype=float)
+    gdf["NDVI_05"] = pd.Series(dtype=float)
+    gdf["NDVI_06"] = pd.Series(dtype=float)
+
+    result = interpolate_features_within_tree(gdf, ["NDVI_04", "NDVI_05", "NDVI_06"], [4, 5, 6])
+
+    assert result.empty
+
+
+def test_filter_nan_trees_ignores_non_temporal_columns():
+    gdf = create_test_trees(2)
+    gdf["CHM_1m_zscore"] = [0.1, 0.2]
+    gdf["NDVI_04"] = [np.nan, 0.2]
+    gdf["NDVI_05"] = [0.3, 0.4]
+
+    filtered = filter_nan_trees(gdf, ["CHM_1m_zscore", "NDVI_04", "NDVI_05"], max_nan_months=1)
+
+    assert len(filtered) == 2

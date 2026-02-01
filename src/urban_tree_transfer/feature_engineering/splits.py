@@ -46,6 +46,7 @@ def create_spatial_blocks(
 
     grids: list[gpd.GeoDataFrame] = []
     for city, group in trees_gdf.groupby("city"):
+        city_name = str(city)
         if group.empty:
             continue
         minx, miny, maxx, maxy = group.total_bounds
@@ -60,7 +61,7 @@ def create_spatial_blocks(
                         "city": city,
                         "grid_x": ix,
                         "grid_y": iy,
-                        "block_id": f"{city}_{ix}_{iy}",
+                        "block_id": f"{city_name[:8]}_{ix:04d}_{iy:04d}",
                         "geometry": box(x, y, x + block_size_m, y + block_size_m),
                     }
                 )
@@ -117,6 +118,8 @@ def _assign_folds(
 ) -> pd.Series:
     if n_splits < 2:
         raise ValueError("n_splits must be >= 2.")
+    if trees_gdf[stratify_column].nunique(dropna=True) < 2:
+        raise ValueError("Stratification requires at least two classes.")
 
     splitter = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=random_seed)
     fold_ids = pd.Series(-1, index=trees_gdf.index, dtype=int)
@@ -249,12 +252,14 @@ def create_stratified_splits_leipzig(
 def validate_split_stratification(
     *split_gdfs: gpd.GeoDataFrame,
     split_names: list[str] | None = None,
+    kl_threshold: float = 0.01,
 ) -> dict[str, Any]:
     """Validate split quality and spatial disjointness for multiple splits.
 
     Args:
         *split_gdfs: Variable number of split GeoDataFrames.
         split_names: Names for each split (e.g., ['train', 'val', 'test']).
+        kl_threshold: Maximum allowed KL-divergence between splits.
 
     Returns:
         Dictionary with validation metrics.
@@ -314,6 +319,15 @@ def validate_split_stratification(
     for i, name_i in enumerate(split_names):
         for name_j in split_names[i + 1 :]:
             overlap_blocks |= block_sets[name_i].intersection(block_sets[name_j])
+
+    if kl_divergences:
+        max_kl = max(kl_divergences.values())
+        if max_kl > kl_threshold:
+            raise ValueError(
+                "Stratification quality check failed: "
+                f"max KL={max_kl:.4f} > {kl_threshold:.4f}. "
+                "Increase n_splits or check genus distributions."
+            )
 
     return {
         "genus_distributions": genus_distributions,

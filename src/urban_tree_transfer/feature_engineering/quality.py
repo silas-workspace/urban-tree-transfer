@@ -18,9 +18,12 @@ import pandas as pd
 from scipy.stats import percentileofscore
 
 from urban_tree_transfer.config.loader import (
+    get_all_feature_names,
     get_all_s2_features,
     get_metadata_columns,
 )
+from urban_tree_transfer.utils.final_validation import validate_zero_nan
+from urban_tree_transfer.utils.schema_validation import validate_phase2b_output
 
 
 def filter_deciduous_genera(
@@ -179,8 +182,10 @@ def filter_nan_trees(
 
     feature_bases = set()
     for col in feature_columns:
-        if "_" in col:
-            base = col.rsplit("_", 1)[0]
+        if "_" not in col:
+            continue
+        base, suffix = col.rsplit("_", 1)
+        if suffix.isdigit() and len(suffix) == 2:
             feature_bases.add(base)
 
     mask = pd.Series(True, index=trees_gdf.index)
@@ -284,6 +289,40 @@ def interpolate_features_within_tree(
 
         interpolated.loc[:, base_cols] = values_matrix
 
+    interior_nan_count = 0
+    for base in feature_bases:
+        base_cols = [f"{base}_{month:02d}" for month in selected_months]
+        if len(base_cols) <= 2:
+            continue
+        values = interpolated[base_cols].to_numpy()
+        for row in values:
+            nan_mask = np.isnan(row)
+            if not nan_mask.any():
+                continue
+            start_edge_len = 0
+            for value in nan_mask:
+                if not value:
+                    break
+                start_edge_len += 1
+            end_edge_len = 0
+            for value in nan_mask[::-1]:
+                if not value:
+                    break
+                end_edge_len += 1
+            interior_mask = nan_mask.copy()
+            if start_edge_len:
+                interior_mask[:start_edge_len] = False
+            if end_edge_len:
+                interior_mask[len(row) - end_edge_len :] = False
+            interior_nan_count += int(interior_mask.sum())
+
+    if interior_nan_count > 0:
+        raise RuntimeError(
+            "Interior NaN interpolation failed: "
+            f"{interior_nan_count} remaining (expected 0). "
+            "Check interpolation logic."
+        )
+
     remaining_nan = interpolated[feature_columns].isna().sum().sum()
     if remaining_nan > 0:
         print(
@@ -337,12 +376,11 @@ def compute_chm_engineered_features(
         non_null = series.dropna()
         if non_null.empty:
             return pd.Series(np.full(len(series), np.nan), index=series.index, dtype=float)
-        return cast(
-            pd.Series,
-            series.map(
-                lambda x: np.nan if pd.isna(x) else percentileofscore(non_null, x, kind="rank")
-            ),
+        result = series.map(
+            lambda x: np.nan if pd.isna(x) else percentileofscore(non_null, x, kind="rank")
         )
+        result = cast(pd.Series, result).clip(0.0, 100.0)
+        return result
 
     result = trees_gdf.copy()
     result["CHM_1m_zscore"] = result.groupby("city")["CHM_1m"].transform(_zscore)
@@ -377,3 +415,62 @@ def filter_ndvi_plausibility(
     retained = int(mask.sum())
     print(f"NDVI plausibility: removed {removed}, retained {retained}.")
     return cast(gpd.GeoDataFrame, trees_gdf.loc[mask].copy())
+
+
+def run_quality_pipeline(
+    trees_gdf: gpd.GeoDataFrame,
+    selected_months: list[int],
+    feature_config: dict[str, Any],
+    max_nan_months: int = 2,
+    max_edge_nan_months: int = 1,
+    ndvi_min_threshold: float = 0.3,
+) -> gpd.GeoDataFrame:
+    """Run the core Phase 2b quality pipeline and validate output schema.
+
+    Args:
+        trees_gdf: Input Phase 2a GeoDataFrame.
+        selected_months: Months to retain (from temporal_selection.json).
+        feature_config: Loaded feature config.
+        max_nan_months: Maximum NaN months allowed per feature base.
+        max_edge_nan_months: Maximum NaN months allowed at edges.
+        ndvi_min_threshold: Minimum NDVI plausibility threshold.
+
+    Returns:
+        GeoDataFrame validated against Phase 2b schema.
+    """
+    trees_gdf = apply_temporal_selection(trees_gdf, selected_months, feature_config)
+
+    s2_features = get_all_s2_features(feature_config)
+    s2_selected_cols = [
+        f"{feature}_{month:02d}" for feature in s2_features for month in selected_months
+    ]
+    s2_selected_cols = [col for col in s2_selected_cols if col in trees_gdf.columns]
+
+    feature_columns = ["CHM_1m", *s2_selected_cols]
+    trees_gdf = filter_nan_trees(
+        trees_gdf, feature_columns=feature_columns, max_nan_months=max_nan_months
+    )
+    trees_gdf = interpolate_features_within_tree(
+        trees_gdf,
+        feature_columns=s2_selected_cols,
+        selected_months=selected_months,
+        max_edge_nan_months=max_edge_nan_months,
+    )
+    trees_gdf = compute_chm_engineered_features(trees_gdf)
+
+    ndvi_columns = [f"NDVI_{month:02d}" for month in selected_months]
+    ndvi_columns = [col for col in ndvi_columns if col in trees_gdf.columns]
+    trees_gdf = filter_ndvi_plausibility(
+        trees_gdf, ndvi_columns=ndvi_columns, min_threshold=ndvi_min_threshold
+    )
+
+    validate_phase2b_output(
+        trees_gdf, selected_months=selected_months, feature_config=feature_config
+    )
+
+    expected_features = get_all_feature_names(
+        months=selected_months, include_chm_engineered=True, config=feature_config
+    )
+    validate_zero_nan(trees_gdf, expected_features, dataset_name="phase2b")
+
+    return trees_gdf

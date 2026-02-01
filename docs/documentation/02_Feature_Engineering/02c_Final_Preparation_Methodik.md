@@ -26,13 +26,14 @@ Transformation der QC-validierten Feature-Datensätze in finale ML-ready Splits 
 
 **Daten:** `data/phase_2_features/trees_clean_{city}.gpkg` (Phase 2b Output)
 
-**Charakteristika:**
-- Berlin: ~45.000 Bäume (nach QC)
-- Leipzig: ~35.000 Bäume
-- Features: ~187 Sentinel-2 + CHM Features (nach temporal selection)
+**Schema-Erwartungen:**
+
+- Metadaten: tree_id, city, genus_latin, species_latin, genus_german, species_german, plant_year, height_m, tree_type
+- Features: Sentinel-2 Bänder/Indizes (nach temporal selection) + CHM Features
 - **Garantie:** 0 NaN-Werte, CRS: EPSG:25833 (projected)
 
 **JSON Konfigurationen:** (aus Exploratory Notebooks)
+
 - `correlation_removal.json` (exp_03): Liste redundanter Features
 - `outlier_thresholds.json` (exp_04): Z-score, Mahalanobis, IQR Thresholds
 - `spatial_autocorrelation.json` (exp_05): Empirische Block-Größe
@@ -49,11 +50,13 @@ Transformation der QC-validierten Feature-Datensätze in finale ML-ready Splits 
 **Zweck:** Entfernung hochkorrelierter Features zur Reduktion von Multikollinearität
 
 **Methodik:**
+
 - Input: Liste redundanter Feature-Namen aus `correlation_removal.json`
 - Strategie: Aus jedem hochkorrelierten Paar (|r| > 0.95) wird Feature mit geringerer Varianz entfernt
 - Output: GeoDataFrame ohne redundante Spalten
 
 **Validierung:**
+
 - Warnung bei fehlenden Spalten (falls bereits entfernt)
 - Schutz der Geometry-Spalte
 - CRS-Validierung
@@ -67,6 +70,7 @@ Transformation der QC-validierten Feature-Datensätze in finale ML-ready Splits 
 #### Funktion 1: `detect_zscore_outliers(gdf, feature_columns, z_threshold, min_feature_count)`
 
 **Methodik:** Univariate Z-Score Methode
+
 ```
 Z = (x - μ) / σ
 
@@ -74,6 +78,7 @@ Outlier wenn: |Z| > threshold (default: 3.0)
 ```
 
 **Per-Feature Detection:**
+
 - Für jedes Feature separat Z-Score berechnen
 - Baum wird getaggt wenn ≥ min_feature_count Features outlier sind
 
@@ -82,6 +87,7 @@ Outlier wenn: |Z| > threshold (default: 3.0)
 #### Funktion 2: `detect_mahalanobis_outliers(gdf, feature_columns, alpha)`
 
 **Methodik:** Multivariate Distanz-Methode (per Genus)
+
 ```
 D² = (x - μ)ᵀ Σ⁻¹ (x - μ)
 
@@ -89,10 +95,12 @@ D² ~ χ²(p) unter H₀ (p = Anzahl Features)
 ```
 
 **Signifikanz-Test:**
+
 - Chi-Square Test mit α = 0.001 (default)
 - Outlier wenn p-value < α
 
 **Per-Genus Analyse:**
+
 - Separate Kovarianzmatrix pro Genus
 - Berücksichtigt Genus-spezifische Feature-Korrelationen
 
@@ -101,6 +109,7 @@ D² ~ χ²(p) unter H₀ (p = Anzahl Features)
 #### Funktion 3: `detect_iqr_outliers(gdf, height_column, multiplier)`
 
 **Methodik:** Tukey's Fences (Höhen-basiert)
+
 ```
 Q1 = 25th Percentile
 Q3 = 75th Percentile
@@ -113,6 +122,7 @@ Outlier wenn: x < Lower oder x > Upper
 ```
 
 **Gruppierung:** Per (Genus, City)
+
 - Berücksichtigt natürliche Höhenunterschiede zwischen Genera
 - k = 1.5 (default, moderates Outlier-Kriterium)
 
@@ -123,12 +133,14 @@ Outlier wenn: x < Lower oder x > Upper
 **Consensus-Strategie:** Severity-basierte Kategorisierung
 
 **Severity Levels:**
+
 - **high:** 3/3 Methoden taggen als Outlier
 - **medium:** 2/3 Methoden taggen als Outlier
 - **low:** 1/3 Methode taggt als Outlier
 - **none:** 0/3 Methoden taggen als Outlier
 
 **Output Metadata Columns:**
+
 ```python
 result["outlier_zscore"] = bool          # Z-score Methode Flag
 result["outlier_mahalanobis"] = bool     # Mahalanobis Methode Flag
@@ -140,6 +152,7 @@ result["outlier_method_count"] = int     # 0, 1, 2, oder 3
 **Return:** (GeoDataFrame mit Metadata, Statistics Dict)
 
 **Statistics:**
+
 ```python
 {
     "trees_removed": 0,           # IMMER 0! Keine Removal
@@ -151,6 +164,7 @@ result["outlier_method_count"] = int     # 0, 1, 2, oder 3
 ```
 
 **Ablation Study Strategie (Phase 3):**
+
 - Baseline: Alle Bäume (inkl. Outliers)
 - Strategy 1: Nur "high" entfernen
 - Strategy 2: "high" + "medium" entfernen
@@ -165,12 +179,14 @@ result["outlier_method_count"] = int     # 0, 1, 2, oder 3
 **Zweck:** Regular Grid Creation für Spatial Disjointness
 
 **Methodik:**
+
 - Per-City Grid: Vermeidet Stadt-übergreifende Blocks
 - Block-ID Format: `{city}_{grid_x}_{grid_y}` (z.B. "berlin_42_73")
 - Spatial Join: `within` predicate (trees → blocks)
 - Fallback: `sjoin_nearest` für Bäume auf Block-Grenzen
 
 **Block-Größe:** Data-driven aus `spatial_autocorrelation.json`
+
 - Empirisch bestimmt via Moran's I Analyse (exp_05)
 - Größer als Autokorrelations-Reichweite
 - Typisch: 400-600m
@@ -184,11 +200,13 @@ result["outlier_method_count"] = int     # 0, 1, 2, oder 3
 **Ratio:** 70/15/15 (Train/Val/Test)
 
 **Constraints:**
+
 1. **Spatial Disjointness:** Blocks als Groups (kein Block in mehreren Splits)
 2. **Genus Stratification:** Erhalt Genus-Proportionen über Splits
 3. **Reproducibility:** Fixed Random Seed (42)
 
 **Algorithmus:**
+
 ```python
 # Step 1: 10-Fold Cross-Validation (oder weniger wenn < 10 Blocks)
 StratifiedGroupKFold(n_splits=min(10, n_blocks))
@@ -213,6 +231,7 @@ StratifiedGroupKFold(n_splits=2)
 **Ratio:** 80/20 (Finetune-Pool/Test)
 
 **Unterschied zu Berlin:**
+
 - Nur 2 Splits (kein Val-Split)
 - Finetune-Pool: Für Few-Shot Sampling in Phase 3
 - Test-Split: Independent Leipzig Evaluation
@@ -224,6 +243,7 @@ StratifiedGroupKFold(n_splits=2)
 **Validierung:** Spatial Disjointness + Stratification Quality
 
 **Spatial Overlap Check:**
+
 ```python
 block_sets = {name: set(gdf["block_id"].unique()) for name, gdf in splits}
 overlap = ∩ all block_sets
@@ -232,6 +252,7 @@ overlap = ∩ all block_sets
 ```
 
 **KL-Divergence Check:**
+
 ```
 KL(P || Q) = Σᵢ P(i) log(P(i) / Q(i))
 
@@ -242,6 +263,7 @@ P, Q = Genus-Verteilungen in zwei Splits
 **Quality Threshold:** KL < 0.01 (sehr ähnliche Verteilungen)
 
 **Return:** Validation Dictionary
+
 ```python
 {
     "genus_distributions": {split_name: {genus: count}},
@@ -261,6 +283,7 @@ P, Q = Genus-Verteilungen in zwei Splits
 **Sentinel-2 Spatial Resolution:** 10m × 10m pixels (B2, B3, B4, B8)
 
 **Kontamination:** Wenn Baum A (Genus X) < 20m von Baum B (Genus Y):
+
 - Pixel von Baum A enthält Spektralsignatur von Genus Y
 - Feature-Label Mismatch → Noisige Labels
 - Modell lernt inkorrekte Genus-Spektral-Mappings
@@ -270,6 +293,7 @@ P, Q = Genus-Verteilungen in zwei Splits
 **Zweck:** Identifikation kontaminationsgefährdeter Bäume
 
 **Algorithmus:**
+
 ```python
 for each genus G:
     same_genus_trees = trees where genus == G
@@ -281,6 +305,7 @@ for each genus G:
 ```
 
 **Output:** Series mit Distanzen (meters)
+
 - `np.inf` wenn Genus isoliert (keine anderen Genera existieren)
 
 **Complexity:** O(n × m) pro Genus (n = Genus-Bäume, m = Andere Bäume)
@@ -288,16 +313,19 @@ for each genus G:
 #### Funktion 2: `apply_proximity_filter(trees_gdf, threshold_m, genus_column)`
 
 **Threshold:** Data-driven aus `proximity_filter.json` (exp_06)
+
 - Empirisch bestimmt: Balanciert Retention Rate vs. Spectral Purity
 - Typisch: 20m (2-Pixel Buffer)
 
 **Filter-Logik:**
+
 ```python
 distances = compute_nearest_different_genus_distance(trees_gdf)
 filtered_gdf = trees_gdf[distances >= threshold_m]
 ```
 
 **Statistics:**
+
 ```python
 {
     "original_count": int,
@@ -315,6 +343,7 @@ filtered_gdf = trees_gdf[distances >= threshold_m]
 **Zweck:** Validation der Filter-Uniformität
 
 **Analyse:**
+
 ```python
 for each genus G:
     total_trees = count(trees where genus == G)
@@ -323,6 +352,7 @@ for each genus G:
 ```
 
 **Uniformity Criterion:** max(removal_rate) - min(removal_rate) < 0.10
+
 - Verhindert Bias gegen bestimmte Genera
 - Erhält Genus-Balance in Datensatz
 
@@ -367,6 +397,7 @@ Input: trees_clean_{city}.gpkg
 **Rationale:** Ablation Study Flexibility in Phase 3
 
 **Baseline Datasets (5 GeoPackages):**
+
 1. `berlin_train.gpkg` - Alle Bäume (inkl. Proximity-nahe)
 2. `berlin_val.gpkg`
 3. `berlin_test.gpkg`
@@ -374,6 +405,7 @@ Input: trees_clean_{city}.gpkg
 5. `leipzig_test.gpkg`
 
 **Filtered Datasets (5 GeoPackages):**
+
 1. `berlin_train_filtered.gpkg` - Proximity-gefiltert (≥ 20m zu anderen Genera)
 2. `berlin_val_filtered.gpkg`
 3. `berlin_test_filtered.gpkg`
@@ -381,6 +413,7 @@ Input: trees_clean_{city}.gpkg
 5. `leipzig_test_filtered.gpkg`
 
 **Phase 3 Experiment Matrix:**
+
 ```
 Training Dataset     Test Dataset      Experiment Type
 ─────────────────────────────────────────────────────────
@@ -399,24 +432,29 @@ Filtered             Filtered          Clean → Clean (Best Case)
 **Location:** `data/phase_2_splits/`
 
 **Berlin Baseline:**
-- `berlin_train.gpkg` (~31.500 trees, ~70 blocks)
-- `berlin_val.gpkg` (~6.750 trees, ~15 blocks)
-- `berlin_test.gpkg` (~6.750 trees, ~15 blocks)
+
+- `berlin_train.gpkg` (70% der Bäume)
+- `berlin_val.gpkg` (15% der Bäume)
+- `berlin_test.gpkg` (15% der Bäume)
 
 **Berlin Filtered:**
-- `berlin_train_filtered.gpkg` (~27.000 trees, ~85% retention)
+
+- `berlin_train_filtered.gpkg` (Proximity-gefiltert)
 - `berlin_val_filtered.gpkg`
 - `berlin_test_filtered.gpkg`
 
 **Leipzig Baseline:**
-- `leipzig_finetune.gpkg` (~28.000 trees, ~80 blocks)
-- `leipzig_test.gpkg` (~7.000 trees, ~20 blocks)
+
+- `leipzig_finetune.gpkg` (80% der Bäume)
+- `leipzig_test.gpkg` (20% der Bäume)
 
 **Leipzig Filtered:**
-- `leipzig_finetune_filtered.gpkg` (~24.000 trees, ~85% retention)
+
+- `leipzig_finetune_filtered.gpkg` (Proximity-gefiltert)
 - `leipzig_test_filtered.gpkg`
 
 **Column Schema (alle GeoPackages):**
+
 ```
 Identifier:
 - tree_id (str)
@@ -445,58 +483,49 @@ Outlier Metadata:
 
 **File:** `outputs/phase_2/metadata/phase_2_final_summary.json`
 
-**Struktur:**
+**JSON Schema:**
+
 ```json
 {
-  "version": "1.0",
-  "created": "2026-01-30T...",
-  "random_seed": 42,
+  "version": string,
+  "created": ISO8601_timestamp,
+  "random_seed": int,
   "configurations": {
-    "block_size_m": 500,
-    "proximity_threshold_m": 20,
-    "z_threshold": 3.0,
-    "mahalanobis_alpha": 0.001,
-    "iqr_multiplier": 1.5,
-    "features_removed": 15
+    "block_size_m": float,
+    "proximity_threshold_m": float,
+    "z_threshold": float,
+    "mahalanobis_alpha": float,
+    "iqr_multiplier": float,
+    "features_removed": int
   },
   "outlier_stats": {
-    "berlin": {
-      "trees_removed": 0,
-      "high_count": 120,
-      "medium_count": 450,
-      "low_count": 1200
-    },
-    "leipzig": {...}
+    "<city>": {
+      "trees_removed": int,  // IMMER 0 (nur Flagging)
+      "high_count": int,
+      "medium_count": int,
+      "low_count": int
+    }
   },
   "proximity_filter_stats": {
-    "berlin": {
-      "original_count": 45000,
-      "removed_count": 6750,
-      "retention_rate": 0.85
-    },
-    "leipzig": {...}
+    "<city>": {
+      "original_count": int,
+      "removed_count": int,
+      "retention_rate": float
+    }
   },
   "baseline_splits": {
-    "berlin": {
-      "train": {"count": 31500, "blocks": 70},
-      "val": {"count": 6750, "blocks": 15},
-      "test": {"count": 6750, "blocks": 15}
-    },
-    "leipzig": {...}
+    "<city>": {
+      "<split_name>": {"count": int, "blocks": int}
+    }
   },
-  "filtered_splits": {...},
+  "filtered_splits": {/* wie baseline_splits */},
   "validation": {
-    "berlin_baseline": {
-      "spatial_overlap": 0,
+    "<city>_<dataset_type>": {
+      "spatial_overlap": int,  // MUSS 0 sein
       "kl_divergences": {
-        "train_vs_val": 0.0023,
-        "train_vs_test": 0.0018,
-        "val_vs_test": 0.0031
+        "<split_a>_vs_<split_b>": float  // < 0.01 erwartet
       }
-    },
-    "berlin_filtered": {...},
-    "leipzig_baseline": {...},
-    "leipzig_filtered": {...}
+    }
   }
 }
 ```
@@ -506,6 +535,7 @@ Outlier Metadata:
 **Location:** `outputs/phase_2/figures/02c_final_prep/`
 
 **Plots:**
+
 1. `split_size_comparison.png` - Baseline vs. Filtered Tree Counts (Grouped Bar Chart)
 2. `genus_distribution_comparison.png` - Genus Proportionen Berlin Train (Baseline vs. Filtered)
 
@@ -516,12 +546,14 @@ Outlier Metadata:
 ### Automated Assertions
 
 **Spatial Disjointness:**
+
 ```python
 assert validation["spatial_overlap"] == 0
 # Kein Block darf in mehreren Splits vorkommen
 ```
 
 **Outlier Non-Removal:**
+
 ```python
 assert len(result) == len(input)
 assert stats["trees_removed"] == 0
@@ -529,6 +561,7 @@ assert stats["trees_removed"] == 0
 ```
 
 **KL-Divergence:**
+
 ```python
 for kl_value in validation["kl_divergences"].values():
     assert kl_value < 0.01
@@ -536,6 +569,7 @@ for kl_value in validation["kl_divergences"].values():
 ```
 
 **Proximity Retention:**
+
 ```python
 assert 0.80 <= filter_stats["retention_rate"] <= 0.95
 # Filter entfernt 5-20% (erwarteter Range)
@@ -544,17 +578,20 @@ assert 0.80 <= filter_stats["retention_rate"] <= 0.95
 ### Manual Validation Checks
 
 **Pre-Execution:**
+
 - [ ] Alle 4 JSON-Konfigurationen vorhanden
 - [ ] Input GeoPackages existieren und sind nicht korrupt
 - [ ] CRS ist EPSG:25833
 
 **Post-Execution:**
+
 - [ ] Genau 10 GeoPackages erstellt
 - [ ] Alle Assertions passed (keine Fehler im Log)
 - [ ] Summary JSON enthält alle erwarteten Felder
 - [ ] Visualizations korrekt generiert (2 PNGs)
 
 **Phase 3 Readiness:**
+
 - [ ] GeoPackages nach Git committed
 - [ ] Summary JSON nach Git committed
 - [ ] Implementation Plan PRD 002c aktualisiert (Status: Done)
@@ -566,6 +603,7 @@ assert 0.80 <= filter_stats["retention_rate"] <= 0.95
 ### Experiment Setup
 
 **Baseline Experiments:**
+
 ```python
 train_gdf = gpd.read_file("data/phase_2_splits/berlin_train.gpkg")
 test_gdf = gpd.read_file("data/phase_2_splits/berlin_test.gpkg")
@@ -576,12 +614,14 @@ train_high_med_removed = train_gdf[~train_gdf["outlier_severity"].isin(["high", 
 ```
 
 **Filtered Experiments:**
+
 ```python
 train_gdf = gpd.read_file("data/phase_2_splits/berlin_train_filtered.gpkg")
 test_gdf = gpd.read_file("data/phase_2_splits/berlin_test_filtered.gpkg")
 ```
 
 **Transfer Learning:**
+
 ```python
 # Pre-train on Berlin
 train_gdf = gpd.read_file("data/phase_2_splits/berlin_train.gpkg")
@@ -603,35 +643,38 @@ test_gdf = gpd.read_file("data/phase_2_splits/leipzig_test.gpkg")
 
 ### Performance
 
-**Runtime (Colab Standard CPU):**
-- Data Loading: ~30 sec
-- Feature Removal: ~5 sec
-- Outlier Detection: ~2 min (Mahalanobis intensiv)
-- Spatial Blocks: ~10 sec
-- Splits Creation: ~30 sec
-- Proximity Filter: ~3 min (Distance Matrix O(n²) per Genus)
-- Export GeoPackages: ~1 min
-- **Total: ~7 min**
+**Computational Complexity:**
 
-**Memory:** ~4 GB RAM (Standard Colab ausreichend)
+- Data Loading: Linear in Dateigröße
+- Feature Removal: O(n) - Spalten-Drop
+- Outlier Detection: O(n × p) für Z-score/IQR, O(n × p²) für Mahalanobis (Kovarianzmatrix)
+- Spatial Blocks: O(n) mit Spatial Index
+- Splits Creation: O(n log n) - StratifiedGroupKFold
+- Proximity Filter: O(n × m) per Genus (n = Genus-Bäume, m = Andere Bäume)
+- Export GeoPackages: Linear in Datensatzgröße
+
+**Memory:** Linear in Anzahl Bäume × Features (Standard Colab ausreichend)
 
 ### Error Handling
 
 **Common Issues:**
 
 1. **Missing JSON Config:**
+
    ```
    FileNotFoundError: Required config not found: proximity_filter.json
    → Solution: Run exp_06 notebook first
    ```
 
 2. **CRS Mismatch:**
+
    ```
    ValueError: Expected CRS EPSG:25833, got EPSG:4326
    → Solution: Input GeoPackages wurden nicht korrekt projiziert (Phase 2b Fehler)
    ```
 
 3. **Insufficient Blocks:**
+
    ```
    ValueError: Not enough blocks to create splits
    → Solution: block_size_m zu groß, zu wenige Blocks für Stratification
@@ -648,18 +691,22 @@ test_gdf = gpd.read_file("data/phase_2_splits/leipzig_test.gpkg")
 ## Literatur & Methodische Referenzen
 
 **Spatial Cross-Validation:**
+
 - Roberts et al. (2017): "Cross-validation strategies for data with temporal, spatial, hierarchical, or phylogenetic structure"
 - Valavi et al. (2019): "blockCV: An R package for generating spatially or environmentally separated folds for k-fold cross-validation of species distribution models"
 
 **Outlier Detection:**
+
 - Tukey, J.W. (1977): "Exploratory Data Analysis" (IQR Method)
 - Mahalanobis, P.C. (1936): "On the generalized distance in statistics"
 
 **Stratified Sampling:**
+
 - Scikit-learn StratifiedGroupKFold Documentation
 - Kohavi, R. (1995): "A study of cross-validation and bootstrap for accuracy estimation and model selection"
 
 **Sentinel-2 Mixed Pixels:**
+
 - Wulder et al. (2018): "Current status of Landsat program, science, and applications"
 - Immitzer et al. (2016): "Tree Species Classification with Random Forest Using Very High Spatial Resolution 8-Band WorldView-2 Satellite Data"
 
