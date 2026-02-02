@@ -75,6 +75,32 @@ wobei B = (1/8) × (μ₁ - μ₂)² / ((σ₁ + σ₂)/2)
 
 ---
 
+## Cross-City Consistency Validation
+
+**Added:** 2026-02-01 (PRD 002d Improvement 1)
+
+**Purpose:** Validate that selected months are discriminative in **both** cities (Berlin and Leipzig), not just one.
+
+**Method:**
+1. Compute monthly mean JM distance separately for Berlin and Leipzig
+2. Rank months by JM distance per city (1=best, 12=worst)
+3. Calculate Spearman rank correlation ρ between the two rankings
+4. Apply consistency threshold:
+   - **ρ > 0.7**: High consistency → use average JM selection (standard approach)
+   - **ρ ≤ 0.7**: Low consistency → use only intersection of top-8 months (conservative)
+
+**Rationale:**
+- Transfer learning (Berlin → Leipzig) requires domain-invariant features
+- City-specific months (e.g., early leaf-out in one city only) hurt generalization
+- Spearman ρ detects whether high-JM months are consistent across cities
+
+**Visualization:** `jm_rank_consistency.png`
+- Scatter plot: Berlin rank (x) vs. Leipzig rank (y)
+- Points near diagonal = consistent ranking
+- Spearman ρ displayed in title
+
+---
+
 ## Visualisierungen
 
 ### Plot 1: JM Distance Line Chart
@@ -109,11 +135,25 @@ wobei B = (1/8) × (μ₁ - μ₂)² / ((σ₁ + σ₂)/2)
   "total_trees_analyzed": 1045234,
   "viable_genera": ["ACER", "TILIA", "QUERCUS", ...],
   "genus_pairs_analyzed": 45,
+  "cross_city_validation": {
+    "spearman_rho": 0.82,
+    "p_value": 0.001,
+    "interpretation": "high consistency - average JM selection valid",
+    "rank_berlin": {"1": 8, "2": 10, "3": 6},
+    "rank_leipzig": {"1": 7, "2": 11, "3": 5},
+    "top8_berlin": [5, 6, 7, 8, 9, 4, 10, 3],
+    "top8_leipzig": [6, 7, 8, 5, 9, 4, 10, 11],
+    "consistent_months": [4, 5, 6, 7, 8, 9, 10],
+    "city_specific": {
+      "berlin_only": [3],
+      "leipzig_only": [11]
+    }
+  },
   "monthly_jm_statistics": {
     "1": {"mean": 0.65, "std": 0.12, "min": 0.42, "max": 0.89},
     ...
   },
-  "selection_method": "top_n_with_seasonal_balance",
+  "selection_method": "average_jm_with_consistency_validation",
   "selection_threshold": 0.80,
   "selected_months": [3, 4, 5, 6, 7, 8, 9, 10],
   "rejected_months": [1, 2, 11, 12],
@@ -123,13 +163,14 @@ wobei B = (1/8) × (μ₁ - μ₂)² / ((σ₁ + σ₂)/2)
 
 **Verwendung:** Phase 2b (Quality Control) lädt `selected_months` und filtert temporal Features
 
-### Plots (3 Dateien)
+### Plots (4 Dateien)
 
 ```
 outputs/phase_2/figures/exp_01_temporal/
 ├── jm_distance_by_month.png        # Line chart (Berlin vs Leipzig)
 ├── jm_heatmap_berlin.png           # Heatmap Berlin
 └── jm_heatmap_leipzig.png          # Heatmap Leipzig
+└── jm_rank_consistency.png         # Cross-city rank consistency
 ```
 
 **DPI:** 300 (Publication-ready)
@@ -149,7 +190,7 @@ outputs/phase_2/figures/exp_01_temporal/
 **Post-Execution:**
 
 - JSON-Schema vollständig
-- 3 PNG-Plots gespeichert
+- 4 PNG-Plots gespeichert
 - Execution Log generiert
 
 ---

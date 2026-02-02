@@ -29,6 +29,9 @@ dev = [
     "nox>=2024.0.0",
     "pytest>=9.0.2",
     "pytest-timeout>=2.4.0",
+    "nbformat>=5.10.4",
+    "nbconvert>=7.17.0",
+    "ipykernel>=7.1.0",
 ]
 
 [build-system]

@@ -229,6 +229,44 @@ I(recommended_block_size) < 0.05
 
 Falls nicht erfüllt → Vergrößere Block-Size oder erhöhe Safety Buffer.
 
+### Post-Split Spatial Independence Validation
+
+**Added:** 2026-02-01 (PRD 002d Improvement 2)
+
+**Purpose:** Verify that the recommended block size yields spatially independent train/val/test splits.
+
+**Method:**
+1. Create preliminary stratified splits at block level (Berlin).
+2. Within-split validation: Moran's I for each split separately.
+3. Between-split validation: Moran's I on boundary trees between split pairs.
+4. Iterative refinement: Increase block size by 20% if validation fails.
+
+**Acceptance Criteria:**
+- Within-split: |I| < 0.1 (negligible autocorrelation)
+- Between-split: |I| < 0.05 (no correlation across split boundaries)
+
+**Output Fields Added:**
+```json
+{
+  "validation": {
+    "post_split": {
+      "method": "post_split_morans_i",
+      "features_tested": ["NDVI_07", "CHM_1m", "B8_07"],
+      "within_split_autocorrelation": {
+        "train": {"NDVI_07": {"I": 0.03, "p_value": 0.12}}
+      },
+      "between_split_autocorrelation": {
+        "train_vs_val": {"NDVI_07": {"I": 0.02, "p_value": 0.45}}
+      },
+      "spatial_independence_achieved": true,
+      "max_within_I": 0.05,
+      "max_between_I": 0.02,
+      "iterations_needed": 1
+    }
+  }
+}
+```
+
 ---
 
 ## Visualisierungen
@@ -330,6 +368,39 @@ Falls nicht erfüllt → Vergrößere Block-Size oder erhöhe Safety Buffer.
 
 **Interpretation:**
 Trade-off visualisieren: Große Blocks → weniger Autokorrelation ABER weniger Blocks (Splits schwieriger).
+
+---
+
+### Plot 6: Split Spatial Independence Map
+
+**Added:** 2026-02-01 (PRD 002d Improvement 2)
+
+**Typ:** 3-Panel Map (Train/Val/Test)
+
+**Panels:**
+- Panel 1: Training split (blue)
+- Panel 2: Validation split (orange)
+- Panel 3: Test split (green)
+
+**Elements:**
+- Background: All trees in light gray
+- Foreground: Split-specific trees highlighted in color
+- Title: Split name + Moran's I statistic + independence status (✅/❌)
+- Overall title: Validation status and max |I| values
+
+**Annotations:**
+- Per-split Moran's I value
+- P-value from permutation test
+- Tree count
+- Independence status (based on |I| < 0.1 threshold)
+
+**Footer:**
+- Threshold validation summary (within-split and between-split)
+
+**Interpretation:**
+- All splits centered at ~50th percentile (uniform distribution) → No spatial clustering
+- Points near diagonal (Berlin rank ≈ Leipzig rank) → High cross-city consistency
+- Moran's I ≈ 0 for all splits → Spatial independence achieved
 
 ---
 

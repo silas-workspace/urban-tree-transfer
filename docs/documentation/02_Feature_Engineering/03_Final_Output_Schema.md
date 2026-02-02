@@ -6,6 +6,7 @@ This document specifies the exact column schema for the 10 GeoPackages produced 
 ## Output Files
 
 Baseline outputs (no proximity filtering):
+
 - `berlin_train.gpkg`
 - `berlin_val.gpkg`
 - `berlin_test.gpkg`
@@ -13,6 +14,7 @@ Baseline outputs (no proximity filtering):
 - `leipzig_test.gpkg`
 
 Filtered outputs (after proximity filter):
+
 - `berlin_train_filtered.gpkg`
 - `berlin_val_filtered.gpkg`
 - `berlin_test_filtered.gpkg`
@@ -22,11 +24,13 @@ Filtered outputs (after proximity filter):
 All files share the same schema.
 
 ## CRS
+
 - EPSG:25833 (UTM Zone 33N)
 
 ## Column Schema
 
 ### 1) Identifiers & Metadata (11)
+
 - `tree_id` (string, non-null)
 - `city` (string, non-null, values: "berlin" or "leipzig")
 - `genus_latin` (string, non-null)
@@ -40,14 +44,17 @@ All files share the same schema.
 - `correction_distance` (float, non-null, meters, range: >= 0)
 
 ### 2) Geometry (1)
+
 - `geometry` (Point, non-null, EPSG:25833)
 
 ### 3) CHM Features (3)
+
 - `CHM_1m` (float, nullable, meters)
 - `CHM_1m_zscore` (float, non-null)
 - `CHM_1m_percentile` (float, non-null, range: 0-100)
 
 ### 4) Sentinel-2 Temporal Features (184)
+
 Selected months are determined by `outputs/phase_2/metadata/temporal_selection.json`.
 This schema assumes selected months **[04-11]**, yielding 8 months × 23 features = 184 columns.
 
@@ -57,6 +64,7 @@ Base features (23):
 `NDWI`, `MSI`, `NDII`, `kNDVI`, `VARI`.
 
 Exact temporal columns:
+
 - Month 04: `B2_04`, `B3_04`, `B4_04`, `B5_04`, `B6_04`, `B7_04`, `B8_04`, `B8A_04`,
   `B11_04`, `B12_04`, `NDVI_04`, `EVI_04`, `GNDVI_04`, `NDre1_04`, `NDVIre_04`,
   `CIre_04`, `IRECI_04`, `RTVIcore_04`, `NDWI_04`, `MSI_04`, `NDII_04`, `kNDVI_04`, `VARI_04`
@@ -83,6 +91,7 @@ Exact temporal columns:
   `CIre_11`, `IRECI_11`, `RTVIcore_11`, `NDWI_11`, `MSI_11`, `NDII_11`, `kNDVI_11`, `VARI_11`
 
 ### 5) Outlier Flags (5)
+
 - `outlier_zscore` (boolean, non-null)
 - `outlier_mahalanobis` (boolean, non-null)
 - `outlier_iqr` (boolean, non-null)
@@ -90,6 +99,7 @@ Exact temporal columns:
 - `outlier_method_count` (integer, non-null, range: 0-3)
 
 ### 6) Spatial Split Metadata (1)
+
 - `block_id` (string, non-null)
 
 ## Redundancy Removal Note
@@ -104,6 +114,13 @@ list the exact retained temporal columns (post-removal).
 
 ## Expected Column Counts
 
-- Phase 2a (extraction): 288 columns (excluding geometry)
-- Phase 2b (quality): 198 columns (excluding geometry)
-- Phase 2c (final): ~190 columns (excluding geometry)
+Column counts depend on methodological decisions made in exploratory analysis:
+
+- **Phase 2a (extraction):** 11 metadata + 1 CHM + (23 bases × 12 months S2)
+- **Phase 2b (quality):** 11 metadata + 3 CHM + (23 bases × selected months)
+- **Phase 2c (final):** 11 metadata + 3 CHM + (retained bases × selected months) + 5 outlier + 1 spatial
+
+**Note:** Exact counts are determined by:
+
+- Temporal selection (exploratory analysis exp_01)
+- Correlation threshold and redundant features (exploratory analysis exp_03)

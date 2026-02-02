@@ -1,8 +1,8 @@
 # Phase 2: Exploratory Analysis - Outlier Detection Threshold Validation
 
 **Phase:** Feature Engineering - Exploratory Analysis
-**Letzte Aktualisierung:** 2026-01-30
-**Status:** 🔄 In Implementierung
+**Last Updated:** 2026-02-01
+**Status:** 🔄 In Implementation
 
 ---
 
@@ -390,6 +390,37 @@ WENN Max Deviation > 2 × Mean_Flagging_Rate:
     "false_positive_estimate": "< 0.3% for high severity",
     "sensitivity_analysis": "threshold variations tested - 3.0/0.001/1.5 optimal",
     "ablation_study_ready": true
+  },
+  "biological_context_analysis": {
+    "age_correlation": {
+      "high_severity_median_plant_year": 1985,
+      "non_outlier_median_plant_year": 2005,
+      "mann_whitney_u": 12345.0,
+      "p_value": 0.001,
+      "interpretation": "High-severity outliers significantly older (likely biological extremes)"
+    },
+    "tree_type_association": {
+      "high_severity_anlagenbaeume_pct": 68.0,
+      "high_severity_strassenbaeume_pct": 32.0,
+      "non_outlier_anlagenbaeume_pct": 45.0,
+      "interpretation": "High-severity enriched in park trees (anlagenbaeume)"
+    },
+    "spatial_clustering": {
+      "ripleys_k_50m": 1.8,
+      "ripleys_k_100m": 2.1,
+      "ripleys_k_200m": 1.9,
+      "expected_under_csr": 1.0,
+      "interpretation": "High-severity outliers spatially clustered (parks, monuments)"
+    },
+    "genus_patterns": {
+      "high_severity_rates_per_genus": {
+        "QUERCUS": 0.12,
+        "PLATANUS": 0.10,
+        "TILIA": 0.08
+      },
+      "interpretation": "Large genera show higher biological extreme rates"
+    },
+    "recommendation": "High-severity outliers likely include biological extremes (old park trees). Consider separate flag for Phase 3 ablation studies."
   }
 }
 ```
@@ -411,7 +442,7 @@ Performance-Vergleich zeigt optimale Removal-Strategie.
 
 ---
 
-## Visualisierungen (7 Required Plots)
+## Visualisierungen (11 Plots: 7 Core + 4 Biological Context)
 
 ### 1. Outlier Rates per Method
 - **Typ:** Bar chart
@@ -463,6 +494,73 @@ Performance-Vergleich zeigt optimale Removal-Strategie.
 - **Stacks:** Severity levels (none/low/medium/high)
 - **Interpretation:** Genus-Uniformität validieren
 
+### 8. Biological Context: Age Distribution
+
+**Added: 2026-02-01 (PRD 002d Improvement 4)**
+
+- **Typ:** Histogram comparison (overlaid or faceted)
+- **X-Achse:** Plant Year
+- **Y-Achse:** Frequency
+- **Groups:** High-severity outliers vs. non-outliers
+- **Statistics:** Mann-Whitney U test results (median plant year comparison)
+- **Interpretation:** If high-severity outliers are significantly older, suggests biological extremes (old park trees)
+
+### 9. Biological Context: Tree Type Association
+
+**Added: 2026-02-01 (PRD 002d Improvement 4)**
+
+- **Typ:** Stacked or grouped bar chart
+- **X-Achse:** Outlier severity (high, medium, low, none)
+- **Y-Achse:** Percentage or count
+- **Groups:** Tree type (anlagenbaeume vs. strassenbaeume)
+- **Interpretation:** Enrichment of high-severity in park trees (anlagenbaeume) indicates biological contexts
+
+### 10. Biological Context: Spatial Clustering
+
+**Added: 2026-02-01 (PRD 002d Improvement 4)**
+
+- **Typ:** Spatial map overlay
+- **Background:** All trees (light gray, small points)
+- **Foreground:** High-severity outliers (red stars, prominent)
+- **Annotation:** Ripley's K statistics at 50/100/200m
+- **Interpretation:** Spatial clustering (K ratio > 1.2) indicates parks/monuments as biological contexts
+
+### 11. Biological Context: Genus-Specific Rates
+
+**Added: 2026-02-01 (PRD 002d Improvement 4)**
+
+- **Typ:** Bar chart
+- **X-Achse:** Genus (filtered for minimum sample size)
+- **Y-Achse:** High-severity outlier rate (%)
+- **Interpretation:** Genera with high natural variability (QUERCUS, PLATANUS) may have higher biological extreme rates
+
+---
+
+## Output Files
+
+**Metadata:**
+```
+outputs/phase_2/metadata/outlier_thresholds.json
+```
+
+**Visualizations (11 plots):**
+```
+outputs/phase_2/figures/exp_04/
+├── outlier_rates_per_method.png          # Plot 1: Core analysis
+├── method_overlap_venn.png                # Plot 2: Core analysis
+├── zscore_sensitivity.png                 # Plot 3: Core analysis
+├── mahalanobis_distribution.png           # Plot 4: Core analysis
+├── iqr_boxplots_per_genus.png            # Plot 5: Core analysis
+├── severity_distribution.png              # Plot 6: Core analysis
+├── outlier_by_genus.png                   # Plot 7: Core analysis
+├── outlier_age_distribution.png           # Plot 8: Biological context (PRD 002d)
+├── outlier_tree_type.png                  # Plot 9: Biological context (PRD 002d)
+├── outlier_spatial_clustering.png         # Plot 10: Biological context (PRD 002d)
+└── outlier_genus_rates.png                # Plot 11: Biological context (PRD 002d)
+```
+
+**DPI:** 300 (Publication-ready)
+
 ---
 
 ## Methodische Verbesserungen gegenüber Legacy
@@ -477,6 +575,27 @@ Performance-Vergleich zeigt optimale Removal-Strategie.
 | **Ablationsstudien**    | Nicht möglich                   | Severity-Flags ermöglichen systematische Tests |
 
 **Zentrale Verbesserung:** Methodisch fundierte, transparente Threshold-Wahl statt ad-hoc-Entscheidungen.
+
+---
+
+## Biological Context Analysis
+
+**Added:** 2026-02-01 (PRD 002d Improvement 4)
+
+**Purpose:** Distinguish data quality issues from biological extremes (analysis-only; flags unchanged).
+
+**Analyses:**
+1. **Age Correlation**: Mann-Whitney U test comparing plant_year of high-severity vs. non-outliers
+2. **Tree Type Association**: Row-normalized contingency table for anlagenbaeume vs. strassenbaeume
+3. **Spatial Clustering**: Ripley's K at 50/100/200 m for high-severity outliers
+4. **Genus Patterns**: High-severity rates per genus (minimum sample size filter)
+
+**Interpretation Guidance:**
+- If high-severity outliers are older and enriched in park trees, they may represent biological extremes.
+- If spatial clustering is strong (Ripley's K ratio > 1.2 at 100 m), parks/monuments are likely drivers.
+
+**Phase 3 Recommendation (conditional):**
+- Consider a derived flag like `is_biological_extreme` for ablation studies if age/tree type analyses support it.
 
 ---
 

@@ -183,14 +183,6 @@ Nicht alle Bäume im Kataster sind für die Klassifikation geeignet:
 | Ausreichende Samples pro Genus | Mindestens N Bäume pro Klasse für robustes Training |
 | Räumliche Qualität             | Keine offensichtlichen Koordinatenfehler            |
 
-### Gattungs-Isolations-Filter
-
-Bei 10m Pixelauflösung können benachbarte Bäume unterschiedlicher Gattungen zu gemischten spektralen Signaturen führen. Der Gattungs-Isolations-Filter adressiert dieses Problem:
-
-- **Problem**: Bäume mit <20m Abstand zu Bäumen anderer Gattungen haben potentiell kontaminierte Spektralsignaturen
-- **Lösung**: Filterung von Bäumen, die weniger als 20m von einem Baum einer anderen Gattung entfernt sind
-- **Trade-off**: Reduzierte Stichprobengröße, aber reinere spektrale Signaturen pro Gattung
-
 ## Computational Constraints
 
 Die verfügbaren Rechenressourcen beeinflussen maßgeblich das experimentelle Design:

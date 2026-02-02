@@ -108,6 +108,59 @@ s_pooled = √[((n_Berlin - 1) × s²_Berlin + (n_Leipzig - 1) × s²_Leipzig) /
 
 ---
 
+### Genus-Specific CHM Normalization
+
+**Added: 2026-02-01 (PRD 002d Improvement 3)**
+
+**Aktuelle Implementierung:** Die CHM-Features verwenden **genus×city-level normalization** statt reiner genus-level oder city-level Normalisierung.
+
+**Formeln (genus×city-spezifisch):**
+
+```python
+# Für jeden Baum in genus g in city c:
+CHM_1m_zscore = (CHM_1m - μ_g,c) / σ_g,c
+CHM_1m_percentile = rank(CHM_1m, genus=g, city=c) / n_g,c × 100
+```
+
+**Begründung:**
+
+1. **Vermeidung von Genus-Leakage:**
+   - City-level Normalisierung: Große Genera (QUERCUS: 20m) bekommen hohe Percentiles, kleine Genera (MALUS: 8m) niedrige Percentiles
+   - Dies kodiert implizit Genus-Information in den Features → Data Leakage
+   - Genus-spezifische Normalisierung entfernt genus-mean-Effekt
+
+2. **Biologischer Kontext:**
+   - QUERCUS (Eichen): 10-40m typische Höhe
+   - MALUS (Äpfel): 3-12m typische Höhe
+   - TILIA (Linden): 15-35m typische Höhe
+   - Features repräsentieren **relative Größe innerhalb Gattung** (Vitalität, Alter, Standortqualität)
+
+3. **City-Level Gruppierung:**
+   - Verhindert cross-city information leakage
+   - Jede Stadt hat eigene genus-spezifische Distributionen
+   - QUERCUS in Berlin normalisiert gegen QUERCUS in Berlin
+   - QUERCUS in Leipzig normalisiert gegen QUERCUS in Leipzig
+
+**Edge Case: Rare Genera (<10 Samples)**
+
+Wenn ein Genus in einer Stadt <10 Samples hat:
+- **Fallback:** City-level Normalisierung (stabiler als genus-level mit wenigen Samples)
+- **Logged:** Warning-Level Logging für Dokumentation
+- **Beispiel:** RARE_GENUS mit 5 Samples in Berlin → verwendet alle Berlin-Bäume als Referenz
+
+**Erwartete Feature-Verteilung:**
+
+Nach genus×city Normalisierung:
+- Alle Genera haben CHM_percentile mean ≈ 50 (by design)
+- Alle Genera haben CHM_zscore mean ≈ 0, std ≈ 1 (by design)
+- Percentile kodiert NICHT mehr absolute Genus-Höhe, sondern relative Position innerhalb Genus
+
+**Implementierung:** `src/urban_tree_transfer/feature_engineering/quality.py::compute_chm_engineered_features()`
+
+**Validation:** `tests/feature_engineering/test_quality.py::test_compute_chm_engineered_features_genus_specific()`
+
+---
+
 ### Plant Year Threshold Determination
 
 **Zweck:** Identifikation eines Schwellenwerts für `plant_year`, unterhalb dessen Bäume zu jung für zuverlässige Sentinel-2-Detektion sind.
@@ -295,6 +348,28 @@ SONST:
 
 ---
 
+### Plot 8: Genus-Specific Normalization Validation
+
+**Added: 2026-02-01 (PRD 002d Improvement 3)**
+
+**Typ:** Box Plot Comparison (Before/After Genus-Specific Normalization)
+
+**Elemente:**
+
+- X-Achse: Genus (sortiert nach Sample Count)
+- Y-Achse: CHM_1m_percentile
+- Panels: Before (city-level) vs. After (genus×city-level)
+- Colors: Genera color-coded
+- Reference line: 50th percentile (expected mean after normalization)
+
+**Interpretation:**
+
+- **Before (City-Level):** Genera klar separiert (QUERCUS high, MALUS low) → Genus-Leakage
+- **After (Genus×City-Level):** Alle Genera zentriert um 50 → Genus-mean-Effekt entfernt
+- **Validation:** Bestätigt, dass Features jetzt relative Position innerhalb Genus kodieren, nicht absolute Genus-Höhe
+
+---
+
 ## Output
 
 ### JSON: `chm_assessment.json`
@@ -344,7 +419,7 @@ SONST:
 
 ---
 
-## Plots (7 Dateien)
+## Plots (8 Dateien)
 
 ```
 outputs/phase_2/figures/exp_02_chm/
@@ -354,7 +429,8 @@ outputs/phase_2/figures/exp_02_chm/
 ├── cohens_d_forest_plot.png            # Cohen's d mit CIs
 ├── chm_distribution_cities.png         # Overlaid Histogramme
 ├── chm_vs_plant_year.png               # CHM vs. Pflanzjahr
-└── genus_inventory.png                 # Sample Counts pro Genus
+├── genus_inventory.png                 # Sample Counts pro Genus
+└── chm_percentile_genus_validation.png # Genus-specific normalization validation (PRD 002d)
 ```
 
 **DPI:** 300 (Publication-ready)

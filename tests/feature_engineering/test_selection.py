@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -95,7 +97,9 @@ def test_remove_redundant_features_drops_columns() -> None:
 def test_remove_redundant_features_skips_geometry() -> None:
     gdf = _make_gdf()
 
-    result = remove_redundant_features(gdf, ["geometry"])
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="Skipping 'geometry' in features_to_remove.")
+        result = remove_redundant_features(gdf, ["geometry"])
 
     assert "geometry" in result.columns
 

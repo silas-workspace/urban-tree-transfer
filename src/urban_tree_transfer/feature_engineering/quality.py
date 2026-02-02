@@ -10,6 +10,7 @@ This module handles:
 
 from __future__ import annotations
 
+import logging
 from typing import Any, cast
 
 import geopandas as gpd
@@ -24,6 +25,8 @@ from urban_tree_transfer.config.loader import (
 )
 from urban_tree_transfer.utils.final_validation import validate_zero_nan
 from urban_tree_transfer.utils.schema_validation import validate_phase2b_output
+
+logger = logging.getLogger(__name__)
 
 
 def filter_deciduous_genera(
@@ -164,13 +167,22 @@ def filter_nan_trees(
     trees_gdf: gpd.GeoDataFrame,
     feature_columns: list[str],
     max_nan_months: int = 2,
+    max_edge_nan_months: int = 1,
+    min_valid_months: int = 2,
 ) -> gpd.GeoDataFrame:
     """Remove trees with too many missing months per feature base.
+
+    Removal criteria:
+    1. Trees with >max_nan_months total NaN values in any feature base
+    2. Trees with >max_edge_nan_months NaN values at temporal edges
+    3. Trees with <min_valid_months valid values (insufficient for interpolation)
 
     Args:
         trees_gdf: Input trees.
         feature_columns: Feature columns to check.
-        max_nan_months: Maximum allowed NaN months per feature.
+        max_nan_months: Maximum allowed NaN months per feature (default: 2).
+        max_edge_nan_months: Maximum allowed NaN months at edges (default: 1).
+        min_valid_months: Minimum required valid months for interpolation (default: 2).
 
     Returns:
         Filtered GeoDataFrame.
@@ -179,6 +191,10 @@ def filter_nan_trees(
         raise ValueError("feature_columns must be a non-empty list.")
     if max_nan_months < 0:
         raise ValueError("max_nan_months must be >= 0.")
+    if max_edge_nan_months < 0:
+        raise ValueError("max_edge_nan_months must be >= 0.")
+    if min_valid_months < 1:
+        raise ValueError("min_valid_months must be >= 1.")
 
     feature_bases = set()
     for col in feature_columns:
@@ -191,8 +207,25 @@ def filter_nan_trees(
     mask = pd.Series(True, index=trees_gdf.index)
     for base in feature_bases:
         base_cols = [c for c in feature_columns if c.startswith(f"{base}_")]
+        if not base_cols:
+            continue
+
+        # Total NaN count per tree
         nan_count_per_tree = trees_gdf[base_cols].isna().sum(axis=1)
-        mask &= nan_count_per_tree <= max_nan_months
+        valid_count_per_tree = trees_gdf[base_cols].notna().sum(axis=1)
+
+        # Per-tree edge NaN count (first and last columns)
+        first_col, last_col = base_cols[0], base_cols[-1]
+        edge_nan_counts_per_tree = trees_gdf[first_col].isna().astype(int) + trees_gdf[
+            last_col
+        ].isna().astype(int)
+
+        # Removal logic: (>max_nan_months total) OR (>max_edge_nan_months at edges) OR (<min_valid_months)
+        mask &= (
+            (nan_count_per_tree <= max_nan_months)
+            & (edge_nan_counts_per_tree <= max_edge_nan_months)
+            & (valid_count_per_tree >= min_valid_months)
+        )
 
     removed = int((~mask).sum())
     print(f"NaN filter: removed {removed} trees.")
@@ -338,53 +371,83 @@ def interpolate_features_within_tree(
 
 def compute_chm_engineered_features(
     trees_gdf: gpd.GeoDataFrame,
+    genus_column: str = "genus_latin",
+    city_column: str = "city",
 ) -> gpd.GeoDataFrame:
-    """Add CHM_1m_zscore and CHM_1m_percentile per city.
+    """Engineer CHM features with genus-specific normalization per city.
 
     Args:
-        trees_gdf: Input trees with CHM_1m and city columns.
+        trees_gdf: Input trees with CHM_1m column.
+        genus_column: Column containing genus labels (default: genus_latin).
+        city_column: Column containing city labels (default: city).
 
     Returns:
         GeoDataFrame with CHM_1m_zscore and CHM_1m_percentile columns.
 
-    Why city-level normalization doesn't cause leakage:
-        CHM is an independent variable (from LiDAR/stereo), not derived from
-        other trees' spectral signatures. City-level statistics normalize
-        structural differences between cities (e.g., Berlin has older/taller
-        trees on average) without leaking phenological information.
-
-    Contrast with forbidden approach:
-        NDVI genus-normalization WOULD cause leakage (NDVI is dependent variable,
-        genus mean would leak class information between train/val sets).
-
-    References:
-        - PRD 002b Section 1.7 (CHM Feature Engineering)
-        - PRD 002_phase2_feature_engineering_overview.md Section 4.1 (Data Leakage)
+    Notes:
+        - Genera with <10 samples in a city fall back to city-level normalization.
+        - This prevents unstable statistics for rare genera; fallbacks are logged.
     """
     if "CHM_1m" not in trees_gdf.columns:
         raise ValueError("Missing required column: CHM_1m")
-    if "city" not in trees_gdf.columns:
-        raise ValueError("Missing required column: city")
+    if genus_column not in trees_gdf.columns:
+        raise ValueError(f"Missing required column: {genus_column}")
+    if city_column not in trees_gdf.columns:
+        raise ValueError(f"Missing required column: {city_column}")
 
-    def _zscore(series: pd.Series) -> pd.Series:
-        std = series.std(ddof=1)
+    def _zscore(values: pd.Series, reference: pd.Series) -> pd.Series:
+        std = reference.std(ddof=1)
         if std == 0 or np.isnan(std):
-            return pd.Series(np.zeros(len(series)), index=series.index, dtype=float)
-        return (series - series.mean()) / std
+            return pd.Series(np.zeros(len(values)), index=values.index, dtype=float)
+        mean = reference.mean()
+        return (values - mean) / std
 
-    def _percentile(series: pd.Series) -> pd.Series:
-        non_null = series.dropna()
+    def _percentile(values: pd.Series, reference: pd.Series) -> pd.Series:
+        non_null = reference.dropna()
         if non_null.empty:
-            return pd.Series(np.full(len(series), np.nan), index=series.index, dtype=float)
-        result = series.map(
+            return pd.Series(np.full(len(values), np.nan), index=values.index, dtype=float)
+        result = values.map(
             lambda x: np.nan if pd.isna(x) else percentileofscore(non_null, x, kind="rank")
         )
         result = cast(pd.Series, result).clip(0.0, 100.0)
         return result
 
+    def _value_mask(series: pd.Series, value: object) -> pd.Series:
+        is_na = pd.isna(value)
+        if isinstance(is_na, (bool, np.bool_)) and is_na:
+            return series.isna()
+        return series == value
+
     result = trees_gdf.copy()
-    result["CHM_1m_zscore"] = result.groupby("city")["CHM_1m"].transform(_zscore)
-    result["CHM_1m_percentile"] = result.groupby("city")["CHM_1m"].transform(_percentile)
+    result["CHM_1m_zscore"] = np.nan
+    result["CHM_1m_percentile"] = np.nan
+
+    city_series = cast(pd.Series, result[city_column])
+    genus_series = cast(pd.Series, result[genus_column])
+
+    for city, city_group in result.groupby(city_column, dropna=False):
+        city_mask = _value_mask(city_series, city)
+        city_reference = result.loc[city_mask, "CHM_1m"]
+
+        for genus, _ in city_group.groupby(genus_column, dropna=False):
+            mask = city_mask & _value_mask(genus_series, genus)
+            n_samples = int(mask.sum())
+
+            if n_samples < 10:
+                logger.warning(
+                    "Genus %s in %s has %s samples (<10). Using city-level normalization.",
+                    genus,
+                    city,
+                    n_samples,
+                )
+                reference = city_reference
+            else:
+                reference = result.loc[mask, "CHM_1m"]
+
+            values = result.loc[mask, "CHM_1m"]
+            result.loc[mask, "CHM_1m_zscore"] = _zscore(values, reference)
+            result.loc[mask, "CHM_1m_percentile"] = _percentile(values, reference)
+
     return result
 
 

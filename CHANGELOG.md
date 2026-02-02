@@ -7,8 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - Phase 2: Code Review Fixes
+
+- Fix edge NaN logic in `filter_nan_trees()` to use per-tree edge NaN counting (quality.py:166-234)
+  - Add `max_edge_nan_months` parameter to filter trees with excessive edge NaN values
+  - Add `min_valid_months` parameter to ensure sufficient data for interpolation
+  - Previously had no edge NaN validation, now validates both edge NaN and minimum valid months
+- Fix syntax errors in runner notebooks (02a, 02b, 02c) caused by broken f-string literals
+  - Repair unterminated string literals split across lines
+  - Fix broken print statements in summary sections
+- Improve JSON existence checks in 02c_final_preparation.ipynb
+  - Add comprehensive validation for all required exploratory JSON configs
+  - Provide clear error messages indicating which notebook to run if JSON is missing
+- Update test_filter_nan_trees_ignores_non_temporal_columns to account for new filtering parameters
+  - Test now explicitly sets min_valid_months=1 to match test expectations
+
 ### Added - Phase 2: Feature Engineering
 
+- Add geometric definition, pixel footprint visualization, and threshold sensitivity curve to exp_06 proximity analysis
+- Add notebook test dependencies and enable notebook execution tests in nox
+- Add notebook test mode guard to runner notebooks for non-Colab execution
+- Add macOS quarantine cleanup in nox to allow scikit-learn imports in CI
+- Add post-split spatial independence validation (Moran's I) to exp_05 with JSON output and visualization
 - Add redundancy removal, outlier flagging, and spatial split implementations for final preparation
 - Add JSON schema files and validation utilities for Phase 2 exploratory outputs
 - Add Phase 2 schema validation helpers for 02a/02b/02c pipeline stages
@@ -71,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - No automatic removal - all trees retained with flags for Phase 3 experiments
   - 7 publication-quality plots (sensitivity, distributions, Venn, rates, severity, genus)
   - Output: `outlier_thresholds.json` with validated parameters and flagging statistics
+- Add biological context analysis for outlier thresholds (age, tree type, spatial clustering, genus patterns) with JSON output
 - Add exploratory notebook `notebooks/exploratory/exp_05_spatial_autocorrelation.ipynb` for Moran's I spatial autocorrelation analysis:
   - Distance lag analysis (100-1200m) to identify autocorrelation decay distance
   - Representative feature analysis (NDVI, CHM, spectral bands)
@@ -190,9 +211,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed - Phase 2: Feature Engineering
 
+- Implement genus-specific CHM normalization in quality pipeline (PRD 002d Improvement 3):
+  - Change from city-level to genus×city-level normalization for `CHM_1m_zscore` and `CHM_1m_percentile`
+  - Prevents genus-leakage by removing genus-mean effect from features
+  - Rare genus fallback (<10 samples) to city-level normalization with logged warnings
+  - Add comprehensive unit tests for genus-specific normalization and edge cases
+  - Update CHM Assessment documentation with genus-specific normalization rationale
+  - Add validation plot specification: `chm_percentile_genus_validation.png`
 - Update PRD 002c (Final Preparation) to load spatial block size from `spatial_autocorrelation.json` instead of `feature_config.yaml`
 - Update Implementation Plan to clarify data-driven block size determination workflow via Moran's I analysis
 - Spatial block size now empirically determined in exp_05, not hardcoded
+- Add cross-city JM consistency validation to exp_01 temporal selection (PRD 002d Improvement 1):
+  - Spearman rank correlation between Berlin/Leipzig JM rankings
+  - Consistency-aware month selection (ρ > 0.7 threshold)
+  - New visualization: `jm_rank_consistency.png`
+  - Extend `temporal_selection.json` with `cross_city_validation` section
+- Add post-split spatial independence validation to exp_05 spatial autocorrelation (PRD 002d Improvement 2):
+  - Within-split Moran's I validation for train/val/test splits (|I| < 0.1 threshold)
+  - Between-split boundary Moran's I validation (|I| < 0.05 threshold)
+  - Iterative block size refinement logic (20% increments, optional)
+  - New visualization: `split_spatial_independence.png` (3-panel split comparison)
+  - Extend `spatial_autocorrelation.json` with `validation.post_split` section
 
 ### Added - Phase 1: Data Processing
 

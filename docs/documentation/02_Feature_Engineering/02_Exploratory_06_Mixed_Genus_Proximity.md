@@ -253,6 +253,36 @@ wobei pixel_size = 10m
 - **10m:** Eliminiert Same-Pixel-Mixing
 - **20m:** Garantiert 1-Pixel-Puffer (benachbarte Pixel auch rein)
 
+### Geometrische Klarheit und Pixel-Kontamination
+
+**Hinzugefugt:** 2026-02-01 (PRD 002d Improvement 5)
+
+**Zweck:** Explizite geometrische Definition des 20m-Thresholds im Kontext der Sentinel-2 Pixelauflosung.
+
+**Distanz-Metrik:**
+- Euklidische Punkt-zu-Punkt-Distanz zwischen Baum-Zentroiden
+- Baum-Geometrie: Punkt (Zentroid der Baumkrone)
+- Sentinel-2 Pixel: 10m x 10m Quadrate
+
+**Kontaminationszonen:**
+| Distanz | Pixel-Uberlappung | Kontamination | Filter-Aktion |
+|---------|-------------------|---------------|---------------|
+| < 10m   | Vollstandig       | HIGH          | Entfernen     |
+| 10-15m  | Partiell          | MEDIUM        | Entfernen     |
+| 15-20m  | Kantenkontakt     | LOW           | Entfernen     |
+| > 20m   | Keine             | NONE          | Behalten      |
+
+**Threshold-Rationale:**
+- 20m eliminiert alle Pixel-Kontaminationszonen
+- Retention Rate: ~85% (guter Trade-off)
+- 15m zu aggressiv (starker Datenverlust)
+- 25m zu liberal (Kantenkontakt bleibt moglich)
+
+**Visualisierungen:**
+- `pixel_contamination_scenarios.png`: 4 Distanzszenarien mit Pixel-Footprints (schematisch)
+- `threshold_sensitivity_curve.png`: Retention Rate vs. Threshold
+- `spatial_contamination_map.png`: Real-world contamination zones (color-coded by pixel overlap)
+
 ### Literature Context
 
 **Spectral Mixing Models:**
@@ -392,6 +422,36 @@ Standard-Werte aus Remote Sensing Literatur bevorzugen.
 - Distance Circles: 5m, 10m, 20m Radii
 
 **Purpose:** Illustriert Pixel-Mixing-Konzept visuell für Dokumentation.
+
+---
+
+### Plot 7: Spatial Contamination Zone Map
+
+**Added: 2026-02-01 (PRD 002d Improvement 5)**
+
+**Typ:** Spatial Point Map (color-coded by contamination zone)
+
+**Elemente:**
+- **HIGH contamination (red):** Trees < 10m apart (full pixel overlap)
+- **MEDIUM contamination (orange):** Trees 10-15m apart (partial overlap)
+- **LOW contamination (light orange):** Trees 15-20m apart (edge contact)
+- **NONE (green):** Trees > 20m apart (no contamination)
+
+**Facets:** Per city (Berlin, Leipzig)
+
+**Annotations:**
+- Zone statistics (count and percentage per zone)
+- Legend with contamination level descriptions
+
+**Purpose:**
+- Real-world validation of contamination patterns
+- Visual confirmation that 20m threshold eliminates all contamination zones
+- Shows spatial clustering of contaminated trees (urban cores vs. parks)
+
+**Interpretation:**
+- HIGH/MEDIUM zones concentrated in dense urban areas
+- GREEN zones (clean) dominant in parks and suburbs
+- Validates threshold choice: 20m removes all red/orange/yellow zones
 
 ---
 

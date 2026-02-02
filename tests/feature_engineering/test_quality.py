@@ -176,6 +176,55 @@ def test_compute_chm_percentile_all_nan():
     assert result["CHM_1m_percentile"].isna().all()
 
 
+def test_compute_chm_engineered_features_genus_specific():
+    """Test genus-specific CHM normalization."""
+    data = {
+        "tree_id": range(1, 21),
+        "city": ["berlin"] * 20,
+        "genus_latin": ["QUERCUS"] * 10 + ["MALUS"] * 10,
+        "CHM_1m": [
+            *[15, 18, 20, 22, 25, 28, 30, 32, 33, 35],
+            *[3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        ],
+        "geometry": [Point(i, i) for i in range(1, 21)],
+    }
+    gdf = gpd.GeoDataFrame(data, crs=PROJECT_CRS)
+
+    result = compute_chm_engineered_features(gdf)
+
+    quercus = result[result["genus_latin"] == "QUERCUS"]["CHM_1m_percentile"]
+    malus = result[result["genus_latin"] == "MALUS"]["CHM_1m_percentile"]
+
+    assert 45 <= quercus.mean() <= 55
+    assert 45 <= malus.mean() <= 55
+
+    quercus_z = result[result["genus_latin"] == "QUERCUS"]["CHM_1m_zscore"]
+    malus_z = result[result["genus_latin"] == "MALUS"]["CHM_1m_zscore"]
+
+    assert abs(quercus_z.mean()) < 0.01
+    assert abs(malus_z.mean()) < 0.01
+    assert 0.95 < quercus_z.std() < 1.05
+    assert 0.95 < malus_z.std() < 1.05
+
+
+def test_compute_chm_engineered_features_rare_genus_fallback():
+    """Test city-level fallback for rare genera (<10 samples)."""
+    data = {
+        "tree_id": range(1, 16),
+        "city": ["berlin"] * 15,
+        "genus_latin": ["QUERCUS"] * 10 + ["RARE_GENUS"] * 5,
+        "CHM_1m": list(range(10, 25)),
+        "geometry": [Point(i, i) for i in range(1, 16)],
+    }
+    gdf = gpd.GeoDataFrame(data, crs=PROJECT_CRS)
+
+    result = compute_chm_engineered_features(gdf)
+
+    rare_features = result[result["genus_latin"] == "RARE_GENUS"]
+    assert rare_features["CHM_1m_zscore"].notna().all()
+    assert rare_features["CHM_1m_percentile"].notna().all()
+
+
 def test_filter_ndvi_plausibility():
     gdf = create_test_trees(3)
     gdf["NDVI_04"] = [0.2, 0.4, 0.6]
@@ -265,6 +314,15 @@ def test_filter_nan_trees_ignores_non_temporal_columns():
     gdf["NDVI_04"] = [np.nan, 0.2]
     gdf["NDVI_05"] = [0.3, 0.4]
 
-    filtered = filter_nan_trees(gdf, ["CHM_1m_zscore", "NDVI_04", "NDVI_05"], max_nan_months=1)
+    # With new parameters: max_edge_nan_months=1, min_valid_months=2
+    # Tree 1 has 1 edge NaN and only 1 valid month (NDVI_05), so gets removed with default min_valid_months=2
+    # Set min_valid_months=1 to keep both trees
+    filtered = filter_nan_trees(
+        gdf,
+        ["CHM_1m_zscore", "NDVI_04", "NDVI_05"],
+        max_nan_months=1,
+        max_edge_nan_months=1,
+        min_valid_months=1,
+    )
 
     assert len(filtered) == 2

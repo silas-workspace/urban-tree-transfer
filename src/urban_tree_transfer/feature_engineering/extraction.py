@@ -133,7 +133,8 @@ def correct_tree_positions(
 
     trees_gdf = ensure_project_crs(trees_gdf.copy())
 
-    valid_mask = ~trees_gdf.geometry.is_empty & trees_gdf.geometry.notnull()
+    geometry = trees_gdf.geometry
+    valid_mask = ~geometry.is_empty & ~geometry.isna()
     valid_indices = np.where(valid_mask)[0]
     sampled_indices = valid_indices
 

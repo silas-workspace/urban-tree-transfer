@@ -214,52 +214,31 @@ Test: Entferne einen Baum aus dem Datensatz
 
 ### 6. CHM Feature Engineering
 
-**Zweck:** Normalisierung von CHM-Werten zur Verbesserung der Cross-City-Transferierbarkeit.
+**Purpose:** Normalize CHM values to improve cross-city transferability while removing genus-height bias.
 
-**Methodischer Ansatz:**
+**Updated (2026-02-01): Genus×City Normalization**
 
 **Feature 1: CHM_1m_zscore (Z-Score Normalization)**
 
 ```
-CHM_zscore = (CHM_1m - μ_city) / σ_city
-
-wobei:
-μ_city = Mittelwert aller CHM_1m-Werte in Stadt
-σ_city = Standardabweichung aller CHM_1m-Werte in Stadt
+CHM_zscore = (CHM_1m - μ_genus,city) / σ_genus,city
 ```
-
-**Interpretation:**
-
-- Z-Score = 0: Baum hat durchschnittliche Höhe in seiner Stadt
-- Z-Score = +2: Baum ist 2 Standardabweichungen höher als Stadt-Durchschnitt
-- Z-Score = -1: Baum ist 1 Standardabweichung niedriger
 
 **Feature 2: CHM_1m_percentile (Percentile Rank)**
 
 ```
-CHM_percentile = Rang(CHM_1m, Stadt) / n_trees_stadt × 100
-
-Range: [0, 100]
+CHM_percentile = rank(CHM_1m, genus×city) / n_genus,city × 100
 ```
 
-**Interpretation:**
+**Rationale:**
+- Different genera have different natural height ranges (e.g., QUERCUS vs. MALUS).
+- City-level normalization mixes these ranges and implicitly encodes genus.
+- Genus-specific normalization removes the genus mean effect, so features represent
+  relative size within genus (age, vitality, site quality).
 
-- Percentile = 90: Baum gehört zu den höchsten 10% in seiner Stadt
-- Percentile = 50: Baum ist median-höhenmäßig
-- Percentile = 10: Baum gehört zu den niedrigsten 10%
-
-**Begründung Stadt-Level-Normalisierung:**
-
-**Warum kein Data Leakage?**
-CHM ist eine **unabhängige Variable** (Canopy Height Model aus LiDAR/Stereo-Photogrammetrie), nicht abgeleitet aus anderen Bäumen. Stadt-Level-Statistiken normalisieren absolute Höhen-Unterschiede zwischen Städten (z.B. Berlin vs. Leipzig Stadtstruktur), ohne Information zwischen Trees zu leaken.
-
-**Unterschied zu Sentinel-2-Normalisierung (verboten):**
-
-- CHM: Externe Datenquelle (LiDAR) → Stadt-Normalisierung OK
-- NDVI: Von anderen Bäumen in Genus beeinflusst → Genus-Normalisierung würde Leakage verursachen
-
-**Transfer-Verbesserung:**
-Z-Score und Percentile reduzieren stadtspezifische Bias (z.B. Berlin hat durchschnittlich höhere Bäume) und fokussieren auf relative Positionen.
+**Edge Cases (rare genera):**
+- If a genus has <10 samples in a city, fall back to city-level normalization.
+- This prevents unstable statistics for rare genera; fallbacks are logged as warnings.
 
 ---
 
