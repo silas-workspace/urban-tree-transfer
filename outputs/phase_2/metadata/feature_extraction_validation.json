@@ -1,0 +1,36 @@
+{
+  "datasets": {
+    "trees_with_features_Berlin": {
+      "overall_valid": true,
+      "crs": {
+        "valid": true,
+        "expected_crs": "EPSG:25833",
+        "actual_crs": "EPSG:25833"
+      },
+      "null_geometries": {
+        "valid": "True",
+        "null_count": 0,
+        "total_count": 905132
+      }
+    },
+    "trees_with_features_Leipzig": {
+      "overall_valid": true,
+      "crs": {
+        "valid": true,
+        "expected_crs": "EPSG:25833",
+        "actual_crs": "EPSG:25833"
+      },
+      "null_geometries": {
+        "valid": "True",
+        "null_count": 0,
+        "total_count": 167867
+      }
+    }
+  },
+  "summary": {
+    "valid": 2,
+    "invalid": 0,
+    "total": 2,
+    "all_valid": true
+  }
+}

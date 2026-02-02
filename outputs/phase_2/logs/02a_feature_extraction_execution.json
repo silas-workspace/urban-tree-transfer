@@ -1,0 +1,16 @@
+{
+  "notebook": "02a_feature_extraction",
+  "execution_start": "2026-02-02T16:50:29.999321",
+  "execution_end": "2026-02-02T17:58:42.930047",
+  "steps": [
+    {
+      "name": "Feature Extraction",
+      "status": "success",
+      "start_time": "2026-02-02T16:50:31.622636",
+      "end_time": "2026-02-02T17:56:20.638800",
+      "records": 1072999,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}
