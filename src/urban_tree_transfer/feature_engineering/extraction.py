@@ -490,10 +490,15 @@ def extract_sentinel_features(
     all_month_columns = [
         f"{feature}_{month:02d}" for month in months_sorted for feature in s2_features
     ]
-    s2_df = pd.DataFrame(np.nan, index=trees_gdf.index, columns=all_month_columns, dtype=float)
+    s2_df = pd.DataFrame(
+        np.nan,
+        index=trees_gdf.index,
+        columns=pd.Index(all_month_columns, dtype="object"),
+        dtype=float,
+    )
     overlap_cols = [col for col in all_month_columns if col in trees_gdf.columns]
     if overlap_cols:
-        trees_gdf = trees_gdf.drop(columns=overlap_cols)
+        trees_gdf = cast(gpd.GeoDataFrame, trees_gdf.drop(columns=overlap_cols))
 
     for month_index, month in enumerate(months_sorted):
         file_path = sentinel_dir / f"S2_{city}_{year}_{month:02d}_median.tif"
@@ -547,7 +552,7 @@ def extract_sentinel_features(
                 end_col = start_col + len(s2_features)
                 s2_df.iloc[batch_indices, start_col:end_col] = samples[:, : len(s2_features)]
 
-    trees_gdf = pd.concat([trees_gdf, s2_df], axis=1)
+    trees_gdf = cast(gpd.GeoDataFrame, pd.concat([trees_gdf, s2_df], axis=1))
     return trees_gdf
 
 
