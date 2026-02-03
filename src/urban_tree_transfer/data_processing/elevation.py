@@ -39,6 +39,7 @@ DEFAULT_TIMEOUT = 600  # 10 minutes per file (Leipzig WebDAV servers are slow)
 MAX_RETRIES = 5
 RETRY_DELAY_BASE = 15  # Base delay in seconds (exponential backoff)
 DEFAULT_PARALLEL_WORKERS = 2  # Reduced to avoid overwhelming Leipzig WebDAV server
+MIN_DOWNLOAD_SUCCESS_RATIO = 0.95  # Minimum fraction of tiles required to proceed
 
 
 def _xyz_to_geotiff(xyz_path: Path, output_path: Path | None = None) -> Path:
@@ -447,19 +448,29 @@ def _download_atom_feed_tiles(
 
     if failed:
         if progress:
-            print("Failed tiles:")
+            print("Failed tiles (first 10):")
             for idx, filename, error in failed[:10]:  # Show first 10
                 print(f"  [{idx}] {filename}: {error}")
             if len(failed) > 10:
                 print(f"  ... and {len(failed) - 10} more")
-        # Don't fail completely if we have some tiles - the mosaic can work with partial data
         if not extracted:
             raise ValueError(
                 f"All {len(failed)} tile downloads failed. First error: {failed[0][2]}"
             )
+        success_ratio = len(extracted) / total_tiles if total_tiles else 0.0
+        if success_ratio < MIN_DOWNLOAD_SUCCESS_RATIO:
+            raise ValueError(
+                "Tile download incomplete. "
+                f"Success ratio {success_ratio:.2%} below minimum "
+                f"{MIN_DOWNLOAD_SUCCESS_RATIO:.2%}. "
+                f"Downloaded {len(extracted)}/{total_tiles} tiles; "
+                f"failed {len(failed)}. "
+                "Check Leipzig GeoSN/WebDAV availability and rerun."
+            )
         warnings.warn(
             f"{len(failed)} of {total_tiles} tiles failed to download. "
-            "Proceeding with partial data.",
+            f"Success ratio {success_ratio:.2%} meets minimum "
+            f"{MIN_DOWNLOAD_SUCCESS_RATIO:.2%}; proceeding with partial data.",
             stacklevel=2,
         )
 
@@ -765,7 +776,7 @@ def _download_zip_list(
 
     if failed:
         if progress:
-            print("Failed tiles:")
+            print("Failed tiles (first 10):")
             for idx, filename, error in failed[:10]:
                 print(f"  [{idx}] {filename}: {error}")
             if len(failed) > 10:
@@ -774,9 +785,20 @@ def _download_zip_list(
             raise ValueError(
                 f"All {len(failed)} tile downloads failed. First error: {failed[0][2]}"
             )
+        success_ratio = len(extracted) / total_urls if total_urls else 0.0
+        if success_ratio < MIN_DOWNLOAD_SUCCESS_RATIO:
+            raise ValueError(
+                "Tile download incomplete. "
+                f"Success ratio {success_ratio:.2%} below minimum "
+                f"{MIN_DOWNLOAD_SUCCESS_RATIO:.2%}. "
+                f"Downloaded {len(extracted)}/{total_urls} tiles; "
+                f"failed {len(failed)}. "
+                "Check Leipzig GeoSN/WebDAV availability and rerun."
+            )
         warnings.warn(
             f"{len(failed)} of {total_urls} tiles failed to download. "
-            "Proceeding with partial data.",
+            f"Success ratio {success_ratio:.2%} meets minimum "
+            f"{MIN_DOWNLOAD_SUCCESS_RATIO:.2%}; proceeding with partial data.",
             stacklevel=2,
         )
 

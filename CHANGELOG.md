@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Increase max retries from 3 to 5 for WebDAV/Nextcloud servers
 - Reduce parallel workers from 4 to 2 to avoid overwhelming Leipzig GeoSN server
 - Increase retry delay base from 10s to 15s for better exponential backoff
+- Fail fast when download success ratio drops below 95%, with detailed failure summary
 - Previous download only completed ~22% (110/512 tiles) due to timeouts
 - Fix ensures complete DOM/DGM coverage for Leipzig CHM generation
 

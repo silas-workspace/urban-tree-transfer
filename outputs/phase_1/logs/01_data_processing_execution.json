@@ -1,13 +1,13 @@
 {
   "notebook": "01_data_processing",
-  "execution_start": "2026-01-28T12:15:44.832037",
-  "execution_end": "2026-01-28T12:17:40.386176",
+  "execution_start": "2026-02-03T14:45:34.130421",
+  "execution_end": "2026-02-03T15:46:32.292337",
   "steps": [
     {
       "name": "Boundaries",
       "status": "success",
-      "start_time": "2026-01-28T12:15:47.281016",
-      "end_time": "2026-01-28T12:16:02.442551",
+      "start_time": "2026-02-03T14:46:54.409301",
+      "end_time": "2026-02-03T14:47:22.366342",
       "records": 2,
       "warnings": [],
       "errors": []
@@ -15,8 +15,8 @@
     {
       "name": "Trees",
       "status": "success",
-      "start_time": "2026-01-28T12:16:02.456776",
-      "end_time": "2026-01-28T12:16:17.001653",
+      "start_time": "2026-02-03T14:47:22.388302",
+      "end_time": "2026-02-03T14:47:39.618536",
       "records": 1072999,
       "warnings": [],
       "errors": []
@@ -24,8 +24,8 @@
     {
       "name": "Elevation",
       "status": "success",
-      "start_time": "2026-01-28T12:16:17.011815",
-      "end_time": "2026-01-28T12:16:18.143363",
+      "start_time": "2026-02-03T14:47:42.681006",
+      "end_time": "2026-02-03T15:23:41.296170",
       "records": 2,
       "warnings": [],
       "errors": []
@@ -33,18 +33,9 @@
     {
       "name": "CHM",
       "status": "success",
-      "start_time": "2026-01-28T12:16:18.151274",
-      "end_time": "2026-01-28T12:16:18.159661",
+      "start_time": "2026-02-03T15:23:41.430380",
+      "end_time": "2026-02-03T15:25:37.306619",
       "records": 2,
-      "warnings": [],
-      "errors": []
-    },
-    {
-      "name": "Sentinel-2",
-      "status": "success",
-      "start_time": "2026-01-28T12:16:18.171539",
-      "end_time": "2026-01-28T12:17:30.162911",
-      "records": 24,
       "warnings": [],
       "errors": []
     }

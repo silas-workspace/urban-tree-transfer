@@ -1,7 +1,7 @@
 [
   {
     "stage": "filtered",
-    "city": "Berlin",
+    "city": "berlin",
     "records": 905132,
     "crs": "EPSG:25833",
     "geometry_types": [
@@ -10,7 +10,7 @@
   },
   {
     "stage": "filtered",
-    "city": "Leipzig",
+    "city": "leipzig",
     "records": 167867,
     "crs": "EPSG:25833",
     "geometry_types": [

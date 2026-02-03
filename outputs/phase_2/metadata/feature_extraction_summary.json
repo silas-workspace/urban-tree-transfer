@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-02-02T17:58:43.181517+00:00",
+  "timestamp": "2026-02-03T17:17:34.279818+00:00",
   "reference_year": 2021,
   "extraction_months": [
     1,
@@ -30,10 +30,10 @@
     "correction_distance"
   ],
   "cities": {
-    "Berlin": {
+    "berlin": {
       "status": "processed",
       "records": 905132,
-      "output_path": "/content/drive/MyDrive/dev/urban-tree-transfer/data/phase_2_features/trees_with_features_Berlin.gpkg",
+      "output_path": "/content/drive/MyDrive/dev/urban-tree-transfer/data/phase_2_features/trees_with_features_berlin.gpkg",
       "summary": {
         "total_trees": 905132,
         "trees_corrected": 864781,
@@ -619,13 +619,13 @@
           "footprint_size": 3,
           "tile_size_px": 512
         },
-        "processing_timestamp": "2026-02-02T17:36:27.039506+00:00"
+        "processing_timestamp": "2026-02-03T16:41:31.422693+00:00"
       }
     },
-    "Leipzig": {
+    "leipzig": {
       "status": "processed",
       "records": 167867,
-      "output_path": "/content/drive/MyDrive/dev/urban-tree-transfer/data/phase_2_features/trees_with_features_Leipzig.gpkg",
+      "output_path": "/content/drive/MyDrive/dev/urban-tree-transfer/data/phase_2_features/trees_with_features_leipzig.gpkg",
       "summary": {
         "total_trees": 167867,
         "trees_corrected": 0,
@@ -1211,7 +1211,7 @@
           "footprint_size": 3,
           "tile_size_px": 512
         },
-        "processing_timestamp": "2026-02-02T17:55:39.901600+00:00"
+        "processing_timestamp": "2026-02-03T17:06:58.433485+00:00"
       }
     }
   }

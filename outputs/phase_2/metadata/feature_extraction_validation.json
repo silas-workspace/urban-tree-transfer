@@ -1,6 +1,6 @@
 {
   "datasets": {
-    "trees_with_features_Berlin": {
+    "trees_with_features_berlin": {
       "overall_valid": true,
       "crs": {
         "valid": true,
@@ -13,7 +13,7 @@
         "total_count": 905132
       }
     },
-    "trees_with_features_Leipzig": {
+    "trees_with_features_leipzig": {
       "overall_valid": true,
       "crs": {
         "valid": true,
