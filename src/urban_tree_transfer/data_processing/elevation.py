@@ -35,10 +35,10 @@ DEFAULT_HEADERS = {
 }
 
 # Download settings
-DEFAULT_TIMEOUT = 300  # 5 minutes per file
-MAX_RETRIES = 3
-RETRY_DELAY_BASE = 10  # Base delay in seconds (exponential backoff)
-DEFAULT_PARALLEL_WORKERS = 4
+DEFAULT_TIMEOUT = 600  # 10 minutes per file (Leipzig WebDAV servers are slow)
+MAX_RETRIES = 5
+RETRY_DELAY_BASE = 15  # Base delay in seconds (exponential backoff)
+DEFAULT_PARALLEL_WORKERS = 2  # Reduced to avoid overwhelming Leipzig WebDAV server
 
 
 def _xyz_to_geotiff(xyz_path: Path, output_path: Path | None = None) -> Path:

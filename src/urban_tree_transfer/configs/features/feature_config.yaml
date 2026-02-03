@@ -154,34 +154,39 @@ splits:
 genus_classification:
   deciduous:
     - ACER
-    - TILIA
-    - QUERCUS
-    - PLATANUS
-    - FRAXINUS
-    - BETULA
     - AESCULUS
-    - ROBINIA
+    - AILANTHUS
+    - ALNUS
+    - BETULA
     - CARPINUS
+    - CORNUS
+    - CORYLUS
+    - CRATAEGUS
     - FAGUS
+    - FRAXINUS
+    - GLEDITSIA
+    - JUGLANS
+    - LIQUIDAMBAR
+    - MALUS
+    - PLATANUS
     - POPULUS
     - PRUNUS
-    - SORBUS
-    - ULMUS
-    - CORYLUS
+    - PYRUS
+    - QUERCUS
+    - ROBINIA
     - SALIX
-    - ALNUS
-    - CRATAEGUS
-    - MALUS
+    - SOPHORA
+    - SORBUS
+    - TILIA
+    - ULMUS
 
   coniferous:
-    - PINUS
-    - PICEA
     - ABIES
     - LARIX
+    - PICEA
+    - PINUS
     - TAXUS
     - THUJA
-    - JUNIPERUS
-    - PSEUDOTSUGA
 
   # Thresholds for including conifers in analysis
   min_genera_for_analysis: 3

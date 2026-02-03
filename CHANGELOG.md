@@ -7,8 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - Phase 1: Leipzig Elevation Download
+
+- Increase Leipzig elevation download timeout from 300s to 600s (10 minutes)
+- Increase max retries from 3 to 5 for WebDAV/Nextcloud servers
+- Reduce parallel workers from 4 to 2 to avoid overwhelming Leipzig GeoSN server
+- Increase retry delay base from 10s to 15s for better exponential backoff
+- Previous download only completed ~22% (110/512 tiles) due to timeouts
+- Fix ensures complete DOM/DGM coverage for Leipzig CHM generation
+
 ### Fixed - Phase 2: Code Review Fixes
 
+- Fix exp_02 CHM assessment notebook string formatting errors
+  - Fix unterminated string literals with newlines in cell 1 (ValueError message)
+  - Fix color dictionary mismatch in cell 18 (city colors vs genus type colors)
 - Fix exp_02 CHM assessment notebook to accept non-normalized city filenames
 - Fix JM consistency analysis to handle NaN monthly means before ranking
 - Fix JM consistency analysis to normalize city casing before aggregation
@@ -215,6 +227,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed - Phase 2: Feature Engineering
 
+- Update genus classification lists to include all 30 genera from Berlin/Leipzig datasets
+  - Add 7 deciduous genera: AILANTHUS, CORNUS, GLEDITSIA, JUGLANS, LIQUIDAMBAR, PYRUS, SOPHORA
+  - Sort all genera alphabetically in feature_config.yaml and exp_02 notebook
+  - Remove coniferous genera not present in data (JUNIPERUS, PSEUDOTSUGA)
 - Change tree position correction to legacy snap-to-peak logic with local maxima scoring
   - Use P90 adaptive radius without safety factor and 5m sampling radius
   - Add minimum peak height filter and local maxima footprint
