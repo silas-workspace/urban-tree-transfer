@@ -1,13 +1,13 @@
 {
   "notebook": "02a_feature_extraction",
-  "execution_start": "2026-02-03T15:51:56.905674",
-  "execution_end": "2026-02-03T17:17:34.271436",
+  "execution_start": "2026-02-03T23:54:42.799952",
+  "execution_end": "2026-02-04T00:21:39.647295",
   "steps": [
     {
       "name": "Feature Extraction",
       "status": "success",
-      "start_time": "2026-02-03T15:51:59.357473",
-      "end_time": "2026-02-03T17:07:47.407472",
+      "start_time": "2026-02-03T23:54:43.922867",
+      "end_time": "2026-02-04T00:19:23.063329",
       "records": 1072999,
       "warnings": [],
       "errors": []
