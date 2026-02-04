@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - Phase 2: NaN Filtering Logic
+
+- Fix edge NaN counting in `filter_nan_trees()` to count consecutive edge NaN values (quality.py:207-243)
+  - Previous logic only checked if first OR last position was NaN (not consecutive count)
+  - Now counts consecutive NaN values from temporal start and end independently
+  - Takes maximum of start/end consecutive NaN count per tree
+  - Prevents trees with 2+ consecutive edge NaN from passing filter (cannot be interpolated)
+  - Example bug: `[NaN, NaN, 0.5, ...]` previously passed (only counted first position), now correctly filtered
+  - Interior 2+ consecutive NaN remain acceptable (can be linearly interpolated with bracketing values)
+  - Resolves ValueError: "NaN values remain after interpolation" (1.4M+ NaN values in Berlin dataset)
+  - Update methodology documentation to clarify consecutive edge NaN counting logic
+  - All existing tests pass without modification (logic now matches documented behavior)
+
 ### Fixed - Phase 1: Leipzig Tile Coverage
 
 - Replace Leipzig elevation tile URLs for "Kreisfreie Stadt Leipzig" (previously used "Landkreis Leipzig")

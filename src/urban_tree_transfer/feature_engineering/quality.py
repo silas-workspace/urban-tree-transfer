@@ -174,14 +174,18 @@ def filter_nan_trees(
 
     Removal criteria:
     1. Trees with >max_nan_months total NaN values in any feature base
-    2. Trees with >max_edge_nan_months NaN values at temporal edges
+    2. Trees with >max_edge_nan_months consecutive NaN values at temporal edges
     3. Trees with <min_valid_months valid values (insufficient for interpolation)
+
+    Edge NaN counting: Counts consecutive NaNs from the start OR end of the
+    temporal sequence (e.g., [NaN, NaN, 0.5, ...] has 2 consecutive edge NaNs).
+    Takes the maximum of start/end consecutive counts per tree.
 
     Args:
         trees_gdf: Input trees.
         feature_columns: Feature columns to check.
         max_nan_months: Maximum allowed NaN months per feature (default: 2).
-        max_edge_nan_months: Maximum allowed NaN months at edges (default: 1).
+        max_edge_nan_months: Maximum allowed consecutive NaN months at edges (default: 1).
         min_valid_months: Minimum required valid months for interpolation (default: 2).
 
     Returns:
@@ -214,16 +218,35 @@ def filter_nan_trees(
         nan_count_per_tree = trees_gdf[base_cols].isna().sum(axis=1)
         valid_count_per_tree = trees_gdf[base_cols].notna().sum(axis=1)
 
-        # Per-tree edge NaN count (first and last columns)
-        first_col, last_col = base_cols[0], base_cols[-1]
-        edge_nan_counts_per_tree = trees_gdf[first_col].isna().astype(int) + trees_gdf[
-            last_col
-        ].isna().astype(int)
+        # Per-tree consecutive edge NaN count (from start and end)
+        values = trees_gdf[base_cols].values  # shape: (n_trees, n_months)
+        nan_mask = np.isnan(values)
+        max_consecutive_edge_nan = np.zeros(len(trees_gdf), dtype=int)
 
-        # Removal logic: (>max_nan_months total) OR (>max_edge_nan_months at edges) OR (<min_valid_months)
+        for idx in range(len(trees_gdf)):
+            row_nan = nan_mask[idx]
+
+            # Count consecutive NaNs from start
+            start_edge_len = 0
+            for is_nan in row_nan:
+                if not is_nan:
+                    break
+                start_edge_len += 1
+
+            # Count consecutive NaNs from end
+            end_edge_len = 0
+            for is_nan in row_nan[::-1]:
+                if not is_nan:
+                    break
+                end_edge_len += 1
+
+            # Take maximum of start/end consecutive NaN count
+            max_consecutive_edge_nan[idx] = max(start_edge_len, end_edge_len)
+
+        # Removal logic: (>max_nan_months total) OR (>max_edge_nan_months consecutive at edges) OR (<min_valid_months)
         mask &= (
             (nan_count_per_tree <= max_nan_months)
-            & (edge_nan_counts_per_tree <= max_edge_nan_months)
+            & (pd.Series(max_consecutive_edge_nan, index=trees_gdf.index) <= max_edge_nan_months)
             & (valid_count_per_tree >= min_valid_months)
         )
 
@@ -303,7 +326,12 @@ def interpolate_features_within_tree(
 
         # Step 1: Vectorized linear interpolation for interior NaNs
         # interpolate(axis=1) operates row-wise across temporal dimension
-        df_interpolated = df_values.interpolate(method="linear", axis=1, limit_area="inside")
+        # Note: pyright type stubs are incomplete for DataFrame.interpolate()
+        df_interpolated = df_values.interpolate(  # type: ignore[call-arg]
+            method="linear",  # type: ignore[call-arg]
+            axis=1,  # type: ignore[call-arg]
+            limit_area="inside",  # type: ignore[call-arg]
+        )
 
         # Step 2: Vectorized edge NaN handling
         # Convert to numpy for faster indexing

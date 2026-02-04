@@ -136,17 +136,27 @@ Laden der selektierten Monate aus `temporal_selection.json`:
 **Phase 2 - Tree-Removal-Schwellenwert:**
 
 ```
-max_nan_months = 2  (aus feature_config.yaml)
+max_nan_months = 2                (aus feature_config.yaml)
+max_edge_nan_months = 1           (konsekutive Edge-NaN)
+min_valid_months = 2              (Minimum für Interpolation)
 
 Für jede Feature-Basis (z.B. "NDVI"):
-    Wenn tree hat >2 NaN-Monate in NDVI-Features:
-        → Baum entfernen
+    Wenn tree hat >2 NaN-Monate total:              → Baum entfernen
+    ODER >1 konsekutive NaN am Start/Ende:          → Baum entfernen
+    ODER <2 valide Monate:                           → Baum entfernen
 ```
 
-**Begründung Schwellenwert:**
+**Edge-NaN-Zählung (wichtig):**
+- Zählt **konsekutive** NaN-Werte vom Zeitreihen-Start oder -Ende
+- Beispiel: `[NaN, NaN, 0.5, ...]` hat 2 konsekutive Edge-NaN vom Start
+- Nimmt Maximum von Start/End-Edge-NaN pro Baum
 
-- **≤2 NaN-Monate:** Lineare Interpolation zuverlässig (z.B. 6/8 Monate vorhanden = 75%)
-- **>2 NaN-Monate:** Interpolation unsicher, phenologisches Muster zu lückenhaft
+**Begründung Schwellenwerte:**
+
+- **≤2 NaN total:** Lineare Interpolation zuverlässig (z.B. 6/8 Monate vorhanden = 75%)
+- **≤1 konsekutive Edge-NaN:** Forward/Backward-Fill akzeptabel, phänologische Grenzen erhalten
+- **≥2 konsekutive Edge-NaN:** Unzulässig - würde 2 Monate mit identischem Wert füllen (unnatürlich)
+- **≥2 valide Monate:** Minimum für sinnvolle Interpolation
 - **Konservativ:** Lieber weniger Bäume mit hoher Qualität als mehr Bäume mit Artefakten
 
 **NaN-Quellen:**
@@ -177,15 +187,18 @@ Für jede Feature-Basis (z.B. "NDVI"):
 
 **Schritt 2 - Edge NaN (Anfang oder Ende der Zeitreihe):**
 
-- **1 Monat Edge-Gap:** Nearest-Neighbor Fill (Forward-fill / Backward-fill)
+- **1 konsekutiver Edge-NaN:** Nearest-Neighbor Fill (Forward-fill / Backward-fill)
   - Start-Edge: `value(0) = value(1)` (Forward-fill)
   - End-Edge: `value(n) = value(n-1)` (Backward-fill)
-- **≥2 Monate Edge-Gap:** **Keine Imputation** → Baum wird im nächsten Schritt entfernt
+  - Beispiel: `[NaN, 0.5, 0.6]` → `[0.5, 0.5, 0.6]` (1 Edge-NaN fillbar)
+- **≥2 konsekutive Edge-NaN:** **Keine Imputation** → Baum wurde bereits in Schritt 4 entfernt
+  - Beispiel: `[NaN, NaN, 0.5]` → Baum entfernt (2 konsekutive Edge-NaN nicht fillbar)
 
 **Edge-NaN-Tolerance-Begründung:**
 
-- **1 Monat:** 87.5% Daten vorhanden (7/8 Monate), minimale Information-Loss
-- **≥2 Monate:** Signifikanter Verlust phenologischer Information (z.B. Frühling oder Herbst fehlt)
+- **1 konsekutiver Edge-NaN:** 87.5% Daten vorhanden (7/8 Monate), minimale Information-Loss
+- **≥2 konsekutive Edge-NaN:** Signifikanter Verlust phenologischer Information (z.B. Frühling oder Herbst fehlt), Forward/Backward-Fill über 2 Monate wäre methodisch unsauber
+- **Interior 2 konsekutive NaN:** Akzeptabel - lineare Interpolation mit beiderseitigen Ankerpunkten möglich
 - **Literatur-Referenz:** Jönsson & Eklundh (2004) empfehlen max 1-2 Edge-Gaps für Vegetations-Zeitreihen
 
 **Data-Leakage-Prävention:**
@@ -198,8 +211,8 @@ Für jede Feature-Basis (z.B. "NDVI"):
 
 ✅ **Erlaubt (Aktuelle Methode):**
 
-- Within-tree linear interpolation
-- Within-tree nearest-neighbor fill (max 1 Edge-month)
+- Within-tree linear interpolation (Interior NaN, auch 2+ konsekutive)
+- Within-tree nearest-neighbor fill (max 1 konsekutiver Edge-NaN)
 
 **Validierung der Unabhängigkeit:**
 
@@ -438,7 +451,7 @@ NDVI < 0.3 in **allen** Growing-Season-Monaten deutet auf:
 | ---------------------- | ---------------------------------- | ----------------------------------- |
 | **NaN-Imputation**     | Genus-Mittelwerte                  | Within-tree temporal interpolation  |
 | **Data Leakage**       | ✗ Ja (Train/Val/Test kontaminiert) | ✓ Nein (tree-independent)           |
-| **Edge NaN**           | Global-fill oder entfernen         | 1 month = fill, ≥2 months = remove  |
+| **Edge NaN**           | Global-fill oder entfernen         | 1 konsekutiv = fill, ≥2 konsekutiv = remove  |
 | **CHM Features**       | CHM_mean, CHM_max, CHM_std (10m)   | CHM_1m, zscore, percentile (1m)     |
 | **CHM Resolution**     | 10m (resampled, cross-tree)        | 1m (direct, no contamination)       |
 | **Plant Year Filter**  | Hardcoded (2018)                   | Statistisch bestimmt (exp_02)       |
