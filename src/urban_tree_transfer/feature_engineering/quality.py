@@ -428,7 +428,7 @@ def interpolate_features_within_tree(
     else:
         print("Within-tree interpolation: all NaN values successfully filled.")
 
-    return interpolated
+    return cast(gpd.GeoDataFrame, interpolated)
 
 
 def compute_chm_engineered_features(

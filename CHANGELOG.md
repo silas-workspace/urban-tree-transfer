@@ -41,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed - Phase 2: Code Review Fixes
 
+- Fix GeoDataFrame type preservation in `interpolate_features_within_tree()` (quality.py:431)
+  - Add explicit cast to GeoDataFrame on return statement
+  - Prevents conversion to regular DataFrame during numpy array assignment
+  - Resolves AttributeError: "'DataFrame' object has no attribute 'crs'" in Phase 2b validation
+  - Follows existing codebase pattern of type casting after pandas operations
 - Fix exp_02 CHM assessment notebook string formatting errors
   - Fix unterminated string literals with newlines in cell 1 (ValueError message)
   - Fix color dictionary mismatch in cell 18 (city colors vs genus type colors)
