@@ -57,6 +57,7 @@ Thumbs.db
 
 # Project-specific
 data/
+docs/literature/
 *.gpkg
 *.parquet
 *.tif

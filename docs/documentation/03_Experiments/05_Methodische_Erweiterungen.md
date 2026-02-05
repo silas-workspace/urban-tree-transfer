@@ -203,7 +203,37 @@ Neben Berlin → Leipzig könnten weitere Szenarien getestet werden.
 
 ---
 
-## 8. Explainability und Interpretierbarkeit
+## 8. From-Scratch Baselines bei allen Fraktionen
+
+### Beschreibung
+
+Statt nur eine From-Scratch Baseline bei 100% Leipzig-Daten zu trainieren, könnte man auch bei 10%, 25% und 50% From-Scratch-Modelle trainieren. Das ergibt eine vollständige Vergleichskurve: Transfer+Fine-Tune vs. From-Scratch bei identischer Datenmenge.
+
+### Vorteile
+
+- Zeigt exakt, ab welcher Datenmenge Transfer keinen Vorteil mehr bringt (Kreuzungspunkt der Kurven)
+- Quantifiziert den Transfer-Vorteil pro Fraktion ("Mit 25% Transfer entspricht 60% From-Scratch")
+- Stärkere Aussage für die Forschungsfrage
+
+### Warum nicht implementiert?
+
+- Verdoppelt die Experimente in 03d (8 From-Scratch + 8 Fine-Tuning statt 2 + 8)
+- Zeitbudget ist begrenzt, Ergebnisse müssen geliefert werden
+- Der 100%-Punkt reicht als Referenz für die Kernaussage
+
+### Implementierte Vereinfachung
+
+- From-Scratch nur bei 100% Leipzig-Daten als obere Referenzlinie
+- Transfer-Vorteil wird über `fraction_to_match_scratch` und `fraction_to_90pct_scratch` approximiert
+
+### Potenzial für Folgearbeit
+
+- Vollständige From-Scratch-Kurve bei 10%, 25%, 50%, 100%
+- Ermöglicht Kosten-Nutzen-Analyse: "Transfer spart X% Labelaufwand"
+
+---
+
+## 9. Explainability und Interpretierbarkeit
 
 ### Beschreibung
 
@@ -243,6 +273,7 @@ Tiefgehende Analyse, warum Modelle bestimmte Entscheidungen treffen.
 | Class Weighting Experimente     | Balanced gewählt          | Niedrig                         |
 | Ensemble-Methoden               | Nicht implementiert       | Niedrig                         |
 | Alternative Transfer-Szenarien  | Nicht implementiert       | Hoch (mehr Städte)              |
+| From-Scratch alle Fraktionen    | Nur 100% Baseline         | Mittel                          |
 | Explainability                  | Basis implementiert       | Mittel                          |
 
 ---

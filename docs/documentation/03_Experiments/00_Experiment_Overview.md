@@ -22,7 +22,7 @@ Die Experimente gliedern sich in drei aufeinander aufbauende Phasen:
 │  ┌─────────────────────────────────────────────────────────────────┐   │
 │  │  PHASE 3.1-3.3: BERLIN-OPTIMIERUNG                              │   │
 │  │  ─────────────────────────────────────────────────────────────  │   │
-│  │  • Setup-Entscheidungen (CHM, Feature-Selektion)                │   │
+│  │  • Setup-Entscheidungen (CHM, Proximity, Outlier, Feature-Selektion) │   │
 │  │  • Algorithmenvergleich (RF, XGBoost, 1D-CNN, TabNet)           │   │
 │  │  • Hyperparameter-Tuning der Champions                          │   │
 │  │  • Berlin Upper Bound etablieren                                │   │
@@ -143,9 +143,10 @@ Da Bäume räumlich autokorreliert sind (benachbarte Bäume ähneln sich), verwe
 
 ### Fold-Konfiguration
 
-- **Setup-Experimente (exp_08, exp_09):** 5-Fold CV
-- **Algorithmenvergleich (exp_10):** 3-Fold CV (für Geschwindigkeit)
-- **HP-Tuning (03b):** 3-Fold CV innerhalb Optuna
+- **Alle CV-Durchläufe (exp_08, exp_09, exp_10, 03b):** 3-Fold Spatial Block CV
+- **Finale Evaluation (03b Test, 03c, 03d):** Hold-out Test Set (kein CV)
+
+**Begründung:** 3-Fold ist für Setup-Entscheidungen und Tuning ausreichend und deutlich schneller. Die finale Leistung wird ohnehin auf dem unabhängigen Hold-out Test Set gemessen.
 
 ---
 
@@ -175,16 +176,16 @@ Wir verwenden **Optuna** mit folgenden Einstellungen:
 
 | Split      | Anteil | Verwendung                     |
 | ---------- | ------ | ------------------------------ |
-| Train      | 60%    | Modelltraining                 |
-| Validation | 20%    | HP-Tuning, Early Stopping      |
-| Test       | 20%    | Finale Evaluation (nur einmal) |
+| Train      | 70%    | Modelltraining                 |
+| Validation | 15%    | HP-Tuning, Early Stopping      |
+| Test       | 15%    | Finale Evaluation (nur einmal) |
 
 ### Leipzig (Target City)
 
 | Split    | Anteil | Verwendung                           |
 | -------- | ------ | ------------------------------------ |
-| Finetune | 50%    | Fine-Tuning Experimente              |
-| Test     | 50%    | Transfer- und Fine-Tuning Evaluation |
+| Finetune | 80%    | Fine-Tuning Experimente              |
+| Test     | 20%    | Transfer- und Fine-Tuning Evaluation |
 
 ---
 
@@ -214,17 +215,19 @@ Dies ermöglicht Aussagen wie: "Berlin Test F1 = 0.62 [0.59, 0.65]"
 | --------------------------- | -------------------------------------- | ---------------- |
 | exp_07_cross_city_baseline  | Deskriptive Analyse Berlin vs. Leipzig | Keine (optional) |
 | exp_08_chm_ablation         | CHM-Strategie bestimmen                | Keine            |
-| exp_09_feature_reduction    | Feature-Anzahl optimieren              | exp_08           |
+| exp_08b_proximity_ablation  | Baseline vs. Filtered Datensatz        | exp_08           |
+| exp_08c_outlier_ablation    | Outlier-Removal-Strategie bestimmen    | exp_08b          |
+| exp_09_feature_reduction    | Feature-Anzahl optimieren              | exp_08c          |
 | exp_10_algorithm_comparison | 4 Algorithmen vergleichen              | exp_09, 03a      |
 
 ### Runner Notebooks
 
-| Notebook                | Zweck                       | Abhängigkeiten |
-| ----------------------- | --------------------------- | -------------- |
-| 03a_setup_fixation      | Datensätze vorbereiten      | exp_08, exp_09 |
-| 03b_berlin_optimization | Champions HP-tunen          | exp_10         |
-| 03c_transfer_evaluation | Zero-Shot Transfer messen   | 03b            |
-| 03d_finetuning          | Fine-Tuning Curve erstellen | 03c            |
+| Notebook                | Zweck                       | Abhängigkeiten                   |
+| ----------------------- | --------------------------- | -------------------------------- |
+| 03a_setup_fixation      | Datensätze vorbereiten      | exp_08, exp_08b, exp_08c, exp_09 |
+| 03b_berlin_optimization | Champions HP-tunen          | exp_10                           |
+| 03c_transfer_evaluation | Zero-Shot Transfer messen   | 03b                              |
+| 03d_finetuning          | Fine-Tuning Curve erstellen | 03c                              |
 
 ---
 
@@ -234,11 +237,11 @@ Dies ermöglicht Aussagen wie: "Berlin Test F1 = 0.62 [0.59, 0.65]"
 Critical Path:
 ─────────────
 
-exp_08 ──→ exp_09 ──→ 03a ──→ exp_10 ──→ 03b ──→ 03c ──→ 03d
-  │           │                  │          │       │       │
-  ▼           ▼                  ▼          ▼       ▼       ▼
-CHM      Features            Datasets   Algos   Models  Transfer  Finetune
-Decision  Selected           Prepared  Compared  Tuned   Tested    Tested
+exp_08 ──→ exp_08b ──→ exp_08c ──→ exp_09 ──→ 03a ──→ exp_10 ──→ 03b ──→ 03c ──→ 03d
+  │           │           │          │                  │          │       │       │
+  ▼           ▼           ▼          ▼                  ▼          ▼       ▼       ▼
+CHM      Proximity     Outlier   Features            Algos      Models  Transfer Finetune
+Decision  Decision    Decision   Selected           Compared    Tuned   Tested   Tested
 
 
 Optional (parallel):

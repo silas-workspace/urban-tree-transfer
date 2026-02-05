@@ -344,11 +344,18 @@ else:
 
 ### Visualisierungen
 
-| Datei                                   | Inhalt                                  |
-| --------------------------------------- | --------------------------------------- |
-| transfer_comparison.png                 | Berlin vs. Leipzig F1 für beide Modelle |
-| confusion_comparison_berlin_leipzig.png | Side-by-side Confusion Matrices         |
-| per_genus_transfer_robustness.png       | Robustheits-Klassifikation pro Genus    |
+| Datei                                   | Inhalt                                             |
+| --------------------------------------- | -------------------------------------------------- |
+| transfer_comparison.png                 | Berlin vs. Leipzig F1 für beide Modelle            |
+| confusion_comparison_berlin_leipzig.png | Side-by-side Confusion Matrices (deutsche Namen)   |
+| per_genus_transfer_robustness.png       | Robustheits-Klassifikation pro Genus (deutsch)     |
+| transfer_conifer_deciduous.png          | Nadel- vs. Laubbäume: Transfer-Performance         |
+| transfer_confusion_pairs.png            | Top-10 Verwechslungspaare in Leipzig               |
+| transfer_species_analysis.png           | Art-Analyse für Genera mit poor Transfer (F1 >15%) |
+
+**Hinweis:** Alle Visualisierungen nutzen **deutsche Gattungsnamen** (`genus_german`)
+und sind wiederverwendbar für die Präsentation. Die gleichen Analyse-Funktionen aus
+der Berlin-Fehleranalyse (03b) können für Leipzig wiederverwendet werden.
 
 ---
 
@@ -372,4 +379,4 @@ Der Transfer-Gap bestimmt, wie wichtig Fine-Tuning ist:
 
 ---
 
-_Letzte Aktualisierung: 2026-02-03_
+_Letzte Aktualisierung: 2026-02-06_

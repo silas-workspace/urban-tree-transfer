@@ -137,16 +137,17 @@ Pro Experiment wird **eine Variable** variiert, alle anderen bleiben konstant:
 
 ### Metriken
 
-**Primärmetrik:** Macro-F1
+**Primärmetrik:** Weighted F1
 
-- Berücksichtigt alle Klassen gleichwertig
-- Robust gegenüber Klassenimbalance
-- Standard in Multi-Class-Klassifikation
+- Gewichtet nach Klassenhäufigkeit, reflektiert praktische Gesamtperformance
+- Robuster als Accuracy bei moderater Klassenimbalance
+- Standard in Multi-Class-Klassifikation mit ungleichen Klassengrößen
 
 **Sekundärmetriken:**
 
-- Weighted-F1 (gewichtet nach Klassenhäufigkeit)
+- Macro-F1 (alle Klassen gleichwertig — zeigt Performance auf seltenen Gattungen)
 - Per-Genus-F1 (für detaillierte Analyse)
+- Accuracy (intuitive Gesamtperformance)
 - Train-Val-Gap (Overfitting-Indikator)
 
 ## Transfer Learning Framework

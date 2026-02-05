@@ -20,18 +20,21 @@ Diese Information hat direkte budgetäre Implikationen: Lohnt es sich, 100 Bäum
 
 ## Methodische Begründungen
 
-### Warum nur bestes Transfer-Modell?
+### Warum beide Champions fine-tunen?
 
 ```
-Option A: Beide Champions fine-tunen
-├── Pro: Vollständiger Vergleich ML vs. NN
-├── Contra: Doppelter Aufwand (4 Fraktionen × 2 Modelle = 8 Experimente)
-└── Entscheidung: Nicht gewählt
+Option A: Beide Champions fine-tunen (gewählt)
+├── Pro: Vollständiger ML vs. NN Vergleich über alle Fraktionen
+├── Pro: Zeigt, ob ML/NN unterschiedlich von lokalen Daten profitieren
+├── Pro: Sample-Efficiency-Kurven beider Paradigmen direkt vergleichbar
+├── Aufwand: 4 Fraktionen × 2 Modelle = 8 Experimente (vertretbar)
+└── Kernargument: Zero-Shot-Ranking ≠ Fine-Tuning-Ranking
+    └── Ein Modell mit schlechterem Transfer kann nach Fine-Tuning besser sein
 
-Option B: Nur bestes Transfer-Modell (gewählt)
-├── Pro: Fokussiert, effizienter
-├── Begründung: Wenn ML besser transferiert, ist Fine-Tuning von NN weniger relevant
-└── Das Transfer-Modell mit besserem Zero-Shot ist wahrscheinlich auch nach Fine-Tuning besser
+Option B: Nur bestes Transfer-Modell
+├── Pro: Weniger Aufwand
+├── Contra: Verliert ML-vs-NN Fine-Tuning-Vergleich
+└── Entscheidung: Nicht gewählt — der Vergleich ist wissenschaftlich zu wertvoll
 ```
 
 ### Warum diese Fraktionen: 10%, 25%, 50%, 100%?
@@ -147,6 +150,37 @@ class_weights = compute_class_weight(
 - Fine-Tuning optimiert für Leipzig, nicht Berlin
 - Leipzig hat andere Genus-Verteilung
 - `balanced` behandelt alle Klassen gleich wichtig
+
+---
+
+## Scaler-Strategie beim Fine-Tuning
+
+### Entscheidung
+
+| Szenario                          | Scaler                          | Begründung                                                                                           |
+| --------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Fine-Tuning** (Transfer-Modell) | Berlin-Scaler beibehalten       | Modell-Weights erwarten Berlin-skalierte Features; nur Weights werden angepasst, nicht Preprocessing |
+| **From-Scratch Baseline**         | Neuer Scaler auf Leipzig fitten | Kein Vorwissen, eigenständiges Modell                                                                |
+
+### Warum Berlin-Scaler beim Fine-Tuning?
+
+```python
+# RICHTIG: Berlin-Scaler beibehalten
+scaler = load("berlin_scaler.pkl")        # Auf Berlin Train gefittet
+X_finetune_scaled = scaler.transform(X_finetune)  # Nur transform!
+X_test_scaled = scaler.transform(X_test)           # Konsistent
+
+# FALSCH: Neuen Scaler auf Leipzig fitten
+scaler = StandardScaler()
+X_finetune_scaled = scaler.fit_transform(X_finetune)  # Verändert Feature-Raum!
+```
+
+**Begründung:**
+
+- Die Modell-Weights (Baumstrukturen bei XGBoost, Neuronale Gewichte bei NN) wurden auf Berlin-skalierte Werte trainiert
+- Ein neuer Scaler würde die Feature-Verteilung verschieben → Modell-Wissen wird inkonsistent
+- Gleicher Scaler macht Zero-Shot und Fine-Tuning direkt vergleichbar
+- Die From-Scratch Baseline nutzt einen eigenen Leipzig-Scaler, weil dort kein Vorwissen existiert
 
 ---
 
@@ -284,30 +318,35 @@ Beispiel:
 ## Experimenteller Ablauf
 
 ```
-1. Lade Best Transfer Model (aus Phase 3.4)
-   └── ML oder NN, basierend auf transfer_evaluation.json
+1. Lade beide Transfer-Champions (aus Phase 3.3)
+   ├── ML-Champion (z.B. XGBoost)
+   └── NN-Champion (z.B. TabNet)
 
 2. Erstelle stratifizierte Subsets
    └── 10%, 25%, 50%, 100% von Leipzig Finetune
+   └── Gleiche Subsets für beide Modelle (fairer Vergleich)
 
-3. Für jede Fraktion:
-   ├── Fine-Tune Modell auf Subset
+3. Für jede Fraktion × jedes Modell:
+   ├── ML: Continue Training / Warm Start
+   ├── NN: Full Fine-Tune mit 0.1× LR
    ├── Evaluiere auf Leipzig Test
    └── Speichere Metriken
 
-4. From-Scratch Baseline
-   ├── Trainiere neues Modell auf 100% Leipzig Finetune
-   └── Evaluiere auf Leipzig Test
+4. From-Scratch Baselines
+   ├── ML von Grund auf auf 100% Leipzig Finetune
+   ├── NN von Grund auf auf 100% Leipzig Finetune
+   └── Evaluiere beide auf Leipzig Test
 
 5. Statistische Tests
    ├── McNemar: Paarweise Vergleiche
    └── Konfidenzintervalle: Bootstrap
 
 6. Effizienz-Metriken berechnen
-   ├── Fraction to Match Scratch
-   └── Fraction to 90% of Scratch
+   ├── Fraction to Match Scratch (je Modell)
+   └── Fraction to 90% of Scratch (je Modell)
 
 7. Visualisierungen erstellen
+   └── Sample-Efficiency-Kurven: ML + NN auf gleichem Plot
 ```
 
 ---
@@ -362,10 +401,17 @@ Beispiel:
 
 ### Visualisierungen
 
-| Datei                       | Inhalt                        |
-| --------------------------- | ----------------------------- |
-| finetuning_curve.png        | F1 vs. Fraktion mit Baselines |
-| finetuning_vs_baselines.png | Vergleich aller Varianten     |
+| Datei                              | Inhalt                                                 |
+| ---------------------------------- | ------------------------------------------------------ |
+| finetuning_curve.png               | F1 vs. Fraktion mit Zero-Shot + From-Scratch Baselines |
+| finetuning_vs_baselines.png        | Vergleich aller Varianten                              |
+| finetuning_per_genus_recovery.png  | Heatmap: Pro-Gattung F1 bei jeder Fraktion (deutsch)   |
+| finetuning_ml_vs_nn_comparison.png | ML vs. NN Sample-Efficiency-Kurven                     |
+| finetuning_significance_matrix.png | McNemar p-Werte über alle Vergleichspaare              |
+
+**Hinweis:** Alle Genus-Labels nutzen **deutsche Gattungsnamen**. Die Pro-Gattung
+Recovery-Heatmap ermöglicht direkte Aussagen wie "Linde erholt sich bereits bei 10% Fine-Tuning
+auf 90% der From-Scratch Performance, Eiche erst bei 50%."
 
 #### Sample Efficiency Curve (finetuning_curve.png)
 
@@ -436,4 +482,4 @@ Empfohlener Workflow:
 
 ---
 
-_Letzte Aktualisierung: 2026-02-03_
+_Letzte Aktualisierung: 2026-02-06_

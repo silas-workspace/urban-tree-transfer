@@ -9,15 +9,17 @@
 
 ## Executive Summary
 
-Dieses Dokument beschreibt 5 methodische Verbesserungen für Phase 2 Feature Engineering, die aus der kritischen Methodenbewertung hervorgegangen sind. Die Verbesserungen adressieren:
+Dieses Dokument beschreibt 7 methodische Verbesserungen für Phase 2 Feature Engineering, die aus der kritischen Methodenbewertung hervorgegangen sind. Die Verbesserungen adressieren:
 
 1. **Cross-City Consistency** in temporal feature selection
 2. **Spatial Independence Validation** für Block-Splits
 3. **Genus-Specific CHM Normalization** statt Stadt-Level
 4. **Biological Context Analysis** für Outlier-Interpretation
 5. **Geometric Clarity** im Proximity Filter
+6. **Deutsche Gattungsnamen in Visualisierungen** statt lateinische
+7. **Nadel-/Laubbaum-Spalte** als Metadatum im Datensatz
 
-**Scope:** Alle Änderungen betreffen explorative Notebooks (exp_01, exp_02, exp_05, exp_04, exp_06) und Module (quality.py, splits.py, outliers.py, proximity.py).
+**Scope:** Alle Änderungen betreffen explorative Notebooks (exp_01, exp_02, exp_05, exp_04, exp_06), Module (quality.py, splits.py, outliers.py, proximity.py) und Visualisierungen.
 
 **Out of Scope:** Feature Importance Analysis (wird in Phase 3 durchgeführt).
 
@@ -26,6 +28,7 @@ Dieses Dokument beschreibt 5 methodische Verbesserungen für Phase 2 Feature Eng
 ## Improvement 1: Cross-City JM Consistency Validation
 
 ### Priority
+
 ⭐ **Kritisch** - Verhindert city-specific temporal selection
 
 ### Problem Statement
@@ -33,6 +36,7 @@ Dieses Dokument beschreibt 5 methodische Verbesserungen für Phase 2 Feature Eng
 **Aktuell:** Temporal month selection basiert auf JM-Distance, aber es wird nicht geprüft, ob die selektierten Monate in **beiden Städten** diskriminativ sind.
 
 **Risiko:**
+
 ```
 Beispiel:
 - Mai zeigt hohe JM-Distance in Berlin (Blattaustrieb-Timing)
@@ -48,6 +52,7 @@ Beispiel:
 **Implikation:** Features müssen **transfer-robust** sein, nicht nur **separabel**.
 
 **Literatur:**
+
 - Pan & Yang (2010, _IEEE TKDE_): "Domain Adaptation requires domain-invariant features"
 - Tuia et al. (2016, _ISPRS_): "Temporal consistency critical for cross-site transfer in remote sensing"
 
@@ -60,6 +65,7 @@ Beispiel:
    - JM_Leipzig(month) für alle Genus-Paare
 
 2. **Cross-City Ranking Consistency:**
+
    ```python
    # Rank months by JM-Distance per city
    rank_berlin = rank(JM_Berlin)  # 1 (best) to 12 (worst)
@@ -70,6 +76,7 @@ Beispiel:
    ```
 
 3. **Consistency-Based Selection:**
+
    ```python
    IF ρ > 0.7:  # High consistency
        → Select top-N months by AVERAGE JM (current approach OK)
@@ -79,6 +86,7 @@ Beispiel:
    ```
 
 4. **Genus-Level Consistency Check:**
+
    ```python
    # For each genus pair (e.g., ACER vs. TILIA):
    # Check if high-JM months are consistent across cities
@@ -95,6 +103,7 @@ Beispiel:
 **New Sections:**
 
 #### Section 3.5: Cross-City JM Consistency Analysis
+
 ```python
 # Calculate JM per city separately (already done for plots)
 jm_berlin_by_month = {1: 0.65, 2: 0.58, ..., 12: 0.62}
@@ -112,6 +121,7 @@ rho, p_value = scipy.stats.spearmanr(rank_berlin, rank_leipzig)
 ```
 
 #### Section 3.6: Consistency-Aware Month Selection
+
 ```python
 # Identify top-8 months per city
 top8_berlin = months_sorted_by_JM[:8]
@@ -135,6 +145,7 @@ else:
 ### Expected Output
 
 **Updated `temporal_selection.json`:**
+
 ```json
 {
   "cross_city_validation": {
@@ -158,6 +169,7 @@ else:
 ```
 
 **New Visualization:** `jm_rank_consistency.png`
+
 - Scatter plot: Rank Berlin (x) vs. Rank Leipzig (y)
 - Diagonal line (perfect consistency)
 - Annotated months (numbers at points)
@@ -177,6 +189,7 @@ else:
 ## Improvement 2: Spatial Independence Validation
 
 ### Priority
+
 ⭐ **Kritisch** - Beweist, dass Spatial Splits funktionieren
 
 ### Problem Statement
@@ -190,6 +203,7 @@ else:
 **Roberts et al. (2017, _Ecology_):** "Spatial cross-validation requires verification that folds are spatially independent."
 
 **Validierung notwendig:**
+
 - Moran's I gibt Empfehlung für Block-Size
 - Aber: Stratified sampling könnte benachbarte Blocks in verschiedene Splits legen
 - Post-hoc Check: Sind Train/Val/Test räumlich unkorreliert?
@@ -199,6 +213,7 @@ else:
 **In exp_05 (nach Block-Size-Bestimmung):**
 
 #### Step 1: Create Preliminary Splits
+
 ```python
 # Use recommended block_size from Moran's I analysis
 block_size = 500  # From autocorrelation decay
@@ -213,6 +228,7 @@ train_blocks, val_blocks, test_blocks = stratified_block_split(
 ```
 
 #### Step 2: Compute Within-Split Moran's I
+
 ```python
 # For each split: Calculate Moran's I for representative features
 features_to_test = ["NDVI_06", "CHM_1m", "B8_07"]
@@ -229,6 +245,7 @@ for split_name, split_blocks in [("train", train_blocks), ...]:
 ```
 
 #### Step 3: Compute Between-Split Moran's I
+
 ```python
 # Identify spatially adjacent blocks across splits
 adjacent_pairs = find_adjacent_blocks(train_blocks, val_blocks)
@@ -245,6 +262,7 @@ for feature in features_to_test:
 ```
 
 #### Step 4: Iterative Adjustment
+
 ```python
 if any(|I_within| > 0.1) or any(I_between > 0.05):
     # Block size too small
@@ -293,6 +311,7 @@ validation_results = validate_spatial_independence(
 ```
 
 #### Section 5: Iterative Block Size Refinement (if needed)
+
 ```python
 iteration = 1
 while not validation_results["passed"]:
@@ -308,6 +327,7 @@ while not validation_results["passed"]:
 ### Expected Output
 
 **Updated `spatial_autocorrelation.json`:**
+
 ```json
 {
   "recommended_block_size_m": 500,
@@ -340,6 +360,7 @@ while not validation_results["passed"]:
 ```
 
 **New Visualization:** `split_spatial_independence.png`
+
 - Map showing Train/Val/Test blocks color-coded
 - Overlay: Moran's I values at block centroids (text annotations)
 - Border highlighting between splits
@@ -359,11 +380,13 @@ while not validation_results["passed"]:
 ## Improvement 3: Genus-Specific CHM Normalization
 
 ### Priority
+
 ⭐ **Kritisch** - Korrekte Feature Engineering ohne Genus-Leakage
 
 ### Problem Statement
 
 **Aktuell:** CHM-Features sind stadt-normalisiert:
+
 ```python
 CHM_1m_zscore = (CHM_1m - μ_city) / σ_city
 CHM_1m_percentile = rank(CHM_1m, city) / n_city
@@ -372,6 +395,7 @@ CHM_1m_percentile = rank(CHM_1m, city) / n_city
 **Problem:** Vermischt Genera mit unterschiedlichen natürlichen Höhenbereichen.
 
 **Beispiel:**
+
 ```
 Baum A: QUERCUS, 20m → Percentile 60 (median für QUERCUS)
 Baum B: MALUS, 8m → Percentile 60 (hoch für MALUS)
@@ -383,15 +407,18 @@ Baum B: MALUS, 8m → Percentile 60 (hoch für MALUS)
 ### Methodological Justification
 
 **Biologischer Kontext:**
+
 - QUERCUS (Eichen): 10-40m typische Höhe
 - MALUS (Äpfel): 3-12m typische Höhe
 - TILIA (Linden): 15-35m typische Höhe
 
 **Stadt-Normalisierung:**
+
 - Mischt diese Bereiche
 - Könnte Genus-Information implizit leaken (hoher Percentile → wahrscheinlich großer Baum → wahrscheinlich QUERCUS)
 
 **Genus-Normalisierung:**
+
 - Entfernt genus-spezifischen Höhen-Bias
 - Features repräsentieren **relative Größe innerhalb Gattung**
 - Relevant für: Alter, Vitalität, Standortqualität
@@ -401,6 +428,7 @@ Baum B: MALUS, 8m → Percentile 60 (hoch für MALUS)
 **Überarbeitung statt Addition:** Die bestehenden 2 Features werden genus-spezifisch berechnet.
 
 #### Neue Formel
+
 ```python
 # Statt Stadt-Level:
 CHM_1m_zscore = (CHM_1m - μ_genus,city) / σ_genus,city
@@ -408,6 +436,7 @@ CHM_1m_percentile = rank(CHM_1m, genus×city) / n_genus,city
 ```
 
 **Wichtig:** Normalisierung bleibt **pro Stadt**, aber **innerhalb Genus**.
+
 - QUERCUS in Berlin: Normalisiert gegen alle QUERCUS in Berlin
 - QUERCUS in Leipzig: Normalisiert gegen alle QUERCUS in Leipzig
 - Verhindert city-leakage, aber nutzt genus-spezifische Verteilungen
@@ -419,6 +448,7 @@ CHM_1m_percentile = rank(CHM_1m, genus×city) / n_genus,city
 **Function:** `engineer_chm_features()`
 
 #### Before (Stadt-Level)
+
 ```python
 def engineer_chm_features(gdf: gpd.GeoDataFrame, city_column: str = "city") -> gpd.GeoDataFrame:
     result = gdf.copy()
@@ -442,6 +472,7 @@ def engineer_chm_features(gdf: gpd.GeoDataFrame, city_column: str = "city") -> g
 ```
 
 #### After (Genus×Stadt-Level)
+
 ```python
 def engineer_chm_features(
     gdf: gpd.GeoDataFrame,
@@ -502,6 +533,7 @@ def engineer_chm_features(
 ```
 
 **Edge Case Handling:**
+
 ```python
 # If genus has <10 samples in a city: fallback to city-level
 # Prevents unstable statistics for rare genera
@@ -513,6 +545,7 @@ def engineer_chm_features(
 **Feature Distribution Changes:**
 
 **Before (Stadt-Level):**
+
 ```
 QUERCUS in Berlin: CHM_percentile mean ≈ 75 (tall trees dominate high percentiles)
 MALUS in Berlin: CHM_percentile mean ≈ 25 (short trees dominate low percentiles)
@@ -520,6 +553,7 @@ MALUS in Berlin: CHM_percentile mean ≈ 25 (short trees dominate low percentile
 ```
 
 **After (Genus-Level):**
+
 ```
 QUERCUS in Berlin: CHM_percentile mean ≈ 50 (centered within genus)
 MALUS in Berlin: CHM_percentile mean ≈ 50 (centered within genus)
@@ -527,6 +561,7 @@ MALUS in Berlin: CHM_percentile mean ≈ 50 (centered within genus)
 ```
 
 **Validation Plot (New):**
+
 ```python
 # Box plot: CHM_1m_percentile distribution per genus
 # Before: Genera clearly separated
@@ -545,6 +580,7 @@ MALUS in Berlin: CHM_percentile mean ≈ 50 (centered within genus)
 ### Impact on Phase 3
 
 **Ablation Study Opportunity:**
+
 - Keep both approaches in feature_config.yaml
 - Generate datasets with both normalization strategies
 - Compare transfer performance (Berlin → Leipzig)
@@ -555,6 +591,7 @@ MALUS in Berlin: CHM_percentile mean ≈ 50 (centered within genus)
 ## Improvement 4: Biological Context Analysis for Outliers
 
 ### Priority
+
 🔵 **Nice-to-Have** - Improves interpretability, nicht kritisch
 
 ### Problem Statement
@@ -562,10 +599,12 @@ MALUS in Berlin: CHM_percentile mean ≈ 50 (centered within genus)
 **Aktuell:** Outlier detection ist rein statistisch (Z-Score, Mahalanobis, IQR).
 
 **Gap:** Keine Unterscheidung zwischen:
+
 - **Data quality issues:** Sensor errors, processing artifacts
 - **Biological extremes:** Very old trees, exceptional specimens
 
 **Beispiel:**
+
 ```
 Baum: 200-jährige QUERCUS in Park
 CHM: 35m (sehr hoch)
@@ -579,6 +618,7 @@ Spektral: Alte Blattstruktur → extreme Werte
 **In exp_04: Exploriere Metadata-Kontext von Outliers**
 
 #### Analysis 1: Plant Year Distribution
+
 ```python
 # Compare plant_year distribution for outliers vs. non-outliers
 outlier_high = trees[trees.outlier_severity == "high"]
@@ -591,6 +631,7 @@ print(f"Non-outlier: median plant_year = {outlier_none.plant_year.median()}")
 ```
 
 #### Analysis 2: Tree Type Distribution
+
 ```python
 # Compare tree_type (anlagenbaeume vs. strassenbaeume)
 contingency_table = pd.crosstab(
@@ -603,6 +644,7 @@ contingency_table = pd.crosstab(
 ```
 
 #### Analysis 3: Spatial Clustering
+
 ```python
 # Are high-severity outliers spatially clustered? (parks, monuments)
 outlier_high_gdf = trees[trees.outlier_severity == "high"]
@@ -614,6 +656,7 @@ K_observed = ripleys_k(outlier_high_gdf, distances=[50, 100, 200])
 ```
 
 #### Analysis 4: Genus-Specific Patterns
+
 ```python
 # Are certain genera more likely to be high-severity outliers?
 genus_outlier_rates = trees.groupby("genus_latin").apply(
@@ -661,6 +704,7 @@ print(f"Mann-Whitney U test: U={u_stat}, p={p_value}")
 ### Expected Output
 
 **Updated `outlier_thresholds.json`:**
+
 ```json
 {
   "biological_context_analysis": {
@@ -689,6 +733,7 @@ print(f"Mann-Whitney U test: U={u_stat}, p={p_value}")
 ```
 
 **New Visualization:** `outlier_biological_context.png` (4-panel figure)
+
 - Panel A: Age distribution (histogram)
 - Panel B: Tree type (stacked bar)
 - Panel C: Spatial clustering (map with high-severity highlighted)
@@ -708,6 +753,7 @@ print(f"Mann-Whitney U test: U={u_stat}, p={p_value}")
 ## Improvement 5: Geometric Clarity in Proximity Filter
 
 ### Priority
+
 🔵 **Nice-to-Have** - Verbessert Dokumentation und Reproduzierbarkeit
 
 ### Problem Statement
@@ -715,6 +761,7 @@ print(f"Mann-Whitney U test: U={u_stat}, p={p_value}")
 **Aktuell:** 20m threshold beschrieben als "2-pixel buffer", aber geometrische Details unklar.
 
 **Ambiguität:**
+
 ```
 Sentinel-2 Pixel: 10m × 10m
 Pixel-Diagonal: √(10² + 10²) ≈ 14.1m
@@ -730,6 +777,7 @@ Frage: Was bedeutet "20m Distanz"?
 **In exp_06: Explizite geometrische Definition und Visualisierung**
 
 #### Step 1: Clarify Distance Metric
+
 ```python
 # Aktuelle Implementierung nutzt:
 distance = euclidean_distance(tree_A.geometry, tree_B.geometry)
@@ -741,6 +789,7 @@ distance = euclidean_distance(tree_A.geometry, tree_B.geometry)
 ```
 
 #### Step 2: Pixel Footprint Visualization
+
 ```python
 import matplotlib.patches as patches
 
@@ -788,6 +837,7 @@ plt.savefig("outputs/phase_2/figures/exp_06/pixel_contamination_schematic.png", 
 ```
 
 #### Step 3: Threshold Sensitivity Analysis
+
 ```python
 # Test multiple thresholds
 thresholds = [10, 15, 20, 25, 30]  # meters
@@ -842,6 +892,7 @@ for scenario in scenarios:
 ### Expected Output
 
 **Updated `proximity_filter.json`:**
+
 ```json
 {
   "geometric_definition": {
@@ -856,11 +907,11 @@ for scenario in scenarios:
     }
   },
   "threshold_sensitivity": {
-    "10m": {"retention": 0.62, "removed": 17100},
-    "15m": {"retention": 0.75, "removed": 11250},
-    "20m": {"retention": 0.85, "removed": 6750},
-    "25m": {"retention": 0.91, "removed": 4050},
-    "30m": {"retention": 0.95, "removed": 2250}
+    "10m": { "retention": 0.62, "removed": 17100 },
+    "15m": { "retention": 0.75, "removed": 11250 },
+    "20m": { "retention": 0.85, "removed": 6750 },
+    "25m": { "retention": 0.91, "removed": 4050 },
+    "30m": { "retention": 0.95, "removed": 2250 }
   },
   "recommended_threshold_m": 20,
   "rationale": "Balances spectral purity (contamination zone eliminated) with sample retention (85%). 15m too aggressive (75% retention), 25m too liberal (edge contact remains)."
@@ -868,6 +919,7 @@ for scenario in scenarios:
 ```
 
 **New Visualizations:**
+
 1. `pixel_contamination_scenarios.png` - 4-panel figure (10m, 15m, 20m, 25m distances)
 2. `threshold_sensitivity_curve.png` - Retention rate vs. threshold
 3. `spatial_contamination_map.png` - Real trees with proximity zones color-coded
@@ -883,9 +935,116 @@ for scenario in scenarios:
 
 ---
 
+## Improvement 6: Deutsche Gattungsnamen in Visualisierungen
+
+### Priority
+
+⭐ **Niedrig** - Kosmetisch, aber wichtig für Präsentationskonsistenz
+
+### Problem Statement
+
+**Aktuell:** Alle explorativen Notebooks (exp_01–exp_06) verwenden `genus_latin` als Achsenlabel
+in Plots (z. B. „TILIA", „ACER"). Phase 3 schreibt dagegen vor, dass alle Visualisierungen
+**deutsche Gattungsnamen** verwenden sollen (`genus_german`: „Linde", „Ahorn").
+
+**Risiko:** Inkonsistenz zwischen Phase 2-Visualisierungen und Phase 3-Ergebnissen in der fertigen
+Arbeit. Wenn Phase 2-Plots in die Präsentation übernommen werden, müssen die Labels übereinstimmen.
+
+### Methodological Justification
+
+- Die Daten enthalten bereits die Spalte `genus_german` — es ist kein Mapping nötig
+- Konvention in Phase 3 PRD (Section 6.0): „All genus labels in visualizations MUST use `genus_german`"
+- Für eine deutschsprachige Abschlussarbeit/Präsentation sind deutsche Namen lesbarer
+
+### Solution Approach
+
+In allen explorativen Notebooks, die Gattungen visualisieren:
+
+1. **Label-Mapping erstellen** (pro Notebook, einmalig):
+
+   ```python
+   # genus_german ist bereits im Datensatz vorhanden
+   label_map = df.drop_duplicates("genus_latin").set_index("genus_latin")["genus_german"].to_dict()
+   ```
+
+2. **Achsenlabels ersetzen:** Überall wo `genus_latin` als Axis-Label oder Facet-Variable
+   verwendet wird, stattdessen `genus_german` nutzen oder Tick-Labels über `label_map` umschreiben.
+
+3. **Betroffene Notebooks:**
+   - `exp_01_temporal_analysis.ipynb` — JM-Distance Plots pro Gattung
+   - `exp_04_outlier_thresholds.ipynb` — Outlier-Verteilung pro Gattung
+   - `exp_06_mixed_genus_proximity.ipynb` — Proximity-Analyse pro Gattung
+
+### Acceptance Criteria
+
+- [ ] Alle Genus-Labels in Phase 2-Plots zeigen deutsche Namen
+- [ ] Lateinische Namen optional in Klammern wo Platz vorhanden: „Linde (Tilia)"
+- [ ] Konsistent mit Phase 3-Konvention (Section 6.0 im PRD)
+
+---
+
+## Improvement 7: Nadel-/Laubbaum-Spalte im Datensatz
+
+### Priority
+
+⭐ **Mittel** - Ermöglicht sauberere Analysen in Phase 3, einfach umzusetzen
+
+### Problem Statement
+
+**Aktuell:** Die Parquet-Datensätze enthalten keine Spalte, die angibt, ob ein Baum ein
+Nadel- oder Laubbaum ist. In Phase 3 wird diese Gruppierung für mehrere Analysen benötigt
+(Conifer vs. Deciduous F1-Vergleich, Transfer-Performance pro Baumgruppe). Das Mapping
+ist derzeit nur als Config-Lookup im Experiment-Config definiert:
+
+```yaml
+genus_groups:
+  conifer: [PINUS, PICEA]
+  deciduous: [TILIA, ACER, QUERCUS, ...]
+```
+
+**Risiko:** Zur Laufzeit muss jedes Mal ein dict-Lookup auf `genus_latin` gemacht werden.
+Bei einer Erweiterung der Gattungsliste oder bei unerwarteten Gattungen im Datensatz
+könnte das Mapping unvollständig sein.
+
+### Methodological Justification
+
+- Eine Spalte `is_conifer` (bool) oder `tree_group` (categorical: `"Nadelbaum"` / `"Laubbaum"`)
+  im Datensatz ist robuster und transparenter
+- Kann direkt beim Proximity-Filter-Schritt oder beim Parquet-Export berechnet werden,
+  da dort bereits über alle Gattungen iteriert wird
+- Besser für Reproduzierbarkeit: das Mapping ist dann im Datensatz fixiert, nicht nur im Config
+
+### Solution Approach
+
+**Stelle:** Im Parquet-Export (Phase 2c, `selection.py` oder `02c_final_preparation.ipynb`),
+nach dem Join mit den harmonisierten Baumdaten:
+
+```python
+CONIFER_GENERA = {"PINUS", "PICEA"}
+df["is_conifer"] = df["genus_latin"].isin(CONIFER_GENERA)
+```
+
+Alternativ als kategoriale Spalte:
+
+```python
+df["tree_group"] = df["genus_latin"].apply(
+    lambda g: "Nadelbaum" if g in CONIFER_GENERA else "Laubbaum"
+)
+```
+
+### Acceptance Criteria
+
+- [ ] Parquet-Datensätze enthalten `is_conifer`-Spalte (oder `tree_group`)
+- [ ] Werte korrekt für alle 10 Gattungen (2 Nadel, 8 Laub)
+- [ ] Phase 3 PRD Config kann vereinfacht werden (direkter Spalten-Zugriff statt Lookup)
+- [ ] Unit-Test prüft korrekte Zuordnung
+
+---
+
 ## Implementation Plan
 
 ### Phase 1: Critical Improvements (Week 1)
+
 **Target:** Methodik-kritische Gaps schließen
 
 - [ ] **Day 1-2:** Improvement 1 (Cross-City JM Consistency)
@@ -907,6 +1066,7 @@ for scenario in scenarios:
   - Update documentation
 
 ### Phase 2: Documentation Improvements (Week 2)
+
 **Target:** Interpretierbarkeit und Reproduzierbarkeit
 
 - [ ] **Day 1-2:** Improvement 4 (Biological Context)
@@ -922,6 +1082,7 @@ for scenario in scenarios:
   - Generate contamination map
 
 ### Phase 3: Integration & Validation (Week 2, End)
+
 **Target:** Alles funktioniert, dokumentiert, reproduzierbar
 
 - [ ] **Day 4:** Re-run Complete Pipeline
@@ -941,6 +1102,7 @@ for scenario in scenarios:
 ## Success Metrics
 
 ### Quantitative
+
 - [ ] Cross-city JM rank correlation ρ > 0.7
 - [ ] Spatial independence: max(|I_within|) < 0.1
 - [ ] Spatial independence: max(I_between) < 0.05
@@ -948,6 +1110,7 @@ for scenario in scenarios:
 - [ ] No breaking changes in downstream code
 
 ### Qualitative
+
 - [ ] Methodology documentation complete
 - [ ] All decisions statistically justified
 - [ ] Visualizations publication-ready
@@ -959,9 +1122,11 @@ for scenario in scenarios:
 ## Dependencies
 
 ### External
+
 - None (all within existing Phase 2 scope)
 
 ### Internal
+
 - Phase 2a must be complete (unchanged)
 - Phase 2b partially re-run (new CHM features)
 - All exploratory notebooks re-executed
@@ -971,12 +1136,12 @@ for scenario in scenarios:
 
 ## Risks & Mitigation
 
-| Risk | Impact | Likelihood | Mitigation |
-|------|--------|------------|------------|
-| JM consistency low (ρ < 0.7) | Month selection changes | Medium | Use conservative intersection approach |
-| Spatial independence not achievable | Block size too large → fewer blocks | Low | Iterative refinement with 20% increments |
-| Genus-CHM requires re-processing all data | Time-intensive | High | Accept - correctness > speed |
-| Biological context shows no clear patterns | Less interpretable | Medium | Document null result - still scientifically valid |
+| Risk                                       | Impact                              | Likelihood | Mitigation                                        |
+| ------------------------------------------ | ----------------------------------- | ---------- | ------------------------------------------------- |
+| JM consistency low (ρ < 0.7)               | Month selection changes             | Medium     | Use conservative intersection approach            |
+| Spatial independence not achievable        | Block size too large → fewer blocks | Low        | Iterative refinement with 20% increments          |
+| Genus-CHM requires re-processing all data  | Time-intensive                      | High       | Accept - correctness > speed                      |
+| Biological context shows no clear patterns | Less interpretable                  | Medium     | Document null result - still scientifically valid |
 
 ---
 
@@ -993,6 +1158,7 @@ for scenario in scenarios:
 ## Acceptance
 
 **Definition of Done:**
+
 - [ ] All 5 improvements implemented
 - [ ] All acceptance criteria met
 - [ ] Pipeline runs end-to-end

@@ -24,9 +24,9 @@ The experiments must follow a structured methodology:
 
 | ID      | Question                                                                                    | Experiment Phase |
 | ------- | ------------------------------------------------------------------------------------------- | ---------------- |
-| **RQ1** | What is the best achievable performance on Berlin with Sentinel-2 + CHM features?           | Phase 3.2        |
-| **RQ2** | How much does performance drop when applying a Berlin-trained model to Leipzig (zero-shot)? | Phase 3.3        |
-| **RQ3** | How much Leipzig fine-tuning data is needed to recover performance?                         | Phase 3.4        |
+| **RQ1** | What is the best achievable performance on Berlin with Sentinel-2 + CHM features?           | Phase 3.1–3.3    |
+| **RQ2** | How much does performance drop when applying a Berlin-trained model to Leipzig (zero-shot)? | Phase 3.4        |
+| **RQ3** | How much Leipzig fine-tuning data is needed to recover performance?                         | Phase 3.5        |
 
 ### 1.3 Goals
 
@@ -77,6 +77,8 @@ urban-tree-transfer/
 │   └── exploratory/
 │       ├── exp_07_cross_city_baseline.ipynb # NEW: Descriptive analysis
 │       ├── exp_08_chm_ablation.ipynb        # NEW: CHM strategy decision
+│       ├── exp_08b_proximity_ablation.ipynb  # NEW: Baseline vs. filtered dataset
+│       ├── exp_08c_outlier_ablation.ipynb    # NEW: Outlier removal strategy
 │       ├── exp_09_feature_reduction.ipynb   # NEW: Top-k feature selection
 │       └── exp_10_algorithm_comparison.ipynb # NEW: Coarse HP comparison
 ├── schemas/
@@ -87,15 +89,16 @@ urban-tree-transfer/
 │   └── finetuning_curve.schema.json         # NEW
 ├── docs/documentation/
 │   └── 03_Experiments/
-│       ├── 00_Experiment_Workflow.md        # NEW
-│       ├── 01_Setup_Fixation.md             # NEW
-│       ├── 02_Berlin_Optimization.md        # NEW
-│       ├── 03_Transfer_Evaluation.md        # NEW
-│       └── 04_Finetuning.md                 # NEW
+│       ├── 00_Experiment_Overview.md         # Experiment overview & structure
+│       ├── 01_Setup_Fixierung.md            # Setup decisions (CHM, proximity, outliers, features)
+│       ├── 02_Berlin_Optimierung.md         # Berlin optimization (algorithms & HP-tuning)
+│       ├── 03_Transfer_Evaluation.md        # Transfer evaluation methodology
+│       ├── 04_Finetuning.md                 # Fine-tuning methodology
+│       └── 05_Methodische_Erweiterungen.md  # Not implemented options for future work
 └── outputs/
     └── phase_3/                             # NEW
         ├── metadata/
-        │   ├── setup_decisions.json         # From exp_08, exp_09
+        │   ├── setup_decisions.json         # From exp_08, exp_08b, exp_08c, exp_09
         │   ├── algorithm_comparison.json    # From exp_10
         │   ├── hp_tuning_ml.json            # From 03b
         │   ├── hp_tuning_nn.json            # From 03b
@@ -109,6 +112,8 @@ urban-tree-transfer/
         ├── figures/
         │   ├── exp_07_baseline/             # Cross-city visualizations
         │   ├── exp_08_chm_ablation/         # CHM decision plots
+        │   ├── exp_08b_proximity/           # Proximity filter decision plots
+        │   ├── exp_08c_outlier/             # Outlier removal decision plots
         │   ├── exp_09_feature_reduction/    # Feature reduction plots
         │   ├── exp_10_algorithm_comparison/ # Model comparison plots
         │   ├── berlin_optimization/         # HP-tuning, feature importance
@@ -150,12 +155,35 @@ Phase 2 Outputs (ML-Ready Datasets, data/phase_2_splits/)
 │  exp_08_chm_ablation.ipynb                                  │
 │  ├── Compare: No CHM vs. zscore vs. percentile vs. both     │
 │  ├── Feature importance analysis per variant                │
-│  ├── Transfer sanity check (optional)                       │
 │  └── Decision logging                                       │
 └─────────────────────────────────────────────────────────────┘
                     │
                     ▼
             setup_decisions.json (chm_strategy)
+                    │
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│  exp_08b_proximity_ablation.ipynb                           │
+│  ├── Compare: Baseline vs. Proximity-filtered datasets      │
+│  ├── 3-Fold Spatial Block CV with RF                        │
+│  ├── Dataset size impact analysis                           │
+│  └── Decision logging                                       │
+└─────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+            setup_decisions.json (+ proximity_strategy)
+                    │
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│  exp_08c_outlier_ablation.ipynb                             │
+│  ├── Compare: No removal vs. high vs. high+medium           │
+│  ├── 3-Fold Spatial Block CV with RF                        │
+│  ├── Sample size vs. F1 trade-off                           │
+│  └── Decision logging                                       │
+└─────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+            setup_decisions.json (+ outlier_strategy)
                     │
                     ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -187,7 +215,7 @@ Phase 2 Outputs (ML-Ready Datasets, data/phase_2_splits/)
 │  ├── XGBoost (coarse HP)                                    │
 │  ├── 1D-CNN (baseline config)                               │
 │  ├── TabNet (baseline config)                               │
-│  ├── 5-Fold Spatial Block CV                                │
+│  ├── 3-Fold Spatial Block CV                                │
 │  └── Champion selection (1 ML + 1 NN)                       │
 └─────────────────────────────────────────────────────────────┘
                     │
@@ -230,11 +258,11 @@ Phase 2 Outputs (ML-Ready Datasets, data/phase_2_splits/)
                     ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  03d_finetuning.ipynb (Runner)                              │
-│  ├── Load best transfer model (ML or NN based on 03c)       │
+│  ├── Fine-tune BOTH champions (ML + NN)                     │
 │  ├── Fine-tune with 10%, 25%, 50%, 100% Leipzig data        │
 │  ├── Evaluate each on Leipzig Test                          │
-│  ├── Leipzig from-scratch baseline                          │
-│  ├── Sample efficiency curve                                │
+│  ├── Leipzig from-scratch baselines (ML + NN)               │
+│  ├── Sample efficiency curves (ML vs. NN comparison)        │
 │  └── Statistical significance tests                         │
 └─────────────────────────────────────────────────────────────┘
                     │
@@ -259,8 +287,39 @@ Phase 2 Outputs (ML-Ready Datasets, data/phase_2_splits/)
 global:
   random_seed: 42
   n_jobs: -1 # Use all cores
-  cv_folds: 5
+  cv_folds: 3 # 3-fold for all CV during training/tuning (speed)
   spatial_block_size_m: 500 # From Phase 2
+
+# Genus grouping for aggregate analyses
+genus_groups:
+  conifer: [PINUS, PICEA] # Nadelbäume
+  deciduous: [TILIA, ACER, QUERCUS, PLATANUS, AESCULUS, BETULA, FRAXINUS, ROBINIA] # Laubbäume
+  # Extend based on actual genus list in dataset
+
+# Plant year bins for post-hoc analysis
+plant_year_decades:
+  - label: "vor 1960"
+    max_year: 1959
+  - label: "1960-79"
+    min_year: 1960
+    max_year: 1979
+  - label: "1980-99"
+    min_year: 1980
+    max_year: 1999
+  - label: "2000-19"
+    min_year: 2000
+    max_year: 2019
+  - label: "ab 2020"
+    min_year: 2020
+
+# Visualization conventions
+visualization:
+  use_german_names: true # Always use genus_german for labels
+  dpi: 300
+  figure_format: png
+  figsize_single: [8, 6]
+  figsize_double: [14, 6]
+  figsize_table: [10, 4]
 
 # =============================================================================
 # EVALUATION METRICS
@@ -280,7 +339,17 @@ metrics:
 # =============================================================================
 setup_ablation:
   # CHM Strategy Comparison
+  # Each feature is evaluated individually for inclusion
   chm:
+    features:
+      - name: CHM_1m
+        description: "Raw CHM height (absolute meters, known overfitting risk)"
+      - name: CHM_1m_zscore
+        description: "Z-score normalized within genus×city"
+      - name: CHM_1m_percentile
+        description: "Percentile rank within genus×city (0-100)"
+
+    # Ablation variants for comparison
     variants:
       - name: no_chm
         features: []
@@ -298,11 +367,51 @@ setup_ablation:
         features: [CHM_1m]
         description: "Raw CHM (known overfitting risk)"
 
+    # Per-feature decision criteria (applied to each CHM feature independently)
+    decision_rules:
+      importance_threshold: 0.25 # Single feature >25% importance = problematic
+      min_improvement: 0.03 # Must improve F1 >3% to justify inclusion
+      max_gap_increase: 0.05 # Must not increase Train-Val gap by >5pp
+      prefer_simpler: true # Prefer fewer CHM features if difference marginal
+
+  # Proximity Filter Ablation
+  proximity_filter:
+    description: "Compare baseline vs. proximity-filtered datasets"
+    variants:
+      - name: baseline
+        dataset_suffix: "" # berlin_train.parquet etc.
+        description: "All trees, no proximity filter"
+      - name: filtered
+        dataset_suffix: "_filtered" # berlin_train_filtered.parquet etc.
+        description: "Trees with ≥20m distance to different genus"
+
     # Decision criteria
     decision_rules:
-      importance_threshold: 0.25 # CHM >25% importance = problematic
-      min_improvement: 0.03 # Must improve >3% to justify CHM
-      prefer_simpler: true # Prefer no_chm if difference marginal
+      min_improvement: 0.02 # Filtered must improve F1 by >2pp
+      max_sample_loss: 0.20 # Filtered must not lose >20% of samples
+      prefer_larger_dataset: true # If F1 difference marginal, keep baseline
+
+  # Outlier Removal Ablation
+  outlier_removal:
+    description: "Determine outlier removal strategy using severity flags"
+    filter_column: outlier_severity # From Phase 2 quality flags
+    count_column: outlier_method_count # Number of methods flagging as outlier (0-3)
+    variants:
+      - name: no_removal
+        remove_levels: [] # Keep all samples
+        description: "No outlier removal"
+      - name: remove_high
+        remove_levels: [high] # Remove only high-severity outliers
+        description: "Remove trees flagged as high severity (≥2 methods)"
+      - name: remove_high_medium
+        remove_levels: [high, medium] # Remove high + medium
+        description: "Remove trees flagged as high or medium severity"
+
+    # Decision criteria
+    decision_rules:
+      min_improvement: 0.02 # Removal must improve F1 by >2pp
+      max_sample_loss: 0.15 # Must not lose >15% of training samples
+      prefer_no_removal: true # If tied, keep all data
 
   # Feature Reduction
   feature_reduction:
@@ -546,6 +655,11 @@ finetuning:
         learning_rate_factor: 0.1 # Reduce LR by 10x
         epochs: 50
 
+  # Preprocessing
+  preprocessing:
+    transfer_scaler: berlin # Keep Berlin scaler for fine-tuning (model expects Berlin-scaled features)
+    from_scratch_scaler: leipzig # Fit new scaler on Leipzig for from-scratch baseline
+
   # Baseline comparison
   from_scratch_baseline: true # Train Leipzig-only model for comparison
 
@@ -644,40 +758,210 @@ def get_optuna_space(algorithm_name: str) -> dict[str, dict]:
 
 2. **Cross-Validation Comparison**
    - Use Random Forest with default HP (stable baseline)
-   - 5-Fold Spatial Block CV
+   - 3-Fold Spatial Block CV
    - Record: F1, Train-Val Gap, Feature Importance
 
-3. **Feature Importance Analysis**
-   - For each variant with CHM: compute importance
-   - Flag if CHM features > 25% total importance
+3. **Per-Feature Importance & Gap Analysis**
+   - For each variant with CHM: compute per-feature importance
+   - For each variant: measure Train-Val Gap increase vs. no_chm baseline
+   - Evaluate each CHM feature (raw, zscore, percentile) independently
 
-4. **Transfer Sanity Check (Optional)**
-   - Train on Berlin with each CHM variant
-   - Test on Leipzig (small sample)
-   - If Δ F1 > 15% with CHM but not without → CHM hurts transfer
+4. **Per-Feature Decision**
+   - Apply decision rules to each CHM feature independently
+   - Determine which (if any) CHM features to include
+   - Document reasoning per feature
 
-5. **Decision Logging**
-   - Apply decision rules from config
-   - Document reasoning
-
-**Decision Logic:**
+**Decision Logic (per CHM feature):**
 
 ```python
-# Pseudocode
-if chm_importance > 0.25:
-    decision = "no_chm"  # CHM dominates = overfitting risk
-elif best_chm_f1 - no_chm_f1 < 0.03:
-    decision = "no_chm"  # Marginal improvement not worth complexity
-elif transfer_drop_with_chm > 0.15:
-    decision = "no_chm"  # CHM hurts transfer
-else:
-    decision = best_chm_variant
+# Pseudocode — each CHM feature evaluated independently
+baseline_f1 = no_chm_val_f1
+baseline_gap = no_chm_train_val_gap
+
+included_features = []
+for feature in ["CHM_1m", "CHM_1m_zscore", "CHM_1m_percentile"]:
+    variant = get_variant_with(feature)
+
+    # Criterion 1: Feature must not dominate model
+    if feature_importance(feature) > 0.25:
+        exclude(feature, reason="dominates model, overfitting risk")
+        continue
+
+    # Criterion 2: Must not destabilize generalization
+    if variant.train_val_gap - baseline_gap > 0.05:
+        exclude(feature, reason="increases Train-Val gap by >5pp")
+        continue
+
+    # Criterion 3: Must provide meaningful improvement
+    if variant.val_f1 - baseline_f1 < 0.03:
+        exclude(feature, reason="marginal improvement <3pp")
+        continue
+
+    included_features.append(feature)
+
+decision = included_features if included_features else "no_chm"
 ```
+
+**Note:** No Leipzig data is used in this decision. Transfer effects of CHM
+are evaluated later in 03c (transfer evaluation). Using target-domain data
+in setup decisions would constitute an information leak.
 
 **Outputs:**
 
 - `outputs/phase_3/metadata/setup_decisions.json` (partial: chm_strategy)
 - `outputs/phase_3/figures/exp_08_chm_ablation/*.png`
+
+---
+
+### 4.2b Exploratory Notebook: exp_08b_proximity_ablation.ipynb
+
+**Purpose:** Determine whether proximity-filtered datasets improve classification
+
+Phase 2c created two dataset variants:
+
+- **Baseline:** All trees meeting genus frequency threshold
+- **Filtered:** Trees with ≥20m distance to nearest tree of a different genus (reduces label noise from mixed crowns)
+
+This ablation determines which variant to use for all subsequent experiments.
+
+**Inputs:**
+
+- `data/phase_2_splits/berlin_train.parquet` (baseline)
+- `data/phase_2_splits/berlin_train_filtered.parquet` (filtered)
+- `data/phase_2_splits/berlin_val.parquet` / `berlin_val_filtered.parquet`
+- `outputs/phase_3/metadata/setup_decisions.json` (chm_strategy from exp_08)
+
+**Key Tasks:**
+
+1. **Load Both Variants**
+   - Apply CHM decision from exp_08 (consistent feature set)
+   - Report sample counts: baseline N vs. filtered N
+
+2. **Cross-Validation Comparison**
+   - Use Random Forest with default HP (stable baseline)
+   - 3-Fold Spatial Block CV on each variant
+   - Record: F1, Per-Genus F1, Train-Val Gap
+
+3. **Sample Loss Analysis**
+   - Compute: `sample_loss_pct = 1 - (N_filtered / N_baseline)`
+   - Per-genus breakdown: which genera lose the most samples?
+   - Identify if any genus drops below minimum viable count
+
+4. **Decision**
+   - Apply decision rules from config
+   - Document trade-off (F1 gain vs. sample loss)
+
+**Decision Logic:**
+
+```python
+# Pseudocode
+baseline_f1 = cv_f1(baseline_dataset)
+filtered_f1 = cv_f1(filtered_dataset)
+sample_loss = 1 - (len(filtered) / len(baseline))
+
+if sample_loss > 0.20:
+    decision = "baseline"
+    reason = f"Filtered loses {sample_loss:.0%} of samples — too much"
+elif filtered_f1 - baseline_f1 < 0.02:
+    decision = "baseline"
+    reason = f"Improvement only {filtered_f1 - baseline_f1:.3f} — marginal"
+else:
+    decision = "filtered"
+    reason = f"Filtered improves F1 by {filtered_f1 - baseline_f1:.3f} with acceptable sample loss"
+```
+
+**Note:** Same information-leak principle as CHM — only Berlin data used.
+
+**Outputs:**
+
+- `outputs/phase_3/metadata/setup_decisions.json` (+ proximity_strategy)
+- `outputs/phase_3/figures/exp_08b_proximity/*.png`
+
+---
+
+### 4.2c Exploratory Notebook: exp_08c_outlier_ablation.ipynb
+
+**Purpose:** Determine outlier removal strategy using Phase 2 severity flags
+
+Phase 2 computed three independent outlier detection methods (Z-Score, Mahalanobis, IQR) and
+combined them into summary columns:
+
+- `outlier_severity`: none / low / medium / high (based on method agreement)
+- `outlier_method_count`: 0-3 (number of methods flagging a tree as outlier)
+
+These flags were deliberately kept as metadata (not acted upon) so that Phase 3 can make
+an informed, data-driven removal decision.
+
+**Inputs:**
+
+- `data/phase_2_splits/berlin_train.parquet` (or `_filtered`, based on exp_08b decision)
+- `data/phase_2_splits/berlin_val.parquet` (or `_filtered`)
+- `outputs/phase_3/metadata/setup_decisions.json` (chm_strategy, proximity_strategy)
+
+**Key Tasks:**
+
+1. **Outlier Distribution Analysis**
+   - Count trees per severity level: none / low / medium / high
+   - Per-genus breakdown: are some genera disproportionately flagged?
+   - Visualize: outlier rate by genus (bar chart)
+
+2. **Prepare Removal Variants**
+   - `no_removal`: All trees (baseline)
+   - `remove_high`: Drop trees with `outlier_severity == "high"` (flagged by ≥2 methods)
+   - `remove_high_medium`: Drop trees with `outlier_severity in ["high", "medium"]`
+
+3. **Cross-Validation Comparison**
+   - Use Random Forest with default HP (stable baseline)
+   - Apply CHM decision from exp_08 (consistent features)
+   - 3-Fold Spatial Block CV on each variant
+   - Record: F1, Per-Genus F1, Train-Val Gap
+
+4. **Sample Loss vs. F1 Trade-off**
+   - For each removal level: compute sample loss %
+   - Plot: F1 vs. samples retained (trade-off curve)
+   - Per-genus: check that no genus drops below minimum samples
+
+5. **Decision**
+   - Apply decision rules from config
+   - Default to no removal if gains are marginal
+
+**Decision Logic:**
+
+```python
+# Pseudocode
+baseline_f1 = cv_f1(no_removal)
+results = {}
+
+for variant_name, remove_levels in [
+    ("remove_high", ["high"]),
+    ("remove_high_medium", ["high", "medium"]),
+]:
+    mask = ~train["outlier_severity"].isin(remove_levels)
+    variant_f1 = cv_f1(train[mask])
+    sample_loss = 1 - mask.sum() / len(train)
+    results[variant_name] = {
+        "f1": variant_f1,
+        "sample_loss": sample_loss,
+        "improvement": variant_f1 - baseline_f1
+    }
+
+# Select best variant that meets criteria
+decision = "no_removal"  # Default
+for name, r in sorted(results.items(), key=lambda x: x[1]["improvement"], reverse=True):
+    if r["sample_loss"] > 0.15:
+        continue  # Too much data loss
+    if r["improvement"] < 0.02:
+        continue  # Marginal gain
+    decision = name
+    break
+```
+
+**Note:** Same information-leak principle — only Berlin data used.
+
+**Outputs:**
+
+- `outputs/phase_3/metadata/setup_decisions.json` (+ outlier_strategy)
+- `outputs/phase_3/figures/exp_08c_outlier/*.png`
 
 ---
 
@@ -687,14 +971,14 @@ else:
 
 **Inputs:**
 
-- `data/phase_2_splits/berlin_train.parquet`
-- `data/phase_2_splits/berlin_val.parquet`
-- `outputs/phase_3/metadata/setup_decisions.json` (chm_strategy)
+- `data/phase_2_splits/berlin_train.parquet` (or `_filtered`, based on exp_08b)
+- `data/phase_2_splits/berlin_val.parquet` (or `_filtered`)
+- `outputs/phase_3/metadata/setup_decisions.json` (chm_strategy, proximity_strategy, outlier_strategy)
 
 **Key Tasks:**
 
 1. **Compute Feature Importance**
-   - Train RF with all features (using CHM decision from exp_08)
+   - Train RF with all features (applying CHM, proximity, and outlier decisions from exp_08/08b/08c)
    - Extract gain-based importance
    - Rank features
 
@@ -702,7 +986,7 @@ else:
    - Top-30, Top-50, Top-80, All features
 
 3. **Evaluate Each Subset**
-   - 5-Fold Spatial Block CV with RF
+   - 3-Fold Spatial Block CV with RF
    - Record F1, training time
 
 4. **Pareto Analysis**
@@ -715,13 +999,28 @@ else:
 
 **Outputs:**
 
-- `outputs/phase_3/metadata/setup_decisions.json` (complete: feature_set, selected_features)
+- `outputs/phase_3/metadata/setup_decisions.json` (complete: chm_strategy, proximity_strategy, outlier_strategy, feature_set, selected_features)
 - `outputs/phase_3/figures/exp_09_feature_reduction/*.png`
 
 **Source Module Functions:**
 
 ```python
 # src/urban_tree_transfer/experiments/ablation.py
+
+def evaluate_dataset_variants(
+    datasets: dict[str, tuple[pd.DataFrame, pd.DataFrame]],
+    feature_cols: list[str],
+    target_col: str,
+    cv: BaseCrossValidator,
+) -> pd.DataFrame:
+    """Evaluate multiple dataset variants with CV. Used by proximity and outlier ablations."""
+
+def apply_outlier_removal(
+    df: pd.DataFrame,
+    remove_levels: list[str],
+    severity_col: str = "outlier_severity",
+) -> pd.DataFrame:
+    """Remove rows matching given outlier severity levels."""
 
 def compute_feature_importance(
     X_train: np.ndarray,
@@ -811,18 +1110,23 @@ def select_optimal_features(
 
 1. **Validate Setup Decisions**
    - Load and validate against schema
-   - Log CHM strategy and feature count
+   - Log CHM strategy, proximity strategy, outlier strategy, and feature count
 
-2. **Apply Feature Selection**
+2. **Apply Dataset Selection**
+   - Choose baseline or filtered datasets based on proximity_strategy
+   - Apply outlier removal based on outlier_strategy
+
+3. **Apply Feature Selection**
    - Load selected features from setup_decisions.json
+   - Apply CHM feature selection
    - Filter columns in all datasets
    - Validate schema consistency
 
-3. **Save Processed Datasets**
+4. **Save Processed Datasets**
    - Save to `data/phase_3_experiments/`
    - Maintain train/val/test/finetune splits
 
-4. **Generate Summary**
+5. **Generate Summary**
    - Feature count, sample counts per city/split
    - Save execution log
 
@@ -872,11 +1176,51 @@ def select_optimal_features(
    - Per-genus analysis
    - Feature importance (gain + permutation for ML)
 
-6. **Visualization**
+6. **Post-Training Error Analysis (Extensive)**
+   This step extracts maximum insight from the trained champion models using all
+   available metadata. All visualizations use **German genus names**.
+
+   a. **Confusion Matrix & Worst Pairs**
+   - Normalized confusion matrix with German labels
+   - Extract top-10 most confused genus pairs (off-diagonal entries)
+   - Publication-quality per-genus metrics table (Precision, Recall, F1, Support)
+
+   b. **Conifer vs. Deciduous Analysis**
+   - Aggregate F1: Nadelbäume vs. Laubbäume
+   - Hypothesis: Nadelbaum-Gattungen haben distinkteres Spektralprofil → höherer F1
+
+   c. **Straßen- vs. Anlagenbäume** (Berlin only, using `tree_type`)
+   - Per-genus F1 split by location type
+   - Hypothesis: Straßenbäume haben homogeneres Umfeld → einfacher zu klassifizieren?
+   - Or: Anlagenbäume stehen freier → klareres Spektralsignal?
+
+   d. **Plant Year Impact** (using `plant_year` from dataset)
+   - Bin plant_year into decades (pre-1960, 1960-79, 1980-99, 2000-19, 2020+)
+   - Prediction accuracy per decade
+   - Hypothesis: Jüngere Bäume (kleiner Kronendeckung) → schwerer zu klassifizieren
+
+   e. **Species Breakdown for Problematic Genera**
+   - For genera with F1 < 0.50: break down by `species_latin`
+   - Are specific species causing the misclassifications?
+   - Example: If Acer has low F1, is it Acer platanoides vs. Acer pseudoplatanus?
+
+   f. **CHM Value vs. Accuracy**
+   - Bin CHM_1m values; compute accuracy per bin
+   - Hypothesis: Extreme CHM values (very small/tall) are harder
+
+   g. **Spatial Error Map**
+   - Join predictions with `geometry_lookup.parquet`
+   - Compute per-block accuracy (using block_id)
+   - Map: which parts of Berlin are hardest to classify?
+
+   h. **Misclassification Flow**
+   - Sankey/alluvial diagram: true genus → predicted genus (errors only)
+   - Shows systematic error patterns for the Präsentation
+
+7. **Visualization**
    - HP tuning progress (optimization history)
-   - Confusion matrix
-   - Feature importance (top-20)
-   - Per-genus F1 bar chart
+   - All figures from post-training analysis (see Section 6.1)
+   - Total: ~15 figures for Berlin optimization
 
 **Outputs:**
 
@@ -973,10 +1317,16 @@ def compute_confidence_intervals(
    - Identify best/worst transferring genera
 
 5. **Confusion Matrix Comparison**
-   - Side-by-side: Berlin vs. Leipzig confusion matrices
+   - Side-by-side: Berlin vs. Leipzig confusion matrices (German labels)
    - Highlight systematic differences
+   - Most confused genus pairs in Leipzig vs. Berlin
 
-6. **Select Best Transfer Model**
+6. **Extended Transfer Analysis**
+   - Nadel- vs. Laubbäume: aggregate transfer performance per group
+   - Species-level detail for genera with poor transfer (F1 drop >15%)
+   - Identify: Are the same genera problematic in both cities?
+
+7. **Select Best Transfer Model**
    - Compare ML and NN transfer performance
    - Select model for fine-tuning experiments
 
@@ -1021,36 +1371,55 @@ def create_transfer_summary(
 
 - `data/phase_3_experiments/leipzig_finetune.parquet`
 - `data/phase_3_experiments/leipzig_test.parquet`
-- Best transfer model from 03c (based on transfer_evaluation.json)
+- `outputs/phase_3/models/berlin_ml_champion.pkl`
+- `outputs/phase_3/models/berlin_nn_champion.pt`
+- `outputs/phase_3/metadata/transfer_evaluation.json` (for context)
 
 **Processing Steps:**
 
-1. **Load Best Transfer Model**
-   - Determine better transfer model (ML or NN)
-   - Load pretrained model
+1. **Load Both Champions**
+   - Load ML champion and NN champion from 03b
+   - Both are fine-tuned to enable ML vs. NN comparison
+   - Load Berlin scaler (keep for fine-tuning preprocessing)
 
 2. **Create Fine-Tuning Subsets**
    - 10%, 25%, 50%, 100% of Leipzig finetune data
    - Stratified sampling to maintain class proportions
+   - Same subsets used for both models (fair comparison)
+   - Apply Berlin scaler to all subsets (model expects Berlin-scaled features)
 
-3. **Fine-Tune at Each Level**
-   - For each fraction:
-     - Apply fine-tuning strategy (continue training / warm start)
+3. **Fine-Tune Both Models at Each Level**
+   - For each fraction × each model:
+     - ML: Continue training / warm start
+     - NN: Full fine-tune with 0.1× LR
      - Evaluate on Leipzig test
      - Record metrics
 
-4. **Leipzig From-Scratch Baseline**
-   - Train new model on 100% Leipzig finetune
+4. **Leipzig From-Scratch Baselines**
+   - Train ML from scratch on 100% Leipzig finetune
+   - Train NN from scratch on 100% Leipzig finetune
+   - Fit new scaler on Leipzig finetune data (independent from Berlin)
    - Compare with transfer + 100% fine-tuning
 
 5. **Statistical Significance**
    - McNemar test: Compare predictions at different levels
    - Identify when fine-tuning significantly improves over zero-shot
 
-6. **Sample Efficiency Curve**
-   - Plot: F1 vs. Fine-tuning fraction
-   - Mark zero-shot baseline and from-scratch baseline
+6. **Sample Efficiency Curves**
+   - Plot: F1 vs. Fine-tuning fraction (ML and NN on same plot)
+   - Mark zero-shot baselines and from-scratch baselines
    - Calculate: fraction needed to reach 90% of from-scratch performance
+   - Compare: Does ML or NN benefit more from local data?
+
+7. **Per-Genus Recovery Analysis**
+   - Heatmap: per-genus F1 at each fine-tuning fraction
+   - Which genera recover fastest with local data?
+   - Do previously poor-transferring genera benefit most from fine-tuning?
+
+8. **ML vs. NN Comparison**
+   - Side-by-side curves: sample efficiency for ML vs. NN
+   - At which fraction does fine-tuning surpass from-scratch?
+   - McNemar significance heatmap across all comparison pairs
 
 **Outputs:**
 
@@ -1101,7 +1470,14 @@ def create_stratified_subsets(
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Setup Decisions",
   "type": "object",
-  "required": ["timestamp", "chm_strategy", "feature_set", "selected_features"],
+  "required": [
+    "timestamp",
+    "chm_strategy",
+    "proximity_strategy",
+    "outlier_strategy",
+    "feature_set",
+    "selected_features"
+  ],
   "properties": {
     "timestamp": { "type": "string", "format": "date-time" },
     "chm_strategy": {
@@ -1128,6 +1504,67 @@ def create_stratified_subsets(
               "val_f1_std": { "type": "number" },
               "chm_importance": { "type": ["number", "null"] },
               "train_val_gap": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "proximity_strategy": {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["baseline", "filtered"]
+        },
+        "reasoning": { "type": "string" },
+        "sample_counts": {
+          "type": "object",
+          "properties": {
+            "baseline_n": { "type": "integer" },
+            "filtered_n": { "type": "integer" },
+            "sample_loss_pct": { "type": "number" }
+          }
+        },
+        "ablation_results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "variant": { "type": "string" },
+              "val_f1_mean": { "type": "number" },
+              "val_f1_std": { "type": "number" },
+              "n_samples": { "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    "outlier_strategy": {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["no_removal", "remove_high", "remove_high_medium"]
+        },
+        "reasoning": { "type": "string" },
+        "sample_counts": {
+          "type": "object",
+          "properties": {
+            "total_n": { "type": "integer" },
+            "removed_n": { "type": "integer" },
+            "sample_loss_pct": { "type": "number" }
+          }
+        },
+        "ablation_results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "variant": { "type": "string" },
+              "val_f1_mean": { "type": "number" },
+              "val_f1_std": { "type": "number" },
+              "n_samples": { "type": "integer" },
+              "sample_loss_pct": { "type": "number" }
             }
           }
         }
@@ -1367,82 +1804,341 @@ def create_stratified_subsets(
 
 ## 6. Visualization Standards
 
+### 6.0 General Conventions
+
+**German Genus Names:** All genus labels in visualizations MUST use `genus_german` from
+the dataset (e.g., "Linde" instead of "Tilia"). Latin names may appear in parentheses
+where space permits: "Linde (Tilia)". This ensures the Präsentation is accessible for
+a German-speaking audience.
+
+**Conifer / Deciduous Grouping:** For aggregate analyses, genera are grouped as:
+
+| Gruppe    | Gattungen (deutsch)                                              | Gattungen (lateinisch)                                              |
+| --------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Nadelbaum | Kiefer, Fichte                                                   | Pinus, Picea                                                        |
+| Laubbaum  | Linde, Ahorn, Eiche, Platane, Kastanie, Birke, Esche, Robinie, … | Tilia, Acer, Quercus, Platanus, Aesculus, Betula, Fraxinus, Robinia |
+
+This grouping is defined in the experiment config and used by the visualization module.
+Currently this requires a runtime lookup; a dedicated `is_conifer` column in the Parquet
+datasets is proposed as Phase 2 Improvement 7 (see PRD 002d).
+
+**Metadata for Post-Hoc Analysis:** The Parquet datasets contain all metadata columns
+needed for post-hoc analysis (`plant_year`, `height_m`, `tree_type`, `species_latin`,
+`genus_german`, etc.) directly — no join required.
+
 ### 6.1 Required Figures
 
-| Experiment | Figure                        | Filename                                  |
-| ---------- | ----------------------------- | ----------------------------------------- |
-| exp_07     | Class distribution comparison | `genus_distribution_comparison.png`       |
-| exp_07     | Phenological profiles         | `phenological_profiles_top5.png`          |
-| exp_07     | CHM violin per genus          | `chm_violin_per_genus.png`                |
-| exp_07     | Cohen's d heatmap             | `cohens_d_heatmap.png`                    |
-| exp_08     | CHM ablation comparison       | `chm_ablation_results.png`                |
-| exp_08     | CHM feature importance        | `chm_feature_importance.png`              |
-| exp_09     | Feature importance ranking    | `feature_importance_ranking.png`          |
-| exp_09     | Pareto curve                  | `pareto_curve.png`                        |
-| exp_10     | Algorithm comparison          | `algorithm_comparison.png`                |
-| exp_10     | Champion confusion matrices   | `confusion_matrix_{champion}.png`         |
-| 03b        | HP tuning history             | `optuna_optimization_history.png`         |
-| 03b        | Berlin confusion matrix       | `berlin_confusion_matrix.png`             |
-| 03b        | Feature importance top-20     | `feature_importance_top20.png`            |
-| 03b        | Per-genus F1                  | `per_genus_f1_berlin.png`                 |
-| 03c        | Transfer comparison           | `transfer_comparison.png`                 |
-| 03c        | Confusion comparison          | `confusion_comparison_berlin_leipzig.png` |
-| 03c        | Per-genus transfer            | `per_genus_transfer_robustness.png`       |
-| 03d        | Fine-tuning curve             | `finetuning_curve.png`                    |
-| 03d        | Comparison with baselines     | `finetuning_vs_baselines.png`             |
+**Setup Ablations (exp_08, exp_08b, exp_08c, exp_09):**
+
+| Experiment | Figure                           | Filename                            |
+| ---------- | -------------------------------- | ----------------------------------- |
+| exp_08     | CHM ablation F1 comparison       | `chm_ablation_results.png`          |
+| exp_08     | CHM feature importance           | `chm_feature_importance.png`        |
+| exp_08     | CHM Train-Val gap comparison     | `chm_train_val_gap.png`             |
+| exp_08b    | Proximity F1 comparison          | `proximity_f1_comparison.png`       |
+| exp_08b    | Per-genus F1 (baseline/filtered) | `proximity_per_genus_f1.png`        |
+| exp_08b    | Per-genus sample loss breakdown  | `proximity_sample_loss.png`         |
+| exp_08c    | Outlier severity by genus        | `outlier_distribution_by_genus.png` |
+| exp_08c    | F1 vs. samples retained curve    | `outlier_tradeoff_curve.png`        |
+| exp_08c    | Per-genus F1 across variants     | `outlier_per_genus_f1.png`          |
+| exp_09     | Feature importance ranking       | `feature_importance_ranking.png`    |
+| exp_09     | Pareto curve (F1 vs. count)      | `pareto_curve.png`                  |
+| exp_09     | Feature group contribution       | `feature_group_contribution.png`    |
+
+**Cross-City Baseline (exp_07, optional):**
+
+| Experiment | Figure                        | Filename                            |
+| ---------- | ----------------------------- | ----------------------------------- |
+| exp_07     | Class distribution comparison | `genus_distribution_comparison.png` |
+| exp_07     | Phenological profiles (top-5) | `phenological_profiles_top5.png`    |
+| exp_07     | CHM violin per genus          | `chm_violin_per_genus.png`          |
+| exp_07     | Cohen's d heatmap             | `cohens_d_heatmap.png`              |
+
+**Algorithm Comparison (exp_10):**
+
+| Experiment | Figure                      | Filename                          |
+| ---------- | --------------------------- | --------------------------------- |
+| exp_10     | Algorithm F1 comparison     | `algorithm_comparison.png`        |
+| exp_10     | Champion confusion matrices | `confusion_matrix_{champion}.png` |
+| exp_10     | Algorithm Train-Val gap     | `algorithm_train_val_gap.png`     |
+
+**Berlin Optimization (03b) — Training & Tuning:**
+
+| Experiment | Figure                      | Filename                          |
+| ---------- | --------------------------- | --------------------------------- |
+| 03b        | Optuna optimization history | `optuna_optimization_history.png` |
+| 03b        | Feature importance top-20   | `feature_importance_top20.png`    |
+
+**Berlin Optimization (03b) — Post-Training Error Analysis (deutsche Namen):**
+
+| Experiment | Figure                            | Filename                            |
+| ---------- | --------------------------------- | ----------------------------------- |
+| 03b        | Confusion matrix (deutsche Namen) | `berlin_confusion_matrix.png`       |
+| 03b        | Per-genus F1 bar chart            | `per_genus_f1_berlin.png`           |
+| 03b        | Per-genus metrics table           | `per_genus_metrics_table.png`       |
+| 03b        | Top-10 confused genus pairs       | `confusion_pairs_worst.png`         |
+| 03b        | Nadel- vs. Laubbäume F1           | `conifer_deciduous_comparison.png`  |
+| 03b        | Straßen- vs. Anlagenbäume F1      | `tree_type_comparison.png`          |
+| 03b        | Accuracy by plant year decade     | `plant_year_impact.png`             |
+| 03b        | Species breakdown (problematic)   | `species_breakdown_problematic.png` |
+| 03b        | Spatial error map (by block)      | `spatial_error_map.png`             |
+| 03b        | CHM value vs. prediction accuracy | `chm_impact_on_accuracy.png`        |
+| 03b        | Misclassification flow            | `misclassification_sankey.png`      |
+
+**Transfer Evaluation (03c):**
+
+| Experiment | Figure                              | Filename                                  |
+| ---------- | ----------------------------------- | ----------------------------------------- |
+| 03c        | Transfer F1 comparison              | `transfer_comparison.png`                 |
+| 03c        | Confusion comparison (side-by-side) | `confusion_comparison_berlin_leipzig.png` |
+| 03c        | Per-genus transfer robustness       | `per_genus_transfer_robustness.png`       |
+| 03c        | Nadel/Laub transfer comparison      | `transfer_conifer_deciduous.png`          |
+| 03c        | Most confused pairs in Leipzig      | `transfer_confusion_pairs.png`            |
+| 03c        | Species detail for poor genera      | `transfer_species_analysis.png`           |
+
+**Fine-Tuning (03d):**
+
+| Experiment | Figure                      | Filename                             |
+| ---------- | --------------------------- | ------------------------------------ |
+| 03d        | Fine-tuning curve (ML + NN) | `finetuning_curve.png`               |
+| 03d        | Comparison with baselines   | `finetuning_vs_baselines.png`        |
+| 03d        | Per-genus F1 recovery       | `finetuning_per_genus_recovery.png`  |
+| 03d        | ML vs. NN comparison        | `finetuning_ml_vs_nn_comparison.png` |
+| 03d        | McNemar significance matrix | `finetuning_significance_matrix.png` |
 
 ### 6.2 Visualization Module
 
 ```python
 # src/urban_tree_transfer/experiments/visualization.py
 
+# --- Setup & Utilities ---
+
 def setup_plot_style() -> None:
-    """Set up publication-ready plot style."""
+    """Set up publication-ready plot style (consistent font, DPI, colors)."""
+
+CONIFER_GENERA = {"PINUS", "PICEA"}  # Extend if dataset contains more
+
+def get_german_labels(genus_latin_list: list[str], lookup: pd.DataFrame) -> list[str]:
+    """Map Latin genus names to German display labels using genus_german column."""
+
+# --- Ablation Plots (exp_08, 08b, 08c, 09) ---
+
+def plot_ablation_comparison(
+    results: pd.DataFrame,  # variant, val_f1_mean, val_f1_std, ...
+    title: str,
+    output_path: Path,
+    highlight_decision: str | None = None,
+) -> None:
+    """Generic bar chart for ablation study F1 comparison."""
+
+def plot_train_val_gap(
+    results: pd.DataFrame,  # variant, train_f1, val_f1, gap
+    title: str,
+    output_path: Path,
+) -> None:
+    """Bar chart showing Train-Val gap across ablation variants."""
+
+def plot_per_genus_comparison(
+    results_a: dict[str, float],
+    results_b: dict[str, float],
+    label_a: str,
+    label_b: str,
+    genus_labels: list[str],  # German names
+    output_path: Path,
+) -> None:
+    """Grouped bar chart comparing per-genus F1 between two variants."""
+
+def plot_sample_loss_by_genus(
+    baseline_counts: pd.Series,
+    filtered_counts: pd.Series,
+    genus_labels: list[str],  # German names
+    output_path: Path,
+) -> None:
+    """Stacked bar: samples retained vs. removed per genus."""
+
+def plot_outlier_distribution(
+    severity_by_genus: pd.DataFrame,  # genus × severity counts
+    genus_labels: list[str],  # German names
+    output_path: Path,
+) -> None:
+    """Stacked bar: outlier severity distribution by genus."""
+
+def plot_tradeoff_curve(
+    points: list[dict],  # name, f1, samples_retained
+    x_label: str,
+    y_label: str,
+    output_path: Path,
+) -> None:
+    """Scatter/line plot: F1 vs. data retained (for outlier/proximity decisions)."""
+
+def plot_pareto_curve(
+    results: pd.DataFrame,  # n_features, val_f1_mean, val_f1_std
+    selected_k: int,
+    output_path: Path,
+) -> None:
+    """F1 vs. feature count with knee point and selection marker."""
+
+def plot_feature_group_contribution(
+    importance_df: pd.DataFrame,
+    group_mapping: dict[str, str],  # feature → group (S2, CHM, etc.)
+    output_path: Path,
+) -> None:
+    """Pie/bar chart showing feature importance by group (S2 temporal vs. CHM)."""
+
+# --- Algorithm Comparison (exp_10) ---
 
 def plot_algorithm_comparison(
     results: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    """Create algorithm comparison bar chart."""
+    """Algorithm F1 comparison bar chart with error bars."""
+
+# --- Core Evaluation Plots (03b, 03c, 03d) ---
 
 def plot_confusion_matrix(
     cm: np.ndarray,
-    labels: list[str],
+    labels: list[str],  # German names
     title: str,
     output_path: Path,
     normalize: bool = True,
 ) -> None:
-    """Create confusion matrix heatmap."""
+    """Confusion matrix heatmap with German genus labels."""
 
 def plot_confusion_comparison(
     cm_source: np.ndarray,
     cm_target: np.ndarray,
-    labels: list[str],
+    labels: list[str],  # German names
     source_name: str,
     target_name: str,
     output_path: Path,
 ) -> None:
-    """Create side-by-side confusion matrix comparison."""
+    """Side-by-side confusion matrix comparison (Berlin vs. Leipzig)."""
 
 def plot_feature_importance(
     importance_df: pd.DataFrame,
     top_n: int = 20,
+    output_path: Path | None = None,
+) -> None:
+    """Horizontal bar chart of top-N feature importances."""
+
+def plot_per_genus_f1(
+    per_genus: dict[str, float],
+    genus_labels: list[str],  # German names
+    title: str,
     output_path: Path,
 ) -> None:
-    """Create feature importance bar chart."""
+    """Horizontal bar chart: per-genus F1 sorted by performance."""
+
+def plot_per_genus_metrics_table(
+    metrics: pd.DataFrame,  # genus, precision, recall, f1, support
+    genus_labels: list[str],  # German names
+    output_path: Path,
+) -> None:
+    """Publication-quality metrics table rendered as figure."""
+
+# --- Post-Training Error Analysis (03b) ---
+
+def plot_confusion_pairs(
+    cm: np.ndarray,
+    labels: list[str],  # German names
+    top_n: int = 10,
+    output_path: Path | None = None,
+) -> None:
+    """Bar chart: top-N most confused genus pairs from confusion matrix."""
+
+def plot_conifer_deciduous(
+    per_genus_f1: dict[str, float],
+    genus_labels: list[str],  # German names
+    conifer_genera: set[str],
+    output_path: Path,
+) -> None:
+    """Grouped bar: aggregate F1 for Nadel- vs. Laubbäume."""
+
+def plot_tree_type_comparison(
+    tree_type_metrics: pd.DataFrame,  # tree_type, genus, f1
+    output_path: Path,
+) -> None:
+    """Grouped bar: Straßenbäume vs. Anlagenbäume F1 per genus (Berlin only)."""
+
+def plot_plant_year_impact(
+    pred_df: pd.DataFrame,  # plant_year, correct (bool)
+    decade_bins: list[int],
+    output_path: Path,
+) -> None:
+    """Line/bar chart: prediction accuracy by plant year decade."""
+
+def plot_species_breakdown(
+    species_metrics: pd.DataFrame,  # genus, species, f1, support
+    problematic_genera: list[str],
+    output_path: Path,
+) -> None:
+    """For problematic genera: per-species F1 to identify if specific species cause errors."""
+
+def plot_spatial_error_map(
+    block_metrics: pd.DataFrame,  # block_id, x, y, f1
+    city_boundary: Any,  # GeoDataFrame
+    output_path: Path,
+) -> None:
+    """Map: spatial distribution of prediction accuracy by block."""
+
+def plot_chm_impact(
+    pred_df: pd.DataFrame,  # CHM_1m, correct (bool)
+    output_path: Path,
+) -> None:
+    """Binned accuracy plot: prediction accuracy as a function of CHM value."""
+
+def plot_misclassification_flow(
+    cm: np.ndarray,
+    labels: list[str],  # German names
+    min_count: int = 10,
+    output_path: Path | None = None,
+) -> None:
+    """Sankey/alluvial diagram: true → predicted for incorrect predictions only."""
+
+# --- Transfer Plots (03c) ---
+
+def plot_per_genus_transfer(
+    transfer_data: dict[str, dict],
+    genus_labels: list[str],  # German names
+    output_path: Path,
+) -> None:
+    """Per-genus transfer robustness visualization (robust/medium/poor)."""
+
+def plot_transfer_conifer_deciduous(
+    transfer_data: dict[str, dict],
+    conifer_genera: set[str],
+    output_path: Path,
+) -> None:
+    """Aggregate transfer performance: Nadel- vs. Laubbäume."""
+
+# --- Fine-Tuning Plots (03d) ---
 
 def plot_finetuning_curve(
     results: list[dict],
     baselines: dict[str, float],
     output_path: Path,
 ) -> None:
-    """Create fine-tuning sample efficiency curve."""
+    """Sample efficiency curve with zero-shot + from-scratch baselines."""
 
-def plot_per_genus_transfer(
-    transfer_data: dict[str, dict],
+def plot_finetuning_ml_vs_nn(
+    ml_results: list[dict],
+    nn_results: list[dict],
     output_path: Path,
 ) -> None:
-    """Create per-genus transfer robustness visualization."""
+    """Side-by-side ML vs. NN fine-tuning curves."""
+
+def plot_finetuning_per_genus_recovery(
+    per_genus_by_fraction: dict[float, dict[str, float]],
+    genus_labels: list[str],  # German names
+    output_path: Path,
+) -> None:
+    """Heatmap: per-genus F1 at each fine-tuning fraction."""
+
+def plot_significance_matrix(
+    p_values: pd.DataFrame,  # comparison pairs × p-values
+    output_path: Path,
+) -> None:
+    """Heatmap of McNemar test p-values across comparisons."""
 ```
 
 ---
@@ -1495,24 +2191,30 @@ tests/integration/
 
 ```
 1. exp_08_chm_ablation.ipynb
-   └── Output: setup_decisions.json (partial)
+   └── Output: setup_decisions.json (chm_strategy)
 
-2. exp_09_feature_reduction.ipynb
-   └── Output: setup_decisions.json (complete)
+2. exp_08b_proximity_ablation.ipynb
+   └── Output: setup_decisions.json (+ proximity_strategy)
 
-3. 03a_setup_fixation.ipynb (Runner)
+3. exp_08c_outlier_ablation.ipynb
+   └── Output: setup_decisions.json (+ outlier_strategy)
+
+4. exp_09_feature_reduction.ipynb
+   └── Output: setup_decisions.json (complete: + feature_set, selected_features)
+
+5. 03a_setup_fixation.ipynb (Runner)
    └── Output: Processed datasets
 
-4. exp_10_algorithm_comparison.ipynb
+6. exp_10_algorithm_comparison.ipynb
    └── Output: algorithm_comparison.json
 
-5. 03b_berlin_optimization.ipynb (Runner)
+7. 03b_berlin_optimization.ipynb (Runner)
    └── Output: hp_tuning_*.json, berlin_evaluation.json, models
 
-6. 03c_transfer_evaluation.ipynb (Runner)
+8. 03c_transfer_evaluation.ipynb (Runner)
    └── Output: transfer_evaluation.json
 
-7. 03d_finetuning.ipynb (Runner)
+9. 03d_finetuning.ipynb (Runner)
    └── Output: finetuning_curve.json
 ```
 
@@ -1618,7 +2320,7 @@ from urban_tree_transfer.experiments import (
 
 ### 10.1 Functional Requirements
 
-- [ ] All 4 exploratory notebooks execute without errors
+- [ ] All 6 exploratory notebooks execute without errors
 - [ ] All 4 runner notebooks execute without errors
 - [ ] All JSON outputs validate against schemas
 - [ ] All required figures generated
@@ -1642,20 +2344,20 @@ from urban_tree_transfer.experiments import (
 
 ## 11. Timeline Estimate
 
-| Task                     | Estimated Hours |
-| ------------------------ | --------------- |
-| Config + Schemas         | 2h              |
-| src/experiments/ modules | 8h              |
-| exp_07 (optional)        | 2h              |
-| exp_08 + exp_09          | 4h              |
-| 03a runner               | 2h              |
-| exp_10                   | 4h              |
-| 03b runner               | 6h              |
-| 03c runner               | 3h              |
-| 03d runner               | 4h              |
-| Testing                  | 4h              |
-| Documentation            | 3h              |
-| **Total**                | **~42h**        |
+| Task                                | Estimated Hours |
+| ----------------------------------- | --------------- |
+| Config + Schemas                    | 2h              |
+| src/experiments/ modules            | 8h              |
+| exp_07 (optional)                   | 2h              |
+| exp_08 + exp_08b + exp_08c + exp_09 | 6h              |
+| 03a runner                          | 2h              |
+| exp_10                              | 4h              |
+| 03b runner                          | 6h              |
+| 03c runner                          | 3h              |
+| 03d runner                          | 4h              |
+| Testing                             | 4h              |
+| Documentation                       | 3h              |
+| **Total**                           | **~44h**        |
 
 ---
 

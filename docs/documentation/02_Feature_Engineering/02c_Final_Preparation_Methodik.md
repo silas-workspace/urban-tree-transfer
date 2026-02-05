@@ -461,6 +461,15 @@ Identifier:
 - city (str)
 - genus_latin (str)
 
+Metadata (für Analysen):
+- species_latin (str)
+- genus_german (str)
+- species_german (str)
+- tree_type (str: "Laubbaum", "Nadelbaum")
+- plant_year (int) — für Fehlermetrik-Analyse
+- position_corrected (bool) — Position-QC-Flag
+- correction_distance (float) — Korrektur-Distanz in Metern
+
 Spatial:
 - geometry (Point, EPSG:25833)
 - block_id (str)
@@ -477,6 +486,110 @@ Outlier Metadata:
 - outlier_iqr (bool)
 - outlier_severity (str: "high", "medium", "low", "none")
 - outlier_method_count (int: 0-3)
+
+NICHT enthalten (vor Export entfernt):
+- height_m (Katasterhöhe, redundant mit CHM-Features)
+```
+
+### Parquet Files (10 + 1 Geometry Lookup)
+
+**Location:** `data/phase_2_splits/`
+
+**Rationale:** ML-optimierte Alternative zu GeoPackages für Phase 3
+
+- **5-10× schnelleres Laden** vs. GeoPackage (GeoPackage nutzt SQLite intern)
+- **Keine Geometrie** (nicht für Training benötigt, siehe geometry_lookup.parquet)
+- **Selektives Spalten-Laden** (Parquet unterstützt Column Pruning)
+- **Snappy-Kompression** (optimiert für Lese-Geschwindigkeit)
+- **Identisches Schema** wie GeoPackages (minus geometry)
+
+**Berlin Baseline:**
+
+- `berlin_train.parquet`
+- `berlin_val.parquet`
+- `berlin_test.parquet`
+
+**Berlin Filtered:**
+
+- `berlin_train_filtered.parquet`
+- `berlin_val_filtered.parquet`
+- `berlin_test_filtered.parquet`
+
+**Leipzig Baseline:**
+
+- `leipzig_finetune.parquet`
+- `leipzig_test.parquet`
+
+**Leipzig Filtered:**
+
+- `leipzig_finetune_filtered.parquet`
+- `leipzig_test_filtered.parquet`
+
+**Geometry Lookup:**
+
+- `geometry_lookup.parquet` (x/y Koordinaten für Visualisierung)
+
+**Column Schema (Parquet Files):**
+
+```
+Identifier:
+- tree_id (str)
+- city (str)
+- genus_latin (str)
+
+Metadata (für Analysen):
+- species_latin (str)
+- genus_german (str)
+- species_german (str)
+- tree_type (str: "Laubbaum", "Nadelbaum")
+- plant_year (int) — für Fehlermetrik-Analyse
+- position_corrected (bool) — Position-QC-Flag
+- correction_distance (float) — Korrektur-Distanz in Metern
+
+Features:
+- B2_04, B3_04, B4_04, B8_04 (Sentinel-2 Bänder)
+- NDVI_04, EVI_04, ... (Indizes)
+- CHM_1m, CHM_5m, ... (Height-Statistiken)
+- ~187 Features total (nach Redundancy-Removal)
+
+Outlier Metadata:
+- outlier_zscore (bool)
+- outlier_mahalanobis (bool)
+- outlier_iqr (bool)
+- outlier_severity (str)
+- outlier_method_count (int)
+
+Spatial:
+- block_id (str)
+
+NICHT in Parquet (vs. GeoPackages):
+- geometry (→ geometry_lookup.parquet für Visualisierung)
+
+Hinweis: height_m wurde bereits vor GeoPackage-Export entfernt (redundant mit CHM-Features)
+```
+
+**Geometry Lookup Schema:**
+
+```
+geometry_lookup.parquet:
+- tree_id (str, non-null) — Primary Key
+- city (str, non-null)
+- split (str, non-null) — z.B. "berlin_train", "leipzig_test"
+- filtered (bool, non-null) — ob Baum in gefilterten Datasets
+- x (float64, non-null) — UTM Easting (EPSG:25833)
+- y (float64, non-null) — UTM Northing (EPSG:25833)
+```
+
+**Verwendung in Phase 3:**
+
+```python
+# Laden für Training (kein geopandas benötigt)
+import pandas as pd
+train = pd.read_parquet("data/phase_2_splits/berlin_train.parquet")
+
+# Visualisierung (Geometrie hinzufügen)
+geo_lookup = pd.read_parquet("data/phase_2_splits/geometry_lookup.parquet")
+train_with_geo = train.merge(geo_lookup, on="tree_id")
 ```
 
 ### Summary Metadata
