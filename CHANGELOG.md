@@ -105,6 +105,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Previously caused silent NaN assignment when input GeoDataFrame had non-sequential indices (e.g., Leipzig after Berlin filtering)
   - GeoSeries geometry assignment already had correct index handling, now columns match
 
+### Fixed - Exploratory Notebooks
+
+- Fix exp_03 correlation analysis to resolve base-name aliases and non-zero-padded months when deriving common months
+
 ### Added - Phase 2: Feature Engineering
 
 - Add geometric definition, pixel footprint visualization, and threshold sensitivity curve to exp_06 proximity analysis
