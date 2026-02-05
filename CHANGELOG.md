@@ -9,13 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed - Dependencies: Google Colab Compatibility
 
-- Fix NumPy version constraint for Google Colab compatibility (pyproject.toml:16)
-  - Change `numpy>=2.0.0` → `numpy>=1.26.0,<2.0` to prevent Colab import errors
-  - NumPy 2.x introduced breaking changes in internal APIs (`_core._multiarray_umath._blas_supports_fpe` removed)
-  - Resolves AttributeError when importing package in Colab after force-reinstall
-  - NumPy 1.26.x is fully compatible with project code (no API changes needed)
-  - Add MEMORY.md with Colab installation best practices (never use `--force-reinstall`)
-  - UV lockfile regenerated: numpy 2.4.1 → 1.26.4, rasterio 1.5.0 → 1.4.4
+- Fix Colab installation issues caused by `--force-reinstall` flag (pyproject.toml:16)
+  - Restore `numpy>=2.0.0` requirement to match Colab default (NumPy 2.0.2 since March 2025)
+  - Previous constraint `numpy>=1.26.0,<2.0` caused binary incompatibility with Colab's pre-installed packages
+  - Resolves ValueError: "numpy.dtype size changed, may indicate binary incompatibility"
+  - Root cause: `--force-reinstall` breaks Colab's dependency resolution, not NumPy 2.x itself
+  - Add MEMORY.md with critical Colab installation best practices (NEVER use `--force-reinstall`)
+  - UV lockfile regenerated: numpy 1.26.4 → 2.4.1 (compatible with Colab 2.0.2)
+  - Solution for users: Runtime restart + normal installation (no force flags)
 
 ### Fixed - Phase 2: NaN Filtering Logic
 
