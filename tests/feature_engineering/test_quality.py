@@ -77,6 +77,9 @@ def test_apply_temporal_selection():
     selected_months = [3, 4, 5, 6, 7, 8]
     result = apply_temporal_selection(gdf, selected_months, feature_config)
 
+    assert isinstance(result, gpd.GeoDataFrame)
+    assert str(result.crs) == PROJECT_CRS
+    assert result.geometry.name == "geometry"
     assert "CHM_1m" in result.columns
     assert f"{s2_features[0]}_01" not in result.columns
     assert f"{s2_features[0]}_03" in result.columns

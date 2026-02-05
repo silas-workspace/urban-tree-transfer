@@ -72,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix syntax errors in runner notebooks (02a, 02b, 02c) caused by broken f-string literals
   - Repair unterminated string literals split across lines
   - Fix broken print statements in summary sections
+- Fix temporal selection to preserve geometry/CRS and avoid DataFrame outputs in Phase 2b validation
 - Improve JSON existence checks in 02c_final_preparation.ipynb
   - Add comprehensive validation for all required exploratory JSON configs
   - Provide clear error messages indicating which notebook to run if JSON is missing

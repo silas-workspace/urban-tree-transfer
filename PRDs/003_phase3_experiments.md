@@ -124,12 +124,14 @@ urban-tree-transfer/
 ### 2.2 Data Flow
 
 ```
-Phase 2 Outputs (ML-Ready Datasets)
-├── berlin_train.gpkg (70%)
-├── berlin_val.gpkg (15%)
-├── berlin_test.gpkg (15%)
-├── leipzig_finetune.gpkg (80%)
-└── leipzig_test.gpkg (20%)
+Phase 2 Outputs (ML-Ready Datasets, data/phase_2_splits/)
+├── berlin_train.parquet (70%)        # ML-optimized (no geometry)
+├── berlin_val.parquet (15%)
+├── berlin_test.parquet (15%)
+├── leipzig_finetune.parquet (80%)
+├── leipzig_test.parquet (20%)
+├── geometry_lookup.parquet            # tree_id → x/y for visualization
+└── *.gpkg                             # Authoritative GeoPackages (kept for traceability)
                     │
                     ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -631,8 +633,8 @@ def get_optuna_space(algorithm_name: str) -> dict[str, dict]:
 
 **Inputs:**
 
-- `data/phase_2_features/final/berlin_train.gpkg`
-- `data/phase_2_features/final/berlin_val.gpkg`
+- `data/phase_2_splits/berlin_train.parquet`
+- `data/phase_2_splits/berlin_val.parquet`
 
 **Key Tasks:**
 
@@ -685,8 +687,8 @@ else:
 
 **Inputs:**
 
-- `data/phase_2_features/final/berlin_train.gpkg`
-- `data/phase_2_features/final/berlin_val.gpkg`
+- `data/phase_2_splits/berlin_train.parquet`
+- `data/phase_2_splits/berlin_val.parquet`
 - `outputs/phase_3/metadata/setup_decisions.json` (chm_strategy)
 
 **Key Tasks:**
@@ -801,8 +803,8 @@ def select_optimal_features(
 
 **Inputs:**
 
-- `data/phase_2_features/final/berlin_*.gpkg`
-- `data/phase_2_features/final/leipzig_*.gpkg`
+- `data/phase_2_splits/berlin_*.parquet`
+- `data/phase_2_splits/leipzig_*.parquet`
 - `outputs/phase_3/metadata/setup_decisions.json`
 
 **Processing Steps:**
@@ -1531,13 +1533,16 @@ exp_07_cross_city_baseline.ipynb
 Google Drive/
 └── dev/urban-tree-transfer/
     ├── data/
-    │   ├── phase_2_features/final/        # Input from Phase 2
-    │   │   ├── berlin_train.gpkg
-    │   │   ├── berlin_val.gpkg
-    │   │   ├── berlin_test.gpkg
-    │   │   ├── leipzig_finetune.gpkg
-    │   │   └── leipzig_test.gpkg
-    │   └── phase_3_experiments/           # Processed for experiments
+    │   ├── phase_2_splits/                    # Input from Phase 2c
+    │   │   ├── berlin_train.parquet            # ML-optimized (no geometry)
+    │   │   ├── berlin_val.parquet
+    │   │   ├── berlin_test.parquet
+    │   │   ├── leipzig_finetune.parquet
+    │   │   ├── leipzig_test.parquet
+    │   │   ├── *_filtered.parquet              # Filtered variants
+    │   │   ├── geometry_lookup.parquet         # tree_id → x/y for visualization
+    │   │   └── *.gpkg                          # Authoritative GeoPackages (kept)
+    │   └── phase_3_experiments/                # Processed for experiments
     │       ├── berlin_train.parquet
     │       ├── berlin_val.parquet
     │       ├── berlin_test.parquet

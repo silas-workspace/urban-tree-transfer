@@ -104,6 +104,7 @@ def apply_temporal_selection(
     s2_features = get_all_s2_features(feature_config)
     metadata = get_metadata_columns(feature_config)
 
+    geometry_col = str(trees_gdf.geometry.name) if hasattr(trees_gdf, "geometry") else "geometry"
     cols_to_keep = [*metadata, "CHM_1m"]
     for feature in s2_features:
         for month in selected_months:
@@ -120,11 +121,16 @@ def apply_temporal_selection(
     features_after = len([c for c in cols_to_keep if c not in [*metadata, "CHM_1m"]])
     print(f"Temporal selection: {features_before} -> {features_after} features.")
 
+    if geometry_col not in trees_gdf.columns:
+        raise ValueError(f"Missing geometry column: {geometry_col}")
+    cols_to_keep.append(geometry_col)
+
     missing_columns = [col for col in cols_to_keep if col not in trees_gdf.columns]
     if missing_columns:
         raise ValueError(f"Missing expected columns: {missing_columns}")
 
-    return cast(gpd.GeoDataFrame, trees_gdf.loc[:, cols_to_keep].copy())
+    result = trees_gdf.loc[:, cols_to_keep].copy()
+    return gpd.GeoDataFrame(result, geometry=geometry_col, crs=trees_gdf.crs)
 
 
 def analyze_nan_distribution(

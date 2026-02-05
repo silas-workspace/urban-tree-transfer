@@ -600,41 +600,63 @@ assert 0.80 <= filter_stats["retention_rate"] <= 0.95
 
 ## Phase 3 Integration
 
+### Data Format Strategy
+
+Phase 2c produces **dual outputs** for each split (see [PRD 002c-ext: Parquet Export](../../PRDs/002c_parquet_export.md)):
+
+- **GeoPackage** (`.gpkg`): Authoritative format with geometry — for traceability and spatial debugging
+- **Parquet** (`.parquet`): ML-optimized format without geometry — for efficient training in Phase 3
+- **Geometry Lookup** (`geometry_lookup.parquet`): tree_id → x/y coordinates for visualizing predictions
+
+Phase 3 notebooks should **always load Parquet** (5-10× faster, no geopandas dependency needed):
+
 ### Experiment Setup
 
 **Baseline Experiments:**
 
 ```python
-train_gdf = gpd.read_file("data/phase_2_splits/berlin_train.gpkg")
-test_gdf = gpd.read_file("data/phase_2_splits/berlin_test.gpkg")
+import pandas as pd
+
+train_df = pd.read_parquet("data/phase_2_splits/berlin_train.parquet")
+test_df = pd.read_parquet("data/phase_2_splits/berlin_test.parquet")
 
 # Outlier Ablation:
-train_high_removed = train_gdf[train_gdf["outlier_severity"] != "high"]
-train_high_med_removed = train_gdf[~train_gdf["outlier_severity"].isin(["high", "medium"])]
+train_high_removed = train_df[train_df["outlier_severity"] != "high"]
+train_high_med_removed = train_df[~train_df["outlier_severity"].isin(["high", "medium"])]
 ```
 
 **Filtered Experiments:**
 
 ```python
-train_gdf = gpd.read_file("data/phase_2_splits/berlin_train_filtered.gpkg")
-test_gdf = gpd.read_file("data/phase_2_splits/berlin_test_filtered.gpkg")
+train_df = pd.read_parquet("data/phase_2_splits/berlin_train_filtered.parquet")
+test_df = pd.read_parquet("data/phase_2_splits/berlin_test_filtered.parquet")
 ```
 
 **Transfer Learning:**
 
 ```python
 # Pre-train on Berlin
-train_gdf = gpd.read_file("data/phase_2_splits/berlin_train.gpkg")
+train_df = pd.read_parquet("data/phase_2_splits/berlin_train.parquet")
 
 # Fine-tune pool for Leipzig
-finetune_pool = gpd.read_file("data/phase_2_splits/leipzig_finetune.gpkg")
+finetune_pool = pd.read_parquet("data/phase_2_splits/leipzig_finetune.parquet")
 
 # Few-shot sampling strategies:
 finetune_10_per_genus = finetune_pool.groupby("genus_latin").sample(n=10, random_state=42)
 finetune_50_per_genus = finetune_pool.groupby("genus_latin").sample(n=50, random_state=42)
 
 # Test on Leipzig
-test_gdf = gpd.read_file("data/phase_2_splits/leipzig_test.gpkg")
+test_df = pd.read_parquet("data/phase_2_splits/leipzig_test.parquet")
+```
+
+**Visualization (joining predictions with geometry):**
+
+```python
+import geopandas as gpd
+
+geo_lookup = pd.read_parquet("data/phase_2_splits/geometry_lookup.parquet")
+predictions = pd.merge(predictions_df, geo_lookup, on="tree_id")
+gdf = gpd.GeoDataFrame(predictions, geometry=gpd.points_from_xy(predictions.x, predictions.y, crs="EPSG:25833"))
 ```
 
 ---
