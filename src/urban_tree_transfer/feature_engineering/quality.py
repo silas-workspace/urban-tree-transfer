@@ -598,4 +598,4 @@ def run_quality_pipeline(
     )
     validate_zero_nan(trees_gdf, expected_features, dataset_name="phase2b")
 
-    return trees_gdf
+    return cast(gpd.GeoDataFrame, trees_gdf)

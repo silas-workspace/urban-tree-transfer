@@ -41,10 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed - Phase 2: Code Review Fixes
 
-- Fix GeoDataFrame type preservation in `interpolate_features_within_tree()` and `compute_chm_engineered_features()` (quality.py:431, 513)
-  - Add explicit cast to GeoDataFrame on return statements
+- Fix GeoDataFrame type preservation in all quality.py functions (quality.py:431, 513, 601)
+  - Add explicit cast to GeoDataFrame on return statements in `interpolate_features_within_tree()`, `compute_chm_engineered_features()`, and `run_quality_pipeline()`
   - Prevents conversion to regular DataFrame during numpy array assignment operations
   - Resolves AttributeError: "'DataFrame' object has no attribute 'crs'" in Phase 2b validation
+  - All 8 functions returning GeoDataFrame now properly cast (filter_deciduous_genera, filter_by_plant_year, apply_temporal_selection, filter_nan_trees, interpolate_features_within_tree, compute_chm_engineered_features, filter_ndvi_plausibility, run_quality_pipeline)
   - Follows existing codebase pattern of type casting after pandas operations
 - Fix exp_02 CHM assessment notebook string formatting errors
   - Fix unterminated string literals with newlines in cell 1 (ValueError message)
