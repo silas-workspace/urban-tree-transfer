@@ -510,7 +510,7 @@ def compute_chm_engineered_features(
             result.loc[mask, "CHM_1m_zscore"] = _zscore(values, reference)
             result.loc[mask, "CHM_1m_percentile"] = _percentile(values, reference)
 
-    return result
+    return cast(gpd.GeoDataFrame, result)
 
 
 def filter_ndvi_plausibility(
