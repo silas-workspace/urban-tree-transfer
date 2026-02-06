@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Change function calls from `ripley.k(coords, support=d)` to `k(coords, support=d)`
   - pointpats API changed in v2.5.0+ - `ripley` module no longer exported at top level
   - Remove runtime pip installation logic - pointpats>=2.5.0 already in project dependencies
+- Fix Ripley’s K spatial clustering cell to avoid shadowing `k` and handle scalar returns
+  - Alias pointpats import to `ripley_k` and rename IQR loop variable to `multiplier`
+  - Normalize `k_observed` with `np.atleast_1d` before indexing
 - Add matplotlib-venn to project dependencies (pyproject.toml)
   - Remove runtime installation from exp_04 notebook
   - Clean dependency management - all packages installed via project requirements
