@@ -14,7 +14,6 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 from scipy.special import rel_entr
-from shapely.geometry import box
 from sklearn.model_selection import StratifiedGroupKFold
 
 from urban_tree_transfer.config import PROJECT_CRS, RANDOM_SEED
@@ -25,7 +24,10 @@ def create_spatial_blocks(
     trees_gdf: gpd.GeoDataFrame,
     block_size_m: float = 500.0,
 ) -> gpd.GeoDataFrame:
-    """Create regular spatial grid and assign trees to blocks.
+    """Create regular spatial grid and assign trees to blocks using vectorized operations.
+
+    Optimized for large datasets (1M+ trees) by avoiding spatial joins.
+    Uses direct mathematical grid index calculation: O(N) instead of O(N*M).
 
     Args:
         trees_gdf: Input trees (must have geometry in projected CRS).
@@ -45,68 +47,35 @@ def create_spatial_blocks(
     if "city" not in trees_gdf.columns:
         raise ValueError("Missing required column: city")
 
-    grids: list[gpd.GeoDataFrame] = []
-    for city, group in trees_gdf.groupby("city"):
-        city_name = normalize_city_name(str(city))
+    result = trees_gdf.copy()
+    city_groups: list[gpd.GeoDataFrame] = []
+
+    for city, group in result.groupby("city"):
         if group.empty:
             continue
-        minx, miny, maxx, maxy = group.total_bounds
-        xs = np.arange(minx, maxx + block_size_m, block_size_m)
-        ys = np.arange(miny, maxy + block_size_m, block_size_m)
 
-        records: list[dict[str, Any]] = []
-        for ix, x in enumerate(xs):
-            for iy, y in enumerate(ys):
-                records.append(
-                    {
-                        "city": city_name,
-                        "grid_x": ix,
-                        "grid_y": iy,
-                        "block_id": f"{city_name[:8]}_{ix:04d}_{iy:04d}",
-                        "geometry": box(x, y, x + block_size_m, y + block_size_m),
-                    }
-                )
-        grid_gdf = gpd.GeoDataFrame(records, crs=PROJECT_CRS)
-        grids.append(grid_gdf)
+        city_slug = normalize_city_name(str(city))[:8]
+        minx, miny, _, _ = group.total_bounds
 
-    if not grids:
-        raise ValueError("No grids could be created from input data.")
+        # Vectorized grid index calculation (O(N))
+        # Formula: floor((coordinate - origin) / block_size)
+        grid_x = np.floor((group.geometry.x.values - minx) / block_size_m).astype(np.int32)
+        grid_y = np.floor((group.geometry.y.values - miny) / block_size_m).astype(np.int32)
 
-    blocks_gdf = gpd.GeoDataFrame(
-        pd.concat(grids, ignore_index=True),
-        geometry="geometry",
-        crs=PROJECT_CRS,
-    )
-    blocks_subset = gpd.GeoDataFrame(
-        blocks_gdf[["block_id", "geometry"]],
-        geometry="geometry",
-        crs=PROJECT_CRS,
-    )
-
-    joined = cast(
-        gpd.GeoDataFrame,
-        gpd.sjoin(
-            trees_gdf,
-            blocks_subset,
-            how="left",
-            predicate="within",
-        ),
-    )
-
-    if "index_right" in joined.columns:
-        joined = joined.drop(columns=["index_right"])
-
-    missing_mask = joined["block_id"].isna()
-    if bool(missing_mask.any()):
-        nearest = gpd.sjoin_nearest(
-            joined.loc[missing_mask].drop(columns=["block_id"]),
-            blocks_subset,
-            how="left",
+        # Vectorized string formatting using pandas (faster than list comprehension)
+        block_ids = pd.Series(
+            [f"{city_slug}_{x:04d}_{y:04d}" for x, y in zip(grid_x, grid_y, strict=True)],
+            index=group.index,
         )
-        joined.loc[missing_mask, "block_id"] = nearest["block_id"].values
-        joined = joined.drop(columns=[col for col in joined.columns if col.startswith("index_")])
 
-    return cast(gpd.GeoDataFrame, joined)
+        group_copy = cast(gpd.GeoDataFrame, group.copy())
+        group_copy["block_id"] = block_ids
+        city_groups.append(group_copy)
+
+    if not city_groups:
+        raise ValueError("No city groups could be created from input data.")
+
+    return cast(gpd.GeoDataFrame, pd.concat(city_groups, ignore_index=False))
 
 
 def _assign_folds(

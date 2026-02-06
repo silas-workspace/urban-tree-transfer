@@ -215,6 +215,52 @@ Für Phase-3-Analysen (z. B. Gruppenauswertung, F1 nach Baumgruppe) wird eine ex
 
 ---
 
+## 5. Performance-Optimierung der Notebooks
+
+### Beschreibung
+
+Die aktuellen Phase-2-Notebooks (Feature Extraction, Data Quality, Final Preparation) arbeiten mit **~1 Million Bäumen** und **großen Raster-Dateien** (CHM: ~2 GB/Stadt, Sentinel-2: ~500 MB/Monat). Die Pipeline funktioniert, zeigt jedoch bei wiederholter Ausführung Optimierungspotenzial in Bezug auf:
+
+- **Arbeitsspeicher-Verbrauch:** Große Raster werden teilweise mehrfach in den Speicher geladen
+- **I/O-Operationen:** Wiederholtes Lesen identischer Raster-Tiles/Regionen
+- **Vectorized Operations:** Einige Schleifen könnten durch NumPy/Pandas-Vektorisierungen ersetzt werden
+- **Chunking-Strategien:** Baumverarbeitung könnte in kleineren Batches erfolgen, um RAM-Peaks zu vermeiden
+
+### Warum nicht implementiert?
+
+1. **Funktionale Priorität:** Die Pipeline liefert korrekte Ergebnisse. Performance-Tuning ist eine Optimierung, kein Bugfix.
+2. **Scope Phase 2:** Fokus lag auf methodischer Korrektheit (Qualitätsprüfungen, Outlier-Handling, Splits), nicht auf Performance.
+3. **Ausführungsumgebung:** Google Colab bietet ausreichend RAM (12-25 GB), Pipeline läuft durch.
+
+### Beobachtete Engpässe
+
+- **Feature Extraction (02a):** Rasterio-Sample-Operationen über 1 Mio. Punkte
+- **Proximity Berechnung (02c):** Paarweise Distanzberechnungen für Spatial Split
+- **Memory-Peaks:** CHM + Sentinel-2 gleichzeitig im Speicher
+
+### Potenzial für Folgearbeit
+
+**Kurzfristige Optimierungen:**
+- **Raster-Windowing:** Nur benötigte Regionen des CHM/Sentinel-2 laden (via `rasterio.windows`)
+- **Batch-Processing:** Bäume in Chunks von 50k verarbeiten statt alle auf einmal
+- **Caching:** Häufig verwendete Raster-Arrays im Memory halten (mit Garbage Collection)
+
+**Mittelfristige Optimierungen:**
+- **Dask-Integration:** Parallele Verarbeitung mit delayed evaluation
+- **Spatial Indexing:** R-Tree für schnellere räumliche Abfragen
+- **Parquet-Partitioning:** Stadt-spezifische Partitionen für schnelleres Filtern
+
+**Benchmarking:**
+- Profilierung mit `line_profiler` oder `memory_profiler`
+- Laufzeit-Vergleich vor/nach Optimierungen
+- RAM-Peak-Monitoring
+
+### Priorität
+
+**Mittel-Hoch:** Phase 2 läuft aktuell, aber für Phase 3 (Experimente mit vielen Trainingsläufen) wird Performance-Optimierung wichtiger. Eine Überarbeitung der Notebooks mit Fokus auf Memory-Effizienz und I/O-Reduktion ist für zukünftige Iterationen empfohlen.
+
+---
+
 ## Zusammenfassung
 
 | Erweiterung                               | Status              | Priorität für Folgearbeit                      |
@@ -223,6 +269,7 @@ Für Phase-3-Analysen (z. B. Gruppenauswertung, F1 nach Baumgruppe) wird eine ex
 | Temporale Selektion: Phänologische Phasen | Nicht implementiert | Hoch (einfach umsetzbar, hoher wiss. Wert)     |
 | Deutsche Gattungsnamen in Plots           | Nicht implementiert | Mittel (Konsistenz/Lesbarkeit)                 |
 | Nadel-/Laubbaum-Spalte im Datensatz       | Nicht implementiert | Hoch (benötigt in Phase-3-Analysen)            |
+| Performance-Optimierung der Notebooks     | Nicht implementiert | Mittel-Hoch (wichtig für Phase 3)              |
 
 ---
 
