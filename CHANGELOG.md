@@ -9,14 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed - Exploratory Notebooks & Dependencies
 
+- Fix pointpats import error in exp_04 outlier thresholds notebook
+  - Update import from deprecated `from pointpats import ripley` to `from pointpats import k`
+  - Change function calls from `ripley.k(coords, support=d)` to `k(coords, support=d)`
+  - pointpats API changed in v2.5.0+ - `ripley` module no longer exported at top level
+  - Remove runtime pip installation logic - pointpats>=2.5.0 already in project dependencies
+- Add matplotlib-venn to project dependencies (pyproject.toml)
+  - Remove runtime installation from exp_04 notebook
+  - Clean dependency management - all packages installed via project requirements
 - Fix matplotlib warnings in exp_04 outlier thresholds notebook
   - Remove `plt.tight_layout()` call in Mahalanobis cell (conflicts with FacetGrid)
   - Change deprecated `labels=` to `tick_labels=` in boxplot (5 instances)
   - Fix undefined `dpi` variable in spatial clustering visualization (`dpi=dpi` → `dpi=300`)
-- Add pointpats>=2.5.0 dependency for Ripley's K spatial clustering analysis
-  - Auto-install pointpats in notebook cell 3 if not available (Colab compatibility)
-  - Enables biological context analysis in exp_04 (previously skipped)
-  - Required for spatial autocorrelation testing of outliers
 - Fix unicode glyph warning for Colab environments
   - Add warnings.filterwarnings to suppress "Glyph missing from font" warnings
   - Colab uses Liberation Sans which lacks some unicode glyphs (✓/✗)
