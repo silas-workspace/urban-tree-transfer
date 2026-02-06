@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - Exploratory Notebooks & Dependencies
+
+- Fix matplotlib warnings in exp_04 outlier thresholds notebook
+  - Remove `plt.tight_layout()` call in Mahalanobis cell (conflicts with FacetGrid)
+  - Change deprecated `labels=` to `tick_labels=` in boxplot (5 instances)
+  - Fix undefined `dpi` variable in spatial clustering visualization (`dpi=dpi` → `dpi=300`)
+- Add pointpats>=2.5.0 dependency for Ripley's K spatial clustering analysis
+  - Enables biological context analysis in exp_04 (previously skipped)
+  - Required for spatial autocorrelation testing of outliers
+- Fix unicode glyph warning in plotting.py
+  - Configure DejaVu Sans font for unicode checkmark support (✓/✗)
+  - Prevents "Glyph 10003 missing from font" warnings in figure exports
+
+### Changed - Documentation
+
+- Update CLAUDE.md project structure to reflect actual directory layout
+  - Move configs/ from root to src/urban_tree_transfer/configs/ (correct location)
+  - Add missing directories: PRDs/, outputs/, legacy/
+  - Add schemas/ and templates/ subdirectories
+  - Update last modified date to 2026-02-06
+- Sync AGENT.md with updated CLAUDE.md (identical copy)
+
 ### Added - Documentation
 
 - Add German literature folder and initial literature list template (docs/literature)

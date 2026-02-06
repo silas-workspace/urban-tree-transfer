@@ -25,6 +25,8 @@ def setup_plotting() -> None:
     plt.rcParams["figure.figsize"] = PUBLICATION_STYLE["figsize"]
     plt.rcParams["savefig.dpi"] = PUBLICATION_STYLE["dpi_export"]
     plt.rcParams["savefig.bbox"] = "tight"
+    # Configure font fallback for unicode characters (e.g., checkmarks)
+    plt.rcParams["font.family"] = "DejaVu Sans"
 
 
 def save_figure(fig: plt.Figure, path: Path, dpi: int = 300) -> None:

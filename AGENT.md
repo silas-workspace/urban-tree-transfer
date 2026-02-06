@@ -13,22 +13,29 @@
 ```
 urban-tree-transfer/
 ├── src/urban_tree_transfer/      # Source package
-│   ├── config/                   # Paths, cities, features
+│   ├── config/                   # Config loading logic
+│   ├── configs/                  # YAML configurations
+│   │   ├── cities/               # berlin.yaml, leipzig.yaml
+│   │   ├── experiments/          # phase_1.yaml, phase_2.yaml, phase_3.yaml
+│   │   └── features/             # feature_config.yaml
 │   ├── data_processing/          # Boundaries, Trees, Elevation, CHM, Sentinel
 │   ├── feature_engineering/      # Extraction, QC, Selection, Splits
 │   ├── experiments/              # Models, Training, Evaluation
+│   ├── schemas/                  # JSON schemas for validation
 │   └── utils/                    # IO, Visualization
-├── configs/                      # YAML configurations
-│   ├── cities/                   # berlin.yaml, leipzig.yaml
-│   └── experiments/              # phase_1.yaml, phase_2.yaml, phase_3.yaml
 ├── notebooks/
-│   ├── runners/                  # Colab-Runner (import src/)
-│   └── exploratory/              # Development notebooks
+│   ├── runners/                  # Colab-Runner notebooks (import src/)
+│   ├── exploratory/              # Exploratory analysis notebooks
+│   └── templates/                # Notebook templates
 ├── tests/                        # Test files
 ├── scripts/                      # Standalone scripts
 ├── docs/                         # Documentation
 │   ├── PROJECT.md
-│   └── documentation/
+│   ├── documentation/            # Methodology docs (Phase 0-3)
+│   └── literature/               # Research literature
+├── PRDs/                         # Product Requirements Documents
+├── outputs/                      # Colab-generated metadata and logs
+├── legacy/                       # Legacy code and configs
 ├── noxfile.py                    # Nox automation
 ├── pyproject.toml                # Dependencies & config
 ├── CLAUDE.md                     # This file
@@ -129,6 +136,15 @@ uv run nox -s pre_commit  # Run before commit
 uv run nox -s ci          # Full CI pipeline
 ```
 
+## Git Commits
+
+**ALWAYS use the `/commit` skill (devops:git) for commits.** Never write manual commit messages with `git commit -m`. The skill handles:
+- Conventional commit format (feat, fix, docs, etc.)
+- Proper message structure
+- Automatic staging review
+
+Do NOT add "Co-Authored-By" footers or write long multi-paragraph commit messages manually.
+
 ## Code Review Checklist
 
 - [ ] Type hints present for all functions
@@ -140,4 +156,4 @@ uv run nox -s ci          # Full CI pipeline
 
 ---
 
-_Last Updated: 2026-01-21_
+_Last Updated: 2026-02-06_

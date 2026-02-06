@@ -16,6 +16,7 @@ dependencies = [
     "numpy>=2.0.0",
     "pyyaml>=6.0.0",
     "pyarrow>=23.0.0",
+    "pointpats>=2.5.0",
 ]
 
 [project.optional-dependencies]
