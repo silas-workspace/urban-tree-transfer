@@ -1,0 +1,253 @@
+{
+  "timestamp": "2026-02-05T21:41:25.208986+00:00",
+  "reference_year": 2021,
+  "configs_used": {
+    "temporal_selection": "/content/drive/MyDrive/dev/urban-tree-transfer/data/phase_2_features/metadata/temporal_selection.json",
+    "chm_assessment": "/content/drive/MyDrive/dev/urban-tree-transfer/data/phase_2_features/metadata/chm_assessment.json",
+    "feature_config": "/content/drive/MyDrive/dev/urban-tree-transfer/configs/features/feature_config.yaml"
+  },
+  "cities": {
+    "berlin": {
+      "input_trees": 905132,
+      "steps": {
+        "01_load_input": {
+          "input": 905132,
+          "removed": 0,
+          "retained": 905132
+        },
+        "02_genus_filter": {
+          "input": 905132,
+          "removed": 0,
+          "retained": 905132
+        },
+        "03_plant_year_filter": {
+          "input": 905132,
+          "removed": 15371,
+          "retained": 889761
+        },
+        "04_temporal_selection": {
+          "input": 276,
+          "removed": 92,
+          "retained": 184
+        },
+        "05_nan_analysis": {
+          "input": 185,
+          "removed": 0,
+          "retained": 185,
+          "top10": [
+            {
+              "feature": "IRECI_11",
+              "nan_count": 478791,
+              "nan_percentage": 53.811191994254635
+            },
+            {
+              "feature": "NDVIre_11",
+              "nan_count": 478787,
+              "nan_percentage": 53.81074243532814
+            },
+            {
+              "feature": "NDre1_11",
+              "nan_count": 478782,
+              "nan_percentage": 53.81018048667001
+            },
+            {
+              "feature": "RTVIcore_11",
+              "nan_count": 478782,
+              "nan_percentage": 53.81018048667001
+            },
+            {
+              "feature": "CIre_11",
+              "nan_count": 478782,
+              "nan_percentage": 53.81018048667001
+            },
+            {
+              "feature": "B6_11",
+              "nan_count": 478782,
+              "nan_percentage": 53.81018048667001
+            },
+            {
+              "feature": "B7_11",
+              "nan_count": 478780,
+              "nan_percentage": 53.80995570720677
+            },
+            {
+              "feature": "NDVI_11",
+              "nan_count": 478779,
+              "nan_percentage": 53.809843317475135
+            },
+            {
+              "feature": "B8_11",
+              "nan_count": 478779,
+              "nan_percentage": 53.809843317475135
+            },
+            {
+              "feature": "GNDVI_11",
+              "nan_count": 478779,
+              "nan_percentage": 53.809843317475135
+            }
+          ]
+        },
+        "06_nan_filter": {
+          "input": 889761,
+          "removed": 41252,
+          "retained": 848509
+        },
+        "07_interpolation": {
+          "input": 10553048,
+          "removed": 10553048,
+          "retained": 0
+        },
+        "08_zero_nan_validation": {
+          "input": 0,
+          "removed": 0,
+          "retained": 0
+        },
+        "09_chm_engineering": {
+          "input": 848509,
+          "removed": 0,
+          "retained": 848509
+        },
+        "10_ndvi_filter": {
+          "input": 848509,
+          "removed": 18356,
+          "retained": 830153
+        },
+        "11_final_validation": {
+          "input": 830153,
+          "removed": 0,
+          "retained": 830153
+        },
+        "12_save_output": {
+          "input": 830153,
+          "removed": 0,
+          "retained": 830153
+        }
+      },
+      "output_trees": 830153,
+      "retention_rate": 0.9171623586394029,
+      "output_features": 187,
+      "output_path": "/content/drive/MyDrive/dev/urban-tree-transfer/data/phase_2_features/trees_clean_berlin.gpkg"
+    },
+    "leipzig": {
+      "input_trees": 167867,
+      "steps": {
+        "01_load_input": {
+          "input": 167867,
+          "removed": 0,
+          "retained": 167867
+        },
+        "02_genus_filter": {
+          "input": 167867,
+          "removed": 0,
+          "retained": 167867
+        },
+        "03_plant_year_filter": {
+          "input": 167867,
+          "removed": 6860,
+          "retained": 161007
+        },
+        "04_temporal_selection": {
+          "input": 276,
+          "removed": 92,
+          "retained": 184
+        },
+        "05_nan_analysis": {
+          "input": 185,
+          "removed": 0,
+          "retained": 185,
+          "top10": [
+            {
+              "feature": "B6_11",
+              "nan_count": 29372,
+              "nan_percentage": 18.242685100647797
+            },
+            {
+              "feature": "B7_11",
+              "nan_count": 29372,
+              "nan_percentage": 18.242685100647797
+            },
+            {
+              "feature": "IRECI_11",
+              "nan_count": 29372,
+              "nan_percentage": 18.242685100647797
+            },
+            {
+              "feature": "NDVIre_11",
+              "nan_count": 29372,
+              "nan_percentage": 18.242685100647797
+            },
+            {
+              "feature": "B3_11",
+              "nan_count": 29371,
+              "nan_percentage": 18.242064009639332
+            },
+            {
+              "feature": "B5_11",
+              "nan_count": 29371,
+              "nan_percentage": 18.242064009639332
+            },
+            {
+              "feature": "B8_11",
+              "nan_count": 29371,
+              "nan_percentage": 18.242064009639332
+            },
+            {
+              "feature": "B4_11",
+              "nan_count": 29371,
+              "nan_percentage": 18.242064009639332
+            },
+            {
+              "feature": "B2_11",
+              "nan_count": 29371,
+              "nan_percentage": 18.242064009639332
+            },
+            {
+              "feature": "EVI_11",
+              "nan_count": 29371,
+              "nan_percentage": 18.242064009639332
+            }
+          ]
+        },
+        "06_nan_filter": {
+          "input": 161007,
+          "removed": 2196,
+          "retained": 158811
+        },
+        "07_interpolation": {
+          "input": 1470417,
+          "removed": 1470417,
+          "retained": 0
+        },
+        "08_zero_nan_validation": {
+          "input": 0,
+          "removed": 0,
+          "retained": 0
+        },
+        "09_chm_engineering": {
+          "input": 158811,
+          "removed": 0,
+          "retained": 158811
+        },
+        "10_ndvi_filter": {
+          "input": 158811,
+          "removed": 5182,
+          "retained": 153629
+        },
+        "11_final_validation": {
+          "input": 153629,
+          "removed": 0,
+          "retained": 153629
+        },
+        "12_save_output": {
+          "input": 153629,
+          "removed": 0,
+          "retained": 153629
+        }
+      },
+      "output_trees": 153629,
+      "retention_rate": 0.9151828530920312,
+      "output_features": 187,
+      "output_path": "/content/drive/MyDrive/dev/urban-tree-transfer/data/phase_2_features/trees_clean_leipzig.gpkg"
+    }
+  }
+}

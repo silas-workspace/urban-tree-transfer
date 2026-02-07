@@ -4,18 +4,46 @@ This directory contains all Product Requirements Documents for the urban-tree-tr
 
 ## Active PRDs
 
-### Phase 2: Feature Engineering (Current)
+### Phase 3: Experiments (Current)
 
-- **[002_phase2_feature_engineering_overview.md](002_phase2_feature_engineering_overview.md)** - Main overview PRD
+Phase 3 is split into **4 sequential PRDs** based on dependencies:
+
+- **[003a_setup.md](003a_setup.md)** - Setup-Fixierung (exp_08, exp_08b, exp_08c, exp_09)
+  - CHM ablation, proximity filtering, outlier removal, feature reduction
+  - Output: `setup_decisions.json`
+  - Dependencies: Phase 2 outputs only
+
+- **[003b_berlin.md](003b_berlin.md)** - Berlin-Optimierung (03a, exp_10, 03b)
+  - Algorithm comparison (with naive baselines), HP-tuning, error analysis
+  - Output: `algorithm_comparison.json`, trained champions
+  - Dependencies: Requires `setup_decisions.json` from 003a
+
+- **[003c_transfer.md](003c_transfer.md)** - Transfer-Evaluation (03c)
+  - Zero-shot transfer, feature stability, a-priori hypothesis testing
+  - Output: `transfer_evaluation.json`
+  - Dependencies: Requires trained champions from 003b
+
+- **[003d_finetuning.md](003d_finetuning.md)** - Fine-Tuning (03d)
+  - Sample efficiency curves, power-law modeling, from-scratch comparison
+  - Output: `finetuning_curve.json`
+  - Dependencies: Requires trained champions from 003b
+
+**Reference:** [003_phase3_complete.md](003_phase3_complete.md) - Complete unified PRD (for reference only)
+
+**Execution Order:** 003a → 003b → (003c + 003d in parallel)
+
+**Working with Coding Agents:** Provide the specific PRD for the current implementation step.
+
+## Completed PRDs
+
+### Phase 2: Feature Engineering
+
+- **[002_phase2_feature_engineering_overview.md](002_phase2_feature_engineering_overview.md)** - ✅ Complete
 - **[002_phase2/](002_phase2/)** - Modular task PRDs
   - [002a_feature_extraction.md](002_phase2/002a_feature_extraction.md) - CHM/S2 feature extraction
   - [002b_data_quality.md](002_phase2/002b_data_quality.md) - NaN handling, plausibility filters
   - [002c_final_preparation.md](002_phase2/002c_final_preparation.md) - Outliers, spatial splits
   - [002_exploratory.md](002_phase2/002_exploratory.md) - Exploratory analysis notebooks
-
-**Working with Coding Agents:** Always provide the overview PRD + specific task PRD.
-
-## Completed PRDs
 
 ### Phase 1: Data Processing
 
@@ -58,4 +86,4 @@ This directory contains all Product Requirements Documents for the urban-tree-tr
 
 ---
 
-**Last Updated:** 2026-01-28
+**Last Updated:** 2026-02-07

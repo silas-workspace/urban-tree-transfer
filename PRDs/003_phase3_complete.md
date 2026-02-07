@@ -211,6 +211,7 @@ Phase 2 Outputs (ML-Ready Datasets, data/phase_2_splits/)
                     ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  exp_10_algorithm_comparison.ipynb                          │
+│  ├── Naive Baselines (Majority, Random, Spatial-Only)      │
 │  ├── Random Forest (coarse HP)                              │
 │  ├── XGBoost (coarse HP)                                    │
 │  ├── 1D-CNN (baseline config)                               │
@@ -244,8 +245,11 @@ Phase 2 Outputs (ML-Ready Datasets, data/phase_2_splits/)
 ┌─────────────────────────────────────────────────────────────┐
 │  03c_transfer_evaluation.ipynb (Runner)                     │
 │  ├── Load trained Berlin models                             │
-│  ├── Zero-shot evaluation on Leipzig Test                   │
-│  ├── Transfer gap calculation                               │
+│  ├── Leipzig from-scratch training (feature stability)     │
+│  ├── Zero-shot evaluation on Leipzig Test (with CIs)       │
+│  ├── Transfer gap calculation (statistical tests)          │
+│  ├── Feature stability analysis (Spearman ρ)               │
+│  ├── A-priori hypothesis testing (4 hypotheses)            │
 │  ├── Per-genus transfer analysis                            │
 │  ├── Confusion matrix comparison                            │
 │  └── Transfer robustness ranking                            │
@@ -263,7 +267,8 @@ Phase 2 Outputs (ML-Ready Datasets, data/phase_2_splits/)
 │  ├── Evaluate each on Leipzig Test                          │
 │  ├── Leipzig from-scratch baselines (ML + NN)               │
 │  ├── Sample efficiency curves (ML vs. NN comparison)        │
-│  └── Statistical significance tests                         │
+│  ├── Power-law fit (y = a × x^b) for sample efficiency     │
+│  └── Statistical significance tests (McNemar)               │
 └─────────────────────────────────────────────────────────────┘
                     │
                     ▼
@@ -992,15 +997,22 @@ for name, r in sorted(results.items(), key=lambda x: x[1]["improvement"], revers
 4. **Pareto Analysis**
    - Plot: F1 vs. Feature Count
    - Identify knee point
+   - **NEW (Imp 1):** Create literature comparison table (Hemmerling 2021: ~276 features, Immitzer 2019: 49 features)
+   - **NEW (Imp 1):** Check for Hughes Effect (F1_all < F1_Top-k → feature curse documented)
 
 5. **Decision Logging**
    - Select smallest k with F1 ≥ F1_all - 0.01
    - Save selected feature list
+   - **NEW (Imp 1):** Document knee-point interpretation with literature context
 
 **Outputs:**
 
-- `outputs/phase_3/metadata/setup_decisions.json` (complete: chm_strategy, proximity_strategy, outlier_strategy, feature_set, selected_features)
+- `outputs/phase_3/metadata/setup_decisions.json` (complete: chm_strategy, proximity_strategy, outlier_strategy, feature_set, selected_features, literature_comparison, knee_point_analysis)
 - `outputs/phase_3/figures/exp_09_feature_reduction/*.png`
+  - `feature_importance_ranking.png` (existing)
+  - `pareto_curve.png` (existing)
+  - `feature_group_contribution.png` (existing)
+  - **NEW (Imp 1):** `feature_pareto_curve_literature.png` (with knee point + Hughes effect annotation)
 
 **Source Module Functions:**
 
@@ -1069,30 +1081,42 @@ def select_optimal_features(
    - Apply StandardScaler (fit on train)
    - Encode labels
 
-2. **Coarse Grid Search (per algorithm)**
+2. **Naive Baselines (NEW - Imp 2)**
+   - **Majority Class Classifier:** Always predict most frequent genus
+   - **Stratified Random Classifier:** Random predictions weighted by class distribution
+   - **Spatial-Only Random Forest:** Only x/y coordinates (no Sentinel-2, no CHM)
+   - Purpose: Establish performance lower bound
+
+3. **Coarse Grid Search (per algorithm)**
    - Random Forest: 24 configs
    - XGBoost: 48 configs
    - 1D-CNN: baseline only
    - TabNet: baseline only
    - Use 3-Fold Spatial Block CV for speed
 
-3. **Collect Metrics**
-   - For each algorithm: Val F1, Train F1, Gap, Fit Time
+4. **Collect Metrics**
+   - For each algorithm + baselines: Val F1, Train F1, Gap, Fit Time
    - Per-genus F1 for error analysis
+   - **NEW (Imp 2):** Relative improvement over best baseline (in percentage points)
 
-4. **Champion Selection**
+5. **Champion Selection**
    - Apply filters (min F1 ≥ 0.50, gap < 35%)
    - Select best ML (RF or XGBoost)
    - Select best NN (1D-CNN or TabNet)
 
-5. **Visualization**
+6. **Visualization**
    - Algorithm comparison bar chart
    - Confusion matrices for champions
+   - **NEW (Imp 2):** Performance ladder (baselines → default models → champions, sorted by F1)
 
 **Outputs:**
 
-- `outputs/phase_3/metadata/algorithm_comparison.json`
+- `outputs/phase_3/metadata/algorithm_comparison.json` (extended with baseline_results)
 - `outputs/phase_3/figures/exp_10_algorithm_comparison/*.png`
+  - `algorithm_comparison.png` (existing)
+  - `confusion_matrix_{champion}.png` (existing)
+  - `algorithm_train_val_gap.png` (existing)
+  - **NEW (Imp 2):** `performance_ladder.png`
 
 ---
 
@@ -1172,8 +1196,9 @@ def select_optimal_features(
 
 5. **Berlin Test Evaluation**
    - Evaluate on hold-out Berlin Test
-   - Compute all metrics with confidence intervals
-   - Per-genus analysis
+   - **NEW (Imp 4):** Compute all metrics with **bootstrap confidence intervals** (1000 resamples, 95% CI)
+   - **NEW (Imp 2):** Evaluate 3 naive baselines on same test set for comparison
+   - Per-genus analysis (with CIs)
    - Feature importance (gain + permutation for ML)
 
 6. **Post-Training Error Analysis (Extensive)**
@@ -1219,14 +1244,16 @@ def select_optimal_features(
 
 7. **Visualization**
    - HP tuning progress (optimization history)
+   - **NEW (Imp 2):** Performance ladder (baselines → champions) with error bars (95% CI)
    - All figures from post-training analysis (see Section 6.1)
-   - Total: ~15 figures for Berlin optimization
+   - **NEW (Imp 4):** All metric plots include confidence interval error bars
+   - Total: ~16 figures for Berlin optimization
 
 **Outputs:**
 
 - `outputs/phase_3/metadata/hp_tuning_ml.json`
 - `outputs/phase_3/metadata/hp_tuning_nn.json`
-- `outputs/phase_3/metadata/berlin_evaluation.json`
+- `outputs/phase_3/metadata/berlin_evaluation.json` (extended with bootstrap CIs and baseline results)
 - `outputs/phase_3/models/berlin_ml_champion.pkl`
 - `outputs/phase_3/models/berlin_nn_champion.pt`
 - `outputs/phase_3/figures/berlin_optimization/*.png`
@@ -1304,36 +1331,85 @@ def compute_confidence_intervals(
 
 2. **Zero-Shot Evaluation**
    - Predict on Leipzig test with both models
-   - Compute all metrics
+   - **NEW (Imp 4):** Compute all metrics with **bootstrap confidence intervals** (1000 resamples, 95% CI)
 
 3. **Transfer Gap Analysis**
    - Calculate absolute drop: F1_Berlin - F1_Leipzig
    - Calculate relative drop: (F1_Berlin - F1_Leipzig) / F1_Berlin \* 100
+   - **NEW (Imp 4):** Statistical significance test: Mann-Whitney U on bootstrap distributions (H0: no transfer gap)
    - Compare ML vs. NN transfer performance
 
-4. **Per-Genus Transfer Analysis**
+4. **Leipzig From-Scratch Training (NEW - Imp 3)**
+   - Train ML champion on Leipzig finetune set with identical hyperparameters as Berlin
+   - Fit new scaler on Leipzig data (independent from Berlin)
+   - Purpose: Feature importance comparison for feature stability analysis
+
+5. **Feature Stability Analysis (NEW - Imp 3)**
+   - Extract feature importances from both Berlin and Leipzig models
+   - Compute Spearman rank correlation (ρ) between importance rankings
+   - Interpretation: ρ > 0.7 = high stability, ρ < 0.5 = city-specific features dominate
+   - Identify most stable features (near diagonal) and most unstable features
+   - Literature validation: Red-Edge expected stable (Immitzer 2019), CHM expected city-specific
+
+6. **Per-Genus Transfer Analysis with A-Priori Hypotheses (Imp 5)**
+
+   **CRITICAL:** The following 4 hypotheses must be documented in `03_Transfer_Evaluation.md` BEFORE running 03c to avoid post-hoc bias.
+
+   **H1 (Sample Size Hypothesis):**
+   - Genera with more Berlin training samples transfer better
+   - Test: Pearson r between berlin_sample_count and transfer_gap
+   - Expected: r < 0 (negative correlation)
+
+   **H2 (Conifer vs. Deciduous Hypothesis):**
+   - Nadelbäume have lower transfer gap than Laubbäume
+   - Test: Mann-Whitney U between conifer and deciduous transfer gaps
+   - Rationale: Nadelbäume have more distinct spectral profile (Fassnacht 2016)
+
+   **H3 (Phenological Distinctness Hypothesis):**
+   - Genera with early leaf-out (BETULA, SALIX) have higher transfer gap
+   - Test: Compare transfer gaps for early vs. mid-season genera
+   - Rationale: Regional phenological differences (Hemmerling 2021)
+
+   **H4 (Red-Edge Robustness Hypothesis):**
+   - Genera with high Red-Edge feature importance transfer better
+   - Test: Correlation between Red-Edge importance and transfer robustness
+   - Rationale: Red-Edge indices optimal for tree species (Immitzer 2019)
+
+   Statistical tests for all 4 hypotheses with p-values and effect sizes.
+
+7. **Transfer Robustness Classification**
    - F1 comparison per genus (Berlin vs. Leipzig)
    - Classify robustness: robust (<5%), medium (5-15%), poor (>15%)
    - Identify best/worst transferring genera
+   - Annotate with sample sizes and hypothesis test results
 
-5. **Confusion Matrix Comparison**
+8. **Confusion Matrix Comparison**
    - Side-by-side: Berlin vs. Leipzig confusion matrices (German labels)
    - Highlight systematic differences
    - Most confused genus pairs in Leipzig vs. Berlin
 
-6. **Extended Transfer Analysis**
+9. **Extended Transfer Analysis**
    - Nadel- vs. Laubbäume: aggregate transfer performance per group
    - Species-level detail for genera with poor transfer (F1 drop >15%)
    - Identify: Are the same genera problematic in both cities?
 
-7. **Select Best Transfer Model**
+10. **Select Best Transfer Model**
    - Compare ML and NN transfer performance
    - Select model for fine-tuning experiments
 
 **Outputs:**
 
-- `outputs/phase_3/metadata/transfer_evaluation.json`
+- `outputs/phase_3/metadata/transfer_evaluation.json` (extended with feature_stability, hypothesis_tests, bootstrap CIs, Leipzig-from-scratch metrics)
 - `outputs/phase_3/figures/transfer/*.png`
+  - `transfer_comparison.png` (with CI error bars)
+  - `confusion_comparison_berlin_leipzig.png`
+  - `per_genus_transfer_robustness.png`
+  - `transfer_conifer_deciduous.png`
+  - `transfer_confusion_pairs.png`
+  - `transfer_species_analysis.png`
+  - **NEW (Imp 3):** `feature_stability_scatter.png` (Berlin vs. Leipzig feature importance with feature-type colors)
+  - **NEW (Imp 5):** `transfer_robustness_ranking.png` (horizontal bar with sample size annotations)
+  - **NEW (Imp 5):** `hypothesis_test_summary.png` (4 hypothesis results with p-values)
 - `outputs/phase_3/logs/03c_transfer_evaluation.json`
 
 **Source Module Functions:**
@@ -1410,6 +1486,9 @@ def create_transfer_summary(
    - Mark zero-shot baselines and from-scratch baselines
    - Calculate: fraction needed to reach 90% of from-scratch performance
    - Compare: Does ML or NN benefit more from local data?
+   - **NEW (Imp 6):** Fit power-law model: Performance = a × N^b (using scipy.optimize.curve_fit)
+   - **NEW (Imp 6):** Extrapolate to calculate 95% recovery point
+   - **NEW (Imp 6):** Literature comparison: Tong et al. (2019) report 50-70% label savings with transfer learning
 
 7. **Per-Genus Recovery Analysis**
    - Heatmap: per-genus F1 at each fine-tuning fraction
@@ -1423,8 +1502,14 @@ def create_transfer_summary(
 
 **Outputs:**
 
-- `outputs/phase_3/metadata/finetuning_curve.json`
+- `outputs/phase_3/metadata/finetuning_curve.json` (extended with power_law_fit: {a, b, R²}, recovery_points: {90%, 95%})
 - `outputs/phase_3/figures/finetuning/*.png`
+  - `finetuning_curve.png` (existing, now with power-law fit line)
+  - `finetuning_vs_baselines.png`
+  - `finetuning_per_genus_recovery.png`
+  - `finetuning_ml_vs_nn_comparison.png`
+  - `finetuning_significance_matrix.png`
+  - **NEW (Imp 6):** `finetuning_powerlaw_extrapolation.png` (log-scale, with 95% recovery marker)
 - `outputs/phase_3/models/finetuned/*.pkl` or `.pt`
 - `outputs/phase_3/logs/03d_finetuning.json`
 
@@ -1738,7 +1823,33 @@ def create_stratified_subsets(
       }
     },
     "best_transfer_model": { "type": "string" },
-    "selection_reasoning": { "type": "string" }
+    "selection_reasoning": { "type": "string" },
+    "feature_stability": {
+      "type": "object",
+      "description": "Feature importance stability analysis (Imp 3)",
+      "properties": {
+        "spearman_rho": { "type": "number" },
+        "interpretation": { "type": "string" },
+        "most_stable_features": { "type": "array", "items": { "type": "string" } },
+        "most_unstable_features": { "type": "array", "items": { "type": "string" } },
+        "literature_validation": { "type": "string" }
+      }
+    },
+    "hypothesis_tests": {
+      "type": "array",
+      "description": "A-priori hypothesis test results (Imp 5)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "hypothesis_id": { "type": "string" },
+          "description": { "type": "string" },
+          "test_statistic": { "type": "string" },
+          "test_value": { "type": "number" },
+          "p_value": { "type": "number" },
+          "result": { "type": "string", "enum": ["confirmed", "rejected", "inconclusive"] }
+        }
+      }
+    }
   }
 }
 ```
@@ -1795,6 +1906,25 @@ def create_stratified_subsets(
           "significant": { "type": "boolean" }
         }
       }
+    },
+    "power_law_fit": {
+      "type": "object",
+      "description": "Power-law model parameters for sample efficiency curve (Imp 6)",
+      "properties": {
+        "a": { "type": "number", "description": "Scaling coefficient" },
+        "b": { "type": "number", "description": "Exponent" },
+        "r_squared": { "type": "number", "description": "Goodness of fit" },
+        "formula": { "type": "string" }
+      }
+    },
+    "recovery_points": {
+      "type": "object",
+      "description": "Extrapolated recovery points (Imp 6)",
+      "properties": {
+        "fraction_to_90pct": { "type": "number" },
+        "fraction_to_95pct": { "type": "number" },
+        "fraction_to_match_scratch": { "type": ["number", "null"] }
+      }
     }
   }
 }
@@ -1844,6 +1974,7 @@ needed for post-hoc analysis (`plant_year`, `height_m`, `tree_type`, `species_la
 | exp_09     | Feature importance ranking       | `feature_importance_ranking.png`    |
 | exp_09     | Pareto curve (F1 vs. count)      | `pareto_curve.png`                  |
 | exp_09     | Feature group contribution       | `feature_group_contribution.png`    |
+| exp_09     | **Pareto with literature context** | `feature_pareto_curve_literature.png` **(Imp 1)** |
 
 **Cross-City Baseline (exp_07, optional):**
 
@@ -1861,6 +1992,7 @@ needed for post-hoc analysis (`plant_year`, `height_m`, `tree_type`, `species_la
 | exp_10     | Algorithm F1 comparison     | `algorithm_comparison.png`        |
 | exp_10     | Champion confusion matrices | `confusion_matrix_{champion}.png` |
 | exp_10     | Algorithm Train-Val gap     | `algorithm_train_val_gap.png`     |
+| exp_10     | **Performance ladder (with baselines)** | `performance_ladder.png` **(Imp 2)** |
 
 **Berlin Optimization (03b) — Training & Tuning:**
 
@@ -1889,22 +2021,26 @@ needed for post-hoc analysis (`plant_year`, `height_m`, `tree_type`, `species_la
 
 | Experiment | Figure                              | Filename                                  |
 | ---------- | ----------------------------------- | ----------------------------------------- |
-| 03c        | Transfer F1 comparison              | `transfer_comparison.png`                 |
+| 03c        | Transfer F1 comparison (with CIs)   | `transfer_comparison.png` **(Imp 4)**     |
 | 03c        | Confusion comparison (side-by-side) | `confusion_comparison_berlin_leipzig.png` |
 | 03c        | Per-genus transfer robustness       | `per_genus_transfer_robustness.png`       |
 | 03c        | Nadel/Laub transfer comparison      | `transfer_conifer_deciduous.png`          |
 | 03c        | Most confused pairs in Leipzig      | `transfer_confusion_pairs.png`            |
 | 03c        | Species detail for poor genera      | `transfer_species_analysis.png`           |
+| 03c        | **Feature stability scatter plot**  | `feature_stability_scatter.png` **(Imp 3)** |
+| 03c        | **Transfer robustness ranking**     | `transfer_robustness_ranking.png` **(Imp 5)** |
+| 03c        | **Hypothesis test summary**         | `hypothesis_test_summary.png` **(Imp 5)** |
 
 **Fine-Tuning (03d):**
 
 | Experiment | Figure                      | Filename                             |
 | ---------- | --------------------------- | ------------------------------------ |
-| 03d        | Fine-tuning curve (ML + NN) | `finetuning_curve.png`               |
+| 03d        | Fine-tuning curve (ML + NN, with power-law fit) | `finetuning_curve.png` **(Imp 6)** |
 | 03d        | Comparison with baselines   | `finetuning_vs_baselines.png`        |
 | 03d        | Per-genus F1 recovery       | `finetuning_per_genus_recovery.png`  |
 | 03d        | ML vs. NN comparison        | `finetuning_ml_vs_nn_comparison.png` |
 | 03d        | McNemar significance matrix | `finetuning_significance_matrix.png` |
+| 03d        | **Power-law extrapolation** | `finetuning_powerlaw_extrapolation.png` **(Imp 6)** |
 
 ### 6.2 Visualization Module
 

@@ -107,15 +107,85 @@ Robustheit(Genus) = |F1_Berlin(Genus) - F1_Leipzig(Genus)| / F1_Berlin(Genus) ×
 - **15%:** Entspricht signifikantem Unterschied; User würde Qualitätsverlust bemerken
 - Basiert auf Praktiker-Feedback und Domain-Expertise
 
-### Per-Genus Analyse: Hypothesenbildung
+### A-Priori Hypothesen (Improvement 5)
 
-Die Per-Genus-Analyse soll Hypothesen generieren:
+**KRITISCH:** Die folgenden Hypothesen werden **vor Ausführung von 03c** formuliert, um post-hoc Bias zu vermeiden.
 
-| Mögliches Muster                      | Hypothese                                     | Praktische Implikation             |
-| ------------------------------------- | --------------------------------------------- | ---------------------------------- |
-| Acer transferiert gut, Tilia schlecht | Acer-Phenologie konsistenter zwischen Städten | Bei Tilia lokale Daten wichtiger   |
-| Seltene Genera transferieren schlecht | Zu wenig Trainingsdaten für Generalisierung   | Fokus auf häufige Genera           |
-| Alle Genera transferieren schlecht    | Fundamentale Unterschiede Berlin/Leipzig      | Transfer-Learning weniger geeignet |
+#### **H1 (Sample Size Hypothesis)**
+
+**Hypothese:** Genera mit mehr Berlin-Trainingssamples haben einen geringeren Transfer-Gap.
+
+**Begründung:**
+- Mehr Trainingsdaten → bessere Generalisierung (weniger Overfitting)
+- Literatur: Velasquez-Camacho et al. (2021) zeigen, dass häufige Genera robuster transferieren
+
+**Statistischer Test:**
+- Pearson Korrelation zwischen `berlin_sample_count` und `relative_transfer_gap`
+- **Erwartetes Ergebnis:** r < 0 (negative Korrelation)
+- **Signifikanzlevel:** α = 0.05
+
+---
+
+#### **H2 (Conifer vs. Deciduous Hypothesis)**
+
+**Hypothese:** Nadelbäume (Kiefer, Fichte) haben einen geringeren Transfer-Gap als Laubbäume.
+
+**Begründung:**
+- Fassnacht et al. (2016): Nadelbäume haben distinkteres spektrales Profil (immergrün)
+- Phänologische Varianz zwischen Städten geringer bei Nadelbäumen
+- Erwartung: Weniger city-specific Muster
+
+**Statistischer Test:**
+- Mann-Whitney U Test zwischen Nadel-Gaps und Laub-Gaps
+- **Erwartetes Ergebnis:** Median(Nadelbaum-Gap) < Median(Laubbaum-Gap)
+- **Signifikanzlevel:** α = 0.05
+
+---
+
+#### **H3 (Phenological Distinctness Hypothesis)**
+
+**Hypothese:** Genera mit frühem Blattaustrieb (BETULA, SALIX) haben einen höheren Transfer-Gap.
+
+**Begründung:**
+- Hemmerling et al. (2021): Regionale phänologische Unterschiede beeinflussen Spektralsignaturen
+- Früher Blattaustrieb → stärkere Temperaturabhängigkeit
+- Berlin vs. Leipzig klimatische Unterschiede → unterschiedliche Timing-Profile
+
+**Statistischer Test:**
+- Vergleich Transfer-Gap: Early-Leafout-Genera (BETULA, SALIX) vs. Mid-Season-Genera (TILIA, QUERCUS)
+- Mann-Whitney U Test
+- **Erwartetes Ergebnis:** Median(Early-Gap) > Median(Mid-Gap)
+- **Signifikanzlevel:** α = 0.05
+
+---
+
+#### **H4 (Red-Edge Robustness Hypothesis)**
+
+**Hypothese:** Genera mit hoher Red-Edge Feature Importance transferieren besser.
+
+**Begründung:**
+- Immitzer et al. (2019): Red-Edge-Indizes optimal für Baumarten-Klassifikation
+- Red-Edge ist biologisch fundamental (Chlorophyll-Absorption-Edge)
+- Erwartet: Weniger city-specific als strukturelle Features (CHM)
+
+**Statistischer Test:**
+- Berechne durchschnittliche Red-Edge Feature Importance pro Genus (aus Berlin-Modell)
+- Pearson Korrelation zwischen Red-Edge-Importance und Transfer-Robustness
+- **Erwartetes Ergebnis:** r > 0 (positive Korrelation: höhere Red-Edge Importance → geringerer Gap)
+- **Signifikanzlevel:** α = 0.05
+
+---
+
+**Hypothesentests-Protokoll:**
+
+Für jede Hypothese wird dokumentiert:
+1. Test-Statistik und Wert
+2. p-Wert
+3. Effektstärke (Cohen's d oder Korrelationskoeffizient)
+4. Ergebnis: "Bestätigt" / "Verworfen" / "Inconclusive" (wenn p knapp über α)
+5. Interpretation in Relation zur Literatur
+
+Diese a-priori Formulierung verhindert, dass wir Muster ex-post rationalisieren.
 
 ---
 
@@ -179,10 +249,18 @@ def compute_transfer_gap(berlin_metrics, leipzig_metrics):
     }
 ```
 
-### Konfidenzintervalle
+### Konfidenzintervalle (Improvement 4)
+
+**Methode:** Bootstrap-Resampling (1000 Resamples, 95% CI)
+
+**Rationale:**
+- Fassnacht et al. (2016): "Accuracy kann je nach Split um 5-10% schwanken"
+- Roberts et al. (2017): "Konfidenzintervalle essentiell für robuste Aussagen"
+- Quantifiziert Unsicherheit bei Limited Test Set Size
 
 ```python
 def bootstrap_ci(y_true, y_pred, metric_fn, n_bootstrap=1000, ci=0.95):
+    """Bootstrap confidence intervals for any metric."""
     scores = []
     for _ in range(n_bootstrap):
         idx = np.random.choice(len(y_true), size=len(y_true), replace=True)
@@ -191,8 +269,99 @@ def bootstrap_ci(y_true, y_pred, metric_fn, n_bootstrap=1000, ci=0.95):
 
     lower = np.percentile(scores, (1 - ci) / 2 * 100)
     upper = np.percentile(scores, (1 + ci) / 2 * 100)
-    return lower, upper
+    return np.mean(scores), lower, upper
 ```
+
+**Statistische Signifikanz des Transfer-Gaps:**
+
+```python
+def test_transfer_gap_significance(y_true, y_pred_berlin, y_pred_leipzig):
+    """Mann-Whitney U test for transfer gap significance."""
+    from scipy.stats import mannwhitneyu
+
+    # Bootstrap both distributions
+    berlin_scores = [bootstrap_single(...) for _ in range(1000)]
+    leipzig_scores = [bootstrap_single(...) for _ in range(1000)]
+
+    # Test H0: Berlin F1 = Leipzig F1
+    statistic, p_value = mannwhitneyu(berlin_scores, leipzig_scores, alternative='greater')
+
+    return {
+        "test": "Mann-Whitney U",
+        "statistic": statistic,
+        "p_value": p_value,
+        "significant": p_value < 0.05,
+        "interpretation": "Transfer gap is statistically significant" if p_value < 0.05 else "No significant transfer gap"
+    }
+```
+
+**Output-Format:**
+
+```
+F1 = 0.742 (95% CI: [0.731, 0.753])
+Transfer Gap = 0.119 (95% CI: [0.093, 0.145]), p < 0.001 ***
+```
+
+---
+
+### Feature Stability Analysis (Improvement 3)
+
+**Zweck:** Verstehen, welche Features city-specific vs. transferable sind.
+
+**Methodik:**
+
+1. **Leipzig-From-Scratch Training:**
+   - Trainiere ML-Champion auf `leipzig_finetune` mit identischen Hyperparametern wie Berlin
+   - Fit neuen Scaler auf Leipzig-Daten (unabhängig von Berlin)
+   - Extrahiere Feature Importances
+
+2. **Spearman Rank Correlation:**
+   ```python
+   from scipy.stats import spearmanr
+
+   berlin_importances = ml_champion.feature_importances_  # From Berlin model
+   leipzig_importances = leipzig_model.feature_importances_  # From Leipzig model
+
+   rho, p_value = spearmanr(berlin_importances, leipzig_importances)
+   ```
+
+3. **Interpretation:**
+   - **ρ > 0.7:** Hohe Stabilität → Features transferieren gut
+   - **ρ 0.5-0.7:** Moderate Stabilität → Einige city-specific Features
+   - **ρ < 0.5:** Niedrige Stabilität → City-specific Features dominieren
+
+4. **Feature-Typ Analyse:**
+   ```python
+   feature_types = {
+       "Spectral": ["B2_", "B3_", "B4_", ...],  # Blaue, grüne, rote Bänder
+       "Red-Edge": ["B5_", "B6_", "B7_", "B8A_", "NDre", "NDVIre", "CIre"],
+       "Moisture": ["NDWI_", "MSI_", "NDII_"],
+       "CHM": ["CHM_1m_zscore", "CHM_1m_percentile"]
+   }
+
+   # Erwartung: Red-Edge stabil (Immitzer 2019), CHM unstabil (city-specific)
+   ```
+
+5. **Literatur-Validation:**
+   - Immitzer et al. (2019): Red-Edge-Indizes optimal für Baumarten → erwarte hohe Stabilität
+   - Tuia et al. (2016): Feature-Importance-Shifts zeigen Domain Shift → erwarte CHM instabil
+
+**Output:**
+
+```json
+{
+  "feature_stability": {
+    "spearman_rho": 0.68,
+    "p_value": 0.001,
+    "interpretation": "Moderate stability - some city-specific features present",
+    "most_stable_features": ["NDVIre_Jun", "NDVI_Jul", "B8A_Aug"],
+    "most_unstable_features": ["CHM_1m_zscore", "MSI_Nov"],
+    "literature_validation": "Red-Edge stable (Immitzer 2019), CHM city-specific (expected)"
+  }
+}
+```
+
+**Visualisierung:** Scatter Plot mit Feature-Typ-Colorierung (siehe Visualisierungen)
 
 ---
 
@@ -248,6 +417,49 @@ Quercus         0.65         0.52          20%     █████░░░░�
 Platanus        0.70         0.58          17%     █████░░░░░░░ Poor
 ...
 ```
+
+### 4. Feature Stability Scatter Plot (NEW - Imp 3)
+
+```
+Berlin Feature Importance (Rank)
+    │
+100 │     CHM_zscore ●
+    │
+ 80 │
+    │          ●  MSI_Nov
+ 60 │      ● Red-Edge features (clustered near diagonal)
+    │     ●●●
+ 40 │    ●●●●  NDVI, EVI
+    │   ●●●
+ 20 │  ●●
+    │
+  0 └──────────────────────────────────
+    0   20  40  60  80  100
+        Leipzig Feature Importance (Rank)
+
+Color Code:
+  ● Spectral (B2-B4, B8, B11, B12)
+  ● Red-Edge (B5-B7, B8A, NDre, NDVIre, CIre)
+  ● Moisture (NDWI, MSI, NDII)
+  ● CHM
+
+Interpretation: Points near diagonal = stable features
+```
+
+**Erwartung:** Red-Edge nahe Diagonale, CHM weit entfernt
+
+### 5. Hypothesis Test Summary (NEW - Imp 5)
+
+```
+Hypothesis                           Test           Result         p-value
+─────────────────────────────────────────────────────────────────────────
+H1: Sample Size → Lower Gap          Pearson r      CONFIRMED      p=0.003 **
+H2: Conifers → Lower Gap              Mann-Whitney   CONFIRMED      p=0.012 *
+H3: Early Leaf-Out → Higher Gap       Mann-Whitney   REJECTED       p=0.142 n.s.
+H4: Red-Edge Importance → Robustness  Pearson r      CONFIRMED      p=0.001 ***
+```
+
+**Output:** Compact tabular summary mit Signifikanz-Stars
 
 ---
 

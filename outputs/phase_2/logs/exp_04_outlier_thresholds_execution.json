@@ -1,0 +1,124 @@
+{
+  "notebook": "exp_04_outlier_thresholds",
+  "execution_start": "2026-02-06T14:07:31.588991",
+  "execution_end": "2026-02-06T14:13:13.300079",
+  "steps": [
+    {
+      "name": "Data Loading & Validation",
+      "status": "success",
+      "start_time": "2026-02-06T14:07:33.437089",
+      "end_time": "2026-02-06T14:10:17.636006",
+      "records": 983782,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Z-Score Sensitivity",
+      "status": "success",
+      "start_time": "2026-02-06T14:10:17.659329",
+      "end_time": "2026-02-06T14:10:31.347787",
+      "records": 18,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Mahalanobis Alpha Validation",
+      "status": "success",
+      "start_time": "2026-02-06T14:10:31.371122",
+      "end_time": "2026-02-06T14:11:28.079082",
+      "records": 180,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "IQR Multiplier Evaluation",
+      "status": "success",
+      "start_time": "2026-02-06T14:11:28.093839",
+      "end_time": "2026-02-06T14:11:36.305587",
+      "records": 180,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Severity Flagging",
+      "status": "success",
+      "start_time": "2026-02-06T14:11:36.315081",
+      "end_time": "2026-02-06T14:11:36.788765",
+      "records": 983782,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Outlier Verification & Visualization",
+      "status": "success",
+      "start_time": "2026-02-06T14:11:36.816999",
+      "end_time": "2026-02-06T14:12:22.261557",
+      "records": 983782,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Biological Context Analysis - Age Distribution",
+      "status": "success",
+      "start_time": "2026-02-06T14:12:23.900013",
+      "end_time": "2026-02-06T14:12:31.189992",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Biological Context Analysis - Tree Type",
+      "status": "success",
+      "start_time": "2026-02-06T14:12:31.202783",
+      "end_time": "2026-02-06T14:12:32.414795",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Biological Context Analysis - Spatial Clustering",
+      "status": "success",
+      "start_time": "2026-02-06T14:12:32.428705",
+      "end_time": "2026-02-06T14:13:04.121805",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Biological Context Analysis - Genus Patterns",
+      "status": "success",
+      "start_time": "2026-02-06T14:13:04.131688",
+      "end_time": "2026-02-06T14:13:05.429585",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Method Overlap Analysis",
+      "status": "success",
+      "start_time": "2026-02-06T14:13:05.438391",
+      "end_time": "2026-02-06T14:13:06.241525",
+      "records": 983782,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Consensus Decision Flow",
+      "status": "success",
+      "start_time": "2026-02-06T14:13:06.259684",
+      "end_time": "2026-02-06T14:13:07.385669",
+      "records": 983782,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Outlier Rates and Genus Impact",
+      "status": "success",
+      "start_time": "2026-02-06T14:13:07.401191",
+      "end_time": "2026-02-06T14:13:11.486814",
+      "records": 983782,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

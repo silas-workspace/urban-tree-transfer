@@ -1,0 +1,146 @@
+{
+  "geometric_definition": {
+    "distance_metric": "euclidean_point_to_point",
+    "tree_geometry": "centroid (point)",
+    "sentinel_pixel_size": "10m x 10m",
+    "threshold_interpretation": "20m = approx 2-pixel separation (edge-to-edge contact)",
+    "contamination_zones": {
+      "high": "< 10m (full pixel overlap)",
+      "medium": "10-15m (partial overlap)",
+      "low": "15-20m (edge contact)",
+      "none": "> 20m (no pixel overlap)"
+    }
+  },
+  "threshold_sensitivity": {
+    "5.0": {
+      "retention_rate": 0.7941499940372437,
+      "removed_count": 170887,
+      "retained_count": 659266
+    },
+    "10.0": {
+      "retention_rate": 0.5113105656427188,
+      "removed_count": 405687,
+      "retained_count": 424466
+    },
+    "15.0": {
+      "retention_rate": 0.3467999272423276,
+      "removed_count": 542256,
+      "retained_count": 287897
+    },
+    "20.0": {
+      "retention_rate": 0.2621854043772654,
+      "removed_count": 612499,
+      "retained_count": 217654
+    },
+    "25.0": {
+      "retention_rate": 0.21403163031393008,
+      "removed_count": 652474,
+      "retained_count": 177679
+    },
+    "30.0": {
+      "retention_rate": 0.18081365724149645,
+      "removed_count": 680050,
+      "retained_count": 150103
+    }
+  },
+  "version": "1.0",
+  "created": "2026-02-06T17:13:36.590568+00:00",
+  "recommended_threshold_m": 5,
+  "justification": "Threshold 5m provides the best passing balance between spectral purity and retention, meeting retention and genus-uniformity criteria while covering at least two Sentinel-2 pixels.",
+  "thresholds_tested": [
+    5,
+    10,
+    15,
+    20,
+    30
+  ],
+  "impact_per_threshold": {
+    "5": {
+      "berlin": {
+        "trees_removed": 143908,
+        "retention_rate": 0.8266488225664426
+      },
+      "leipzig": {
+        "trees_removed": 25162,
+        "retention_rate": 0.8362158186279934
+      }
+    },
+    "10": {
+      "berlin": {
+        "trees_removed": 378708,
+        "retention_rate": 0.5438093941719178
+      },
+      "leipzig": {
+        "trees_removed": 67232,
+        "retention_rate": 0.5623742913121872
+      }
+    },
+    "15": {
+      "berlin": {
+        "trees_removed": 515235,
+        "retention_rate": 0.3793493488549701
+      },
+      "leipzig": {
+        "trees_removed": 90696,
+        "retention_rate": 0.4096427106861335
+      }
+    },
+    "20": {
+      "berlin": {
+        "trees_removed": 585275,
+        "retention_rate": 0.2949793592265522
+      },
+      "leipzig": {
+        "trees_removed": 103502,
+        "retention_rate": 0.32628605276347566
+      }
+    },
+    "30": {
+      "berlin": {
+        "trees_removed": 652377,
+        "retention_rate": 0.21414847624474043
+      },
+      "leipzig": {
+        "trees_removed": 116267,
+        "retention_rate": 0.24319627153727486
+      }
+    }
+  },
+  "genus_specific_uniform": false,
+  "max_genus_deviation_percent": 40.54928075753414,
+  "distance_percentiles": {
+    "berlin": {
+      "count": 791061,
+      "mean": 19.62457515954064,
+      "std": 26.23525193103705,
+      "min": 0.0,
+      "max": 474.0624783262888,
+      "p10": 3.1622776601683795,
+      "p25": 5.830951894845301,
+      "p50": 10.295630140987,
+      "p75": 20.727772015421255,
+      "p90": 49.25444142409901,
+      "p95": 74.33034373659252,
+      "p99": 125.89678312014172
+    },
+    "leipzig": {
+      "count": 143237,
+      "mean": 22.58995893350923,
+      "std": 36.08264183095151,
+      "min": 0.0,
+      "max": 937.7600972530234,
+      "p10": 3.1622776601683795,
+      "p25": 6.0,
+      "p50": 10.63014581273465,
+      "p75": 22.135943621178654,
+      "p90": 55.90169943749474,
+      "p95": 90.82400563727631,
+      "p99": 169.93563449830404
+    }
+  },
+  "validation": {
+    "retention_exceeds_85_percent": false,
+    "genus_impact_uniform": false,
+    "covers_two_pixels": false
+  }
+}

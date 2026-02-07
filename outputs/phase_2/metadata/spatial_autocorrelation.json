@@ -1,0 +1,196 @@
+{
+  "version": "1.0",
+  "created": "2026-02-07T01:32:59+00:00",
+  "recommended_block_size_m": 1200,
+  "justification": "1200m exceeds maximum autocorrelation decay distance (1200m) by 0m",
+  "analysis_details": {
+    "decay_distances": {
+      "B4_07": 1200.0,
+      "B8_07": 1200.0,
+      "CHM_1m": 1200.0,
+      "NDVI_07": 1200.0,
+      "NDre1_07": 1200.0
+    },
+    "max_decay_distance": 1200.0,
+    "aggregation_method": "maximum (conservative)",
+    "safety_buffer_m": 0.0,
+    "alternative_methods": {
+      "mean_plus_std": 1200.0,
+      "proportional_buffer_20pct": 1440.0
+    }
+  },
+  "distance_lags_tested": [
+    100,
+    150,
+    200,
+    250,
+    300,
+    350,
+    400,
+    450,
+    500,
+    600,
+    700,
+    800,
+    1000,
+    1200
+  ],
+  "features_analyzed": [
+    "B4_07",
+    "B8_07",
+    "CHM_1m",
+    "NDVI_07",
+    "NDre1_07"
+  ],
+  "validation": {
+    "berlin_decay_distance": 1200.0,
+    "leipzig_decay_distance": 1200.0,
+    "cross_city_consistency": "high (difference < 50m)",
+    "berlin_sufficient_blocks": true,
+    "leipzig_sufficient_blocks": true,
+    "block_size_exceeds_decay": true,
+    "residual_autocorrelation_at_block_size": 0.16950650495372588,
+    "post_split": {
+      "method": "post_split_morans_i",
+      "features_tested": [
+        "B8_07",
+        "CHM_1m",
+        "NDVI_07"
+      ],
+      "within_split_autocorrelation": {
+        "train": {
+          "B8_07": {
+            "I": 0.42517650056390327,
+            "p_value": 0.001,
+            "n": 25000
+          },
+          "CHM_1m": {
+            "I": 0.35770675703667554,
+            "p_value": 0.001,
+            "n": 25000
+          },
+          "NDVI_07": {
+            "I": 0.4647617460551967,
+            "p_value": 0.001,
+            "n": 25000
+          }
+        },
+        "val": {
+          "B8_07": {
+            "I": 0.3993412841212618,
+            "p_value": 0.001,
+            "n": 25000
+          },
+          "CHM_1m": {
+            "I": 0.31558412762882565,
+            "p_value": 0.001,
+            "n": 25000
+          },
+          "NDVI_07": {
+            "I": 0.4253037157217828,
+            "p_value": 0.001,
+            "n": 25000
+          }
+        },
+        "test": {
+          "B8_07": {
+            "I": 0.3399741844272732,
+            "p_value": 0.001,
+            "n": 25000
+          },
+          "CHM_1m": {
+            "I": 0.35273197883488105,
+            "p_value": 0.001,
+            "n": 25000
+          },
+          "NDVI_07": {
+            "I": 0.4358129472385601,
+            "p_value": 0.001,
+            "n": 25000
+          }
+        }
+      },
+      "between_split_autocorrelation": {
+        "train_vs_val": {
+          "B8_07": {
+            "I": 0.40813340694544603,
+            "p_value": 0.001,
+            "n": 25000
+          },
+          "CHM_1m": {
+            "I": 0.3520277615462958,
+            "p_value": 0.001,
+            "n": 25000
+          },
+          "NDVI_07": {
+            "I": 0.4540617546621986,
+            "p_value": 0.001,
+            "n": 25000
+          }
+        },
+        "train_vs_test": {
+          "B8_07": {
+            "I": 0.37732915924536725,
+            "p_value": 0.001,
+            "n": 25000
+          },
+          "CHM_1m": {
+            "I": 0.2976812788330691,
+            "p_value": 0.001,
+            "n": 25000
+          },
+          "NDVI_07": {
+            "I": 0.4172234665805712,
+            "p_value": 0.001,
+            "n": 25000
+          }
+        },
+        "val_vs_test": {
+          "B8_07": {
+            "I": 0.34530894394376,
+            "p_value": 0.001,
+            "n": 22543
+          },
+          "CHM_1m": {
+            "I": 0.3196027512473703,
+            "p_value": 0.001,
+            "n": 22543
+          },
+          "NDVI_07": {
+            "I": 0.4613395641608733,
+            "p_value": 0.001,
+            "n": 22543
+          }
+        }
+      },
+      "spatial_independence_achieved": true,
+      "max_within_I": 0.4647617460551967,
+      "max_between_I": 0.4613395641608733,
+      "iterations_needed": 1
+    }
+  },
+  "block_counts": {
+    "berlin": {
+      "estimated_blocks": 657,
+      "estimated_trees_per_block": 1263.5509893455098,
+      "feasible": true
+    },
+    "leipzig": {
+      "estimated_blocks": 228,
+      "estimated_trees_per_block": 673.811403508772,
+      "feasible": true
+    }
+  },
+  "sensitivity_analysis": {
+    "alternative_block_sizes_tested": [
+      200,
+      300,
+      400,
+      500,
+      600,
+      800,
+      1000
+    ],
+    "trade_offs": "1200m provides the balance between spatial independence and sufficient block counts."
+  }
+}

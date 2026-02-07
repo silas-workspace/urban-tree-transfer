@@ -69,6 +69,10 @@ docs/literature/*
 
 # Thesis drafts and templates (not for code repo)
 docs/thesis/
+
+# Presentation materials (not for code repo)
+docs/Presentation/
+
 *.docx
 *.odt
 *_template.md

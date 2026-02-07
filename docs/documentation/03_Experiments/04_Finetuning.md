@@ -313,6 +313,69 @@ Beispiel:
 - 90%-Schwelle = "praktisch akzeptable" Performance
 - Niedriger Wert = Transfer ist sehr effizient
 
+### Power-Law Fit (Improvement 6)
+
+**Zweck:** Quantifizierung der Sample-Efficiency-Kurve durch analytisches Modell.
+
+Sample-Efficiency-Kurven folgen häufig einem **Power-Law** (Potenzgesetz):
+
+```
+Performance = a × N^b
+```
+
+wobei:
+- **N**: Anzahl Fine-Tuning Samples
+- **a**: Skalierungsfaktor
+- **b**: Sample-Efficiency-Exponent (0 < b < 1)
+
+**Implementierung:**
+
+```python
+from scipy.optimize import curve_fit
+
+def power_law(x, a, b):
+    return a * np.power(x, b)
+
+# Fit auf Fine-Tuning Datenpunkte
+fractions = [0.1, 0.25, 0.5, 1.0]
+sample_counts = [500, 1250, 2500, 5000]
+f1_scores = [0.51, 0.54, 0.56, 0.57]
+
+params, _ = curve_fit(power_law, sample_counts, f1_scores)
+a, b = params
+```
+
+**Anwendungen:**
+
+1. **Extrapolation zu 95% Recovery:**
+   ```python
+   # Wie viele Samples für 95% der From-Scratch Performance?
+   target_f1 = from_scratch_f1 * 0.95
+   n_samples_95pct = ((target_f1 - zero_shot_f1) / a) ** (1/b)
+   ```
+
+2. **Visualisierung:**
+   - Gestrichelte Kurve: Power-Law Fit
+   - Punkte: Empirische Messungen (10%, 25%, 50%, 100%)
+   - Extrapolation: Gestrichelte Linie über 100% hinaus
+
+**Interpretation des Exponenten b:**
+
+| Exponent b | Interpretation                                  |
+| ---------- | ----------------------------------------------- |
+| b > 0.5    | Starke Sample-Efficiency (rapide Verbesserung)  |
+| b ≈ 0.3    | Moderate Sample-Efficiency                      |
+| b < 0.2    | Schwache Sample-Efficiency (viele Daten nötig)  |
+
+**Literatur-Vergleich (Improvement 6):**
+
+| Studie                | Domain            | Label Savings | b-Exponent |
+| --------------------- | ----------------- | ------------- | ---------- |
+| Tong et al. (2019)    | Remote Sensing    | 50-70%        | ~0.35      |
+| Dieses Projekt        | Tree Transfer     | TBD           | TBD        |
+
+**HINWEIS:** Wenn b < 0.2, deutet dies auf limitierte Transferierbarkeit zwischen Berlin und Leipzig hin.
+
 ---
 
 ## Experimenteller Ablauf
@@ -343,10 +406,15 @@ Beispiel:
 
 6. Effizienz-Metriken berechnen
    ├── Fraction to Match Scratch (je Modell)
-   └── Fraction to 90% of Scratch (je Modell)
+   ├── Fraction to 90% of Scratch (je Modell)
+   └── **Power-Law Fit (Imp 6):**
+       ├── Fit y = a × x^b auf empirische Datenpunkte
+       ├── Extrapoliere zu 95% Recovery Point
+       └── Vergleich mit Literatur (Tong et al. 2019: b ≈ 0.35)
 
 7. Visualisierungen erstellen
-   └── Sample-Efficiency-Kurven: ML + NN auf gleichem Plot
+   ├── Sample-Efficiency-Kurven: ML + NN auf gleichem Plot
+   └── **Power-Law Fit Curve (Imp 6)** mit Extrapolation (gestrichelt)
 ```
 
 ---
@@ -387,6 +455,17 @@ Beispiel:
         "fraction_to_match_scratch": 0.25,
         "fraction_to_90pct_scratch": 0.08
     },
+    "power_law_fit": {
+        "a": 0.28,
+        "b": 0.32,
+        "r_squared": 0.97,
+        "interpretation": "moderate sample efficiency (b=0.32)"
+    },
+    "recovery_points": {
+        "n_samples_90pct": 387,
+        "n_samples_95pct": 892,
+        "label_savings_vs_scratch": "82.2%"
+    },
     "significance_tests": [
         {
             "comparison": "zero_shot_vs_10pct",
@@ -401,19 +480,20 @@ Beispiel:
 
 ### Visualisierungen
 
-| Datei                              | Inhalt                                                 |
-| ---------------------------------- | ------------------------------------------------------ |
-| finetuning_curve.png               | F1 vs. Fraktion mit Zero-Shot + From-Scratch Baselines |
-| finetuning_vs_baselines.png        | Vergleich aller Varianten                              |
-| finetuning_per_genus_recovery.png  | Heatmap: Pro-Gattung F1 bei jeder Fraktion (deutsch)   |
-| finetuning_ml_vs_nn_comparison.png | ML vs. NN Sample-Efficiency-Kurven                     |
-| finetuning_significance_matrix.png | McNemar p-Werte über alle Vergleichspaare              |
+| Datei                                   | Inhalt                                                          |
+| --------------------------------------- | --------------------------------------------------------------- |
+| finetuning_curve.png                    | F1 vs. Fraktion mit Zero-Shot + From-Scratch Baselines          |
+| **power_law_fit.png (Imp 6)**           | Power-Law Kurve mit Extrapolation zu 95% Recovery (gestrichelt) |
+| finetuning_vs_baselines.png             | Vergleich aller Varianten                                       |
+| finetuning_per_genus_recovery.png       | Heatmap: Pro-Gattung F1 bei jeder Fraktion (deutsch)            |
+| finetuning_ml_vs_nn_comparison.png      | ML vs. NN Sample-Efficiency-Kurven                              |
+| finetuning_significance_matrix.png      | McNemar p-Werte über alle Vergleichspaare                       |
 
 **Hinweis:** Alle Genus-Labels nutzen **deutsche Gattungsnamen**. Die Pro-Gattung
 Recovery-Heatmap ermöglicht direkte Aussagen wie "Linde erholt sich bereits bei 10% Fine-Tuning
 auf 90% der From-Scratch Performance, Eiche erst bei 50%."
 
-#### Sample Efficiency Curve (finetuning_curve.png)
+#### Sample Efficiency Curve mit Power-Law Fit (Imp 6)
 
 ```
 F1
@@ -421,17 +501,24 @@ F1
      │                              ┌─── From-Scratch
 0.55 ┤                          ••••○
      │                      •••'
-0.50 ┤                  •••'
-     │              •••'────────────┐
-     │          ••○'                │ Fine-Tune
-0.45 ┤      •••'                    │
-     │  ○••'                        │
-0.40 ┤○─────────────────────────────┘ Zero-Shot
-     │
-     └──┬────────┬────────┬────────┬──
-       0%      25%      50%     100%
+0.50 ┤                  •••'┈┈┈┈┈┈┈┈┐ Power-Law
+     │              •••'            │ Extrapolation
+     │          ••○'                │ (gestrichelt)
+0.45 ┤      •••'┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┐  │
+     │  ○••'                      │  │ Fine-Tune (Punkte)
+0.40 ┤○───────────────────────────┴──┘ Zero-Shot
+     │        ↑
+     │        └─ 95% Recovery Point (aus Power-Law)
+     └──┬────────┬────────┬────────┬────────┬──
+       0%      25%      50%     100%    150%
               Fine-Tuning Fraktion
+
+Legende:
+• ○ = Empirische Messungen (10%, 25%, 50%, 100%)
+┈┈┈ = Power-Law Fit (y = a × x^b)
 ```
+
+**Beschriftung:** Visualisierung zeigt empirische Datenpunkte und gefittete Power-Law Kurve mit Extrapolation zu 95% Recovery Point.
 
 ---
 

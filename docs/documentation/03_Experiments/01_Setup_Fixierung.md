@@ -288,6 +288,12 @@ Die Feature-Anzahl beeinflusst:
 
 4. Pareto-Analyse
    └── Finde Kniepunkt: Minimale Features bei maximaler F1
+
+5. **Literatur-Comparison (NEW - Imp 1)**
+   └── Positionierung unserer Feature-Anzahl im wissenschaftlichen Kontext
+
+6. **Hughes-Effekt Check (NEW - Imp 1)**
+   └── Prüfen ob F1(Alle) < F1(Top-k) → Curse of Dimensionality
 ```
 
 #### Entscheidungslogik
@@ -300,13 +306,37 @@ Die Feature-Anzahl beeinflusst:
 - Entspricht typischer Varianz zwischen Trainingsläufen
 - Ermöglicht signifikante Feature-Reduktion ohne echten Performanceverlust
 
+#### Literatur-Context (Improvement 1)
+
+**Vergleich mit publizierten Studien:**
+
+| Studie                    | Feature-Anzahl | Input-Typ                 | Accuracy | Anmerkung           |
+| ------------------------- | -------------- | ------------------------- | -------- | ------------------- |
+| Hemmerling et al. (2021)  | ~276           | 12 months × 23 features   | 82-94%   | Dense time series   |
+| Immitzer et al. (2019)    | 49             | Feature-selected          | 76%      | Top S2 features     |
+| Dieses Projekt            | 30-80          | 8 months × selected       | TBD      | RF importance-based |
+
+**Interpretation:** Positioniert Projekt im wissenschaftlichen Kontext. Unsere Feature-Anzahl liegt im typischen Bereich für Sentinel-2 basierte Baumklassifikation.
+
+#### Hughes-Effekt Analyse (Improvement 1)
+
+**Wenn F1(Alle Features) < F1(Top-k Features):**
+
+Dokumentation:
+- Expliziter Hinweis auf Hughes-Effekt (Fassnacht et al. 2016)
+- Feature-Selektion ist **essentiell**, nicht optional
+- Begründung: Mit limitiertem Training-Set führen zu viele Features zu Overfitting
+
+**Literatur:** Fassnacht et al. (2016): "Curse of Dimensionality" bei zu vielen Features relativ zur Sample Size
+
 #### Visualisierungen
 
-| Abbildung                      | Zweck                              |
-| ------------------------------ | ---------------------------------- |
-| feature_importance_ranking.png | Feature-Importance Ranking (alle)  |
-| pareto_curve.png               | F1 vs. Feature-Anzahl              |
-| feature_group_contribution.png | Beitrag S2 vs. CHM Feature-Gruppen |
+| Abbildung                              | Zweck                              |
+| -------------------------------------- | ---------------------------------- |
+| feature_importance_ranking.png         | Feature-Importance Ranking (alle)  |
+| pareto_curve.png                       | F1 vs. Feature-Anzahl              |
+| feature_group_contribution.png         | Beitrag S2 vs. CHM Feature-Gruppen |
+| **feature_pareto_curve_literature.png** | **Pareto mit Knee-Point + Literatur-Kontext (Imp 1)** |
 
 ---
 

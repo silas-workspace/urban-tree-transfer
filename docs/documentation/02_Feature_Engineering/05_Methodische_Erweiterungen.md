@@ -271,6 +271,7 @@ Die aktuellen Phase-2-Notebooks (Feature Extraction, Data Quality, Final Prepara
 Die aktuellen Notebooks (Phase 1, Phase 2a/b/c, Exploratory) enthalten **redundante Konfigurationen** direkt im Code. Parameter wie Pfade, Schwellenwerte, Feature-Listen und Verarbeitungsoptionen werden in mehreren Notebooks wiederholt definiert, was zu Inkonsistenzen und Wartungsaufwand führt.
 
 **Beispiele für duplizierte Konfigurationen:**
+
 - Feature-Listen (Sentinel-2 Bänder, Vegetation Indices)
 - Outlier-Schwellenwerte (z.B. `CHM_MAX_VALID`, `NDVI_MIN_VALID`)
 - Pfad-Definitionen (Data-Directory, Output-Directory)
@@ -280,6 +281,7 @@ Die aktuellen Notebooks (Phase 1, Phase 2a/b/c, Exploratory) enthalten **redunda
 ### Aktueller Zustand
 
 **Phase 1 (01_data_processing.ipynb):**
+
 ```python
 # Hardcoded im Notebook
 PROJECT_CRS = "EPSG:25833"
@@ -288,6 +290,7 @@ NODATA_VALUE = -9999.0
 ```
 
 **Phase 2a (02a_feature_extraction.ipynb):**
+
 ```python
 # Wieder definiert
 SPECTRAL_BANDS = ["B2", "B3", "B4", ...]
@@ -296,6 +299,7 @@ CHM_MAX = 50.0
 ```
 
 **Exploratory Notebooks:**
+
 ```python
 # Jeweils neu definiert
 OUTLIER_THRESHOLDS = {"NDVI": (0.2, 0.95), "CHM_1m": (0, 50)}
@@ -319,12 +323,28 @@ OUTLIER_THRESHOLDS = {"NDVI": (0.2, 0.95), "CHM_1m": (0, 50)}
 **Kurzfristige Verbesserungen:**
 
 **1. Experiment-Configs erweitern:**
+
 ```yaml
 # configs/experiments/phase2_feature_engineering.yaml
 extraction:
   sentinel2:
     bands: [B2, B3, B4, B5, B6, B7, B8, B8A, B11, B12]
-    indices: [NDVI, EVI, GNDVI, NDre1, NDVIre, CIre, IRECI, RTVIcore, NDWI, MSI, NDII, kNDVI, VARI]
+    indices:
+      [
+        NDVI,
+        EVI,
+        GNDVI,
+        NDre1,
+        NDVIre,
+        CIre,
+        IRECI,
+        RTVIcore,
+        NDWI,
+        MSI,
+        NDII,
+        kNDVI,
+        VARI,
+      ]
   chm:
     value_range: [0, 50]
     buffer_radius: 30
@@ -335,11 +355,11 @@ quality:
     EVI: [-0.5, 1.5]
     CHM_1m: [0, 50]
     CHM_30m_mean: [0, 40]
-  
+
 splits:
-    test_size: 0.2
-    spatial_distance_km: 5.0
-    random_seed: 42
+  test_size: 0.2
+  spatial_distance_km: 5.0
+  random_seed: 42
 
 visualization:
   figsize: [12, 7]
@@ -348,6 +368,7 @@ visualization:
 ```
 
 **2. Config-Loader in Notebooks:**
+
 ```python
 # Statt Hardcoding
 from urban_tree_transfer.config.loader import load_experiment_config
@@ -358,6 +379,7 @@ outliers = config["quality"]["outlier_thresholds"]
 ```
 
 **3. Zentralisierte Plot-Konfiguration:**
+
 ```python
 # src/urban_tree_transfer/config/visualization.py
 PUBLICATION_STYLE = {
@@ -392,13 +414,13 @@ PUBLICATION_STYLE = {
 
 ## Zusammenfassung
 
-| Erweiterung                               | Status              | Priorität für Folgearbeit                      |
-| ----------------------------------------- | ------------------- | ---------------------------------------------- |
-| CHM × Pflanzjahr (Wachstumsrate)          | Nicht implementiert | Mittel (abhängig von plant_year Verfügbarkeit) |
-| Temporale Selektion: Phänologische Phasen | Nicht implementiert | Hoch (einfach umsetzbar, hoher wiss. Wert)     |
-| Deutsche Gattungsnamen in Plots           | Nicht implementiert | Mittel (Konsistenz/Lesbarkeit)                 |
-| Nadel-/Laubbaum-Spalte im Datensatz       | Nicht implementiert | Hoch (benötigt in Phase-3-Analysen)            |
-| Performance-Optimierung der Notebooks     | Nicht implementiert | Mittel-Hoch (wichtig für Phase 3)              |
+| Erweiterung                                 | Status              | Priorität für Folgearbeit                      |
+| ------------------------------------------- | ------------------- | ---------------------------------------------- |
+| CHM × Pflanzjahr (Wachstumsrate)            | Nicht implementiert | Mittel (abhängig von plant_year Verfügbarkeit) |
+| Temporale Selektion: Phänologische Phasen   | Nicht implementiert | Hoch (einfach umsetzbar, hoher wiss. Wert)     |
+| Deutsche Gattungsnamen in Plots             | Nicht implementiert | Mittel (Konsistenz/Lesbarkeit)                 |
+| Nadel-/Laubbaum-Spalte im Datensatz         | Nicht implementiert | Hoch (benötigt in Phase-3-Analysen)            |
+| Performance-Optimierung der Notebooks       | Nicht implementiert | Mittel-Hoch (wichtig für Phase 3)              |
 | Konsolidierung der Notebook-Konfigurationen | Nicht implementiert | Mittel (wichtig für systematische Experimente) |
 
 ---
