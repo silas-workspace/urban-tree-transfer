@@ -241,16 +241,19 @@ Die aktuellen Phase-2-Notebooks (Feature Extraction, Data Quality, Final Prepara
 ### Potenzial für Folgearbeit
 
 **Kurzfristige Optimierungen:**
+
 - **Raster-Windowing:** Nur benötigte Regionen des CHM/Sentinel-2 laden (via `rasterio.windows`)
 - **Batch-Processing:** Bäume in Chunks von 50k verarbeiten statt alle auf einmal
 - **Caching:** Häufig verwendete Raster-Arrays im Memory halten (mit Garbage Collection)
 
 **Mittelfristige Optimierungen:**
+
 - **Dask-Integration:** Parallele Verarbeitung mit delayed evaluation
 - **Spatial Indexing:** R-Tree für schnellere räumliche Abfragen
 - **Parquet-Partitioning:** Stadt-spezifische Partitionen für schnelleres Filtern
 
 **Benchmarking:**
+
 - Profilierung mit `line_profiler` oder `memory_profiler`
 - Laufzeit-Vergleich vor/nach Optimierungen
 - RAM-Peak-Monitoring
@@ -258,6 +261,132 @@ Die aktuellen Phase-2-Notebooks (Feature Extraction, Data Quality, Final Prepara
 ### Priorität
 
 **Mittel-Hoch:** Phase 2 läuft aktuell, aber für Phase 3 (Experimente mit vielen Trainingsläufen) wird Performance-Optimierung wichtiger. Eine Überarbeitung der Notebooks mit Fokus auf Memory-Effizienz und I/O-Reduktion ist für zukünftige Iterationen empfohlen.
+
+---
+
+## 6. Konsolidierung der Notebook-Konfigurationen
+
+### Beschreibung
+
+Die aktuellen Notebooks (Phase 1, Phase 2a/b/c, Exploratory) enthalten **redundante Konfigurationen** direkt im Code. Parameter wie Pfade, Schwellenwerte, Feature-Listen und Verarbeitungsoptionen werden in mehreren Notebooks wiederholt definiert, was zu Inkonsistenzen und Wartungsaufwand führt.
+
+**Beispiele für duplizierte Konfigurationen:**
+- Feature-Listen (Sentinel-2 Bänder, Vegetation Indices)
+- Outlier-Schwellenwerte (z.B. `CHM_MAX_VALID`, `NDVI_MIN_VALID`)
+- Pfad-Definitionen (Data-Directory, Output-Directory)
+- Split-Parameter (Test-Size, Random-Seed, Spatial-Distance)
+- Plot-Styles (Figsize, DPI, Font-Sizes)
+
+### Aktueller Zustand
+
+**Phase 1 (01_data_processing.ipynb):**
+```python
+# Hardcoded im Notebook
+PROJECT_CRS = "EPSG:25833"
+BOUNDARY_BUFFER = 500
+NODATA_VALUE = -9999.0
+```
+
+**Phase 2a (02a_feature_extraction.ipynb):**
+```python
+# Wieder definiert
+SPECTRAL_BANDS = ["B2", "B3", "B4", ...]
+VEG_INDICES = ["NDVI", "EVI", "GNDVI", ...]
+CHM_MAX = 50.0
+```
+
+**Exploratory Notebooks:**
+```python
+# Jeweils neu definiert
+OUTLIER_THRESHOLDS = {"NDVI": (0.2, 0.95), "CHM_1m": (0, 50)}
+```
+
+### Problem
+
+- **Inkonsistenzrisiko:** Änderungen müssen über mehrere Notebooks manuell synchronisiert werden
+- **Wartungsaufwand:** Schwellenwerte/Parameter an mehreren Stellen anpassen
+- **Fehleranfälligkeit:** Typos oder vergessene Updates führen zu falschen Ergebnissen
+- **Reproduzierbarkeit:** Schwierig nachzuvollziehen, welche Konfiguration zu welchem Experiment gehört
+
+### Warum nicht implementiert?
+
+1. **Iterative Entwicklung:** Während der Exploration/Entwicklung ist schnelles Experimentieren wichtiger als perfekte Konfiguration
+2. **Scope Phase 2:** Fokus auf Methodik-Implementierung, nicht auf Code-Infrastruktur
+3. **Funktionale Anforderung:** Pipeline liefert Ergebnisse, Refactoring ist kein Blocker
+
+### Potenzial für Folgearbeit
+
+**Kurzfristige Verbesserungen:**
+
+**1. Experiment-Configs erweitern:**
+```yaml
+# configs/experiments/phase2_feature_engineering.yaml
+extraction:
+  sentinel2:
+    bands: [B2, B3, B4, B5, B6, B7, B8, B8A, B11, B12]
+    indices: [NDVI, EVI, GNDVI, NDre1, NDVIre, CIre, IRECI, RTVIcore, NDWI, MSI, NDII, kNDVI, VARI]
+  chm:
+    value_range: [0, 50]
+    buffer_radius: 30
+
+quality:
+  outlier_thresholds:
+    NDVI: [0.2, 0.95]
+    EVI: [-0.5, 1.5]
+    CHM_1m: [0, 50]
+    CHM_30m_mean: [0, 40]
+  
+splits:
+    test_size: 0.2
+    spatial_distance_km: 5.0
+    random_seed: 42
+
+visualization:
+  figsize: [12, 7]
+  dpi: 300
+  style: "seaborn-v0_8-whitegrid"
+```
+
+**2. Config-Loader in Notebooks:**
+```python
+# Statt Hardcoding
+from urban_tree_transfer.config.loader import load_experiment_config
+
+config = load_experiment_config("phase2_feature_engineering")
+bands = config["extraction"]["sentinel2"]["bands"]
+outliers = config["quality"]["outlier_thresholds"]
+```
+
+**3. Zentralisierte Plot-Konfiguration:**
+```python
+# src/urban_tree_transfer/config/visualization.py
+PUBLICATION_STYLE = {
+    "style": "seaborn-v0_8-whitegrid",
+    "figsize": (12, 7),
+    "dpi": 300,
+    "font_size": 12,
+    "title_size": 14
+}
+```
+
+**Mittelfristige Verbesserungen:**
+
+- **Config-Versionierung:** Experiment-Configs mit Git-Commit-Hash verknüpfen
+- **Config-Validation:** Pydantic-Schemas für Type-Safety
+- **Hydra-Integration:** Hierarchische Config-Komposition für Experiment-Varianten
+- **Config-Tracking:** Mlflow/Sacred für Experiment-Parameter-Logging
+
+### Vorteile einer Konsolidierung
+
+✅ **Single Source of Truth:** Parameter nur einmal definieren  
+✅ **Reproduzierbarkeit:** Klare Zuordnung Config → Experiment  
+✅ **Wartbarkeit:** Eine Stelle für Schwellenwert-Anpassungen  
+✅ **Testbarkeit:** Config-Loader kann Unit-getestet werden  
+✅ **Dokumentation:** YAML ist self-documenting (mit Kommentaren)
+
+### Priorität
+
+**Mittel:** Aktuell funktioniert die Pipeline, aber vor Phase 3 (Experimente mit vielen Varianten) sollte die Konfiguration konsolidiert werden. Für systematische Hyperparameter-Experimente ist ein sauberes Config-System essenziell.
 
 ---
 
@@ -270,6 +399,7 @@ Die aktuellen Phase-2-Notebooks (Feature Extraction, Data Quality, Final Prepara
 | Deutsche Gattungsnamen in Plots           | Nicht implementiert | Mittel (Konsistenz/Lesbarkeit)                 |
 | Nadel-/Laubbaum-Spalte im Datensatz       | Nicht implementiert | Hoch (benötigt in Phase-3-Analysen)            |
 | Performance-Optimierung der Notebooks     | Nicht implementiert | Mittel-Hoch (wichtig für Phase 3)              |
+| Konsolidierung der Notebook-Konfigurationen | Nicht implementiert | Mittel (wichtig für systematische Experimente) |
 
 ---
 
