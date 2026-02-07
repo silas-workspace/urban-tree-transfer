@@ -7,6 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Phase 3: 100% PRD Compliance (✅ Completed 2026-02-07)
+
+- Add missing config helper functions to `config/loader.py` per PRD 003 Section 3.2
+  - `get_algorithm_config()`: Get configuration for specific algorithm
+  - `get_coarse_grid()`: Get coarse hyperparameter grid for algorithm
+  - `get_optuna_space()`: Get Optuna search space for algorithm
+  - Export all three functions in `config/__init__.py`
+- Add missing fine-tuning functions to `experiments/training.py` per PRD 003 Section 4.8
+  - `create_stratified_subsets()`: Create stratified subsets at different fractions for sample efficiency curves
+  - `finetune_xgboost()`: Fine-tune XGBoost model with additional trees using `xgb_model` parameter
+  - `finetune_neural_network()`: Fine-tune CNN1D or TabNet with reduced learning rate (lr × 0.1)
+  - Export all three functions in `experiments/__init__.py`
+- Add missing ablation helper functions to `experiments/ablation.py` per PRD 003 Section 4.3
+  - `evaluate_dataset_variants()`: Evaluate multiple dataset variants with CV (proximity/outlier ablations)
+  - `compute_feature_importance()`: Compute and rank feature importance using RF gain
+  - `create_feature_subsets()`: Create feature subsets based on importance ranking (top-k selection)
+  - `evaluate_feature_subsets()`: Evaluate each feature subset with spatial block CV
+  - `select_optimal_features()`: Select optimal feature set using Pareto criterion (smallest k with F1 ≥ best - max_drop)
+  - Export all five functions in `experiments/__init__.py`
+- **Implementation Status:** 100% of PRD 003 specification complete
+  - All 11 missing helper functions implemented (~155 lines)
+  - All functions have docstrings, type hints, and error handling
+  - Enables notebooks (exp_09, 03d) to use modular helpers instead of inline logic
+
+### Fixed - Phase 3: Test Suite
+
+- Fix floating-point precision error in `tests/experiments/test_transfer.py`
+  - Change `assert gap.absolute_drop == 0.14` to `assert gap.absolute_drop == pytest.approx(0.14, abs=1e-10)`
+  - Resolves FAILED test due to 0.7 - 0.56 = 0.13999999999999999 in floating-point arithmetic
+  - **Result:** All 133 tests now passing (previously 132/133)
+- Fix Pyright type errors in transfer hypothesis summaries and visualization helpers
+  - Guard hypothesis metric keys before dict access in `experiments/transfer.py`
+  - Normalize pandas typing usage in `experiments/visualization.py` (map callable, sort casts)
+- Fix linter errors in new code
+  - Add `from exc` to ImportError in `finetune_xgboost()` (B904 compliance)
+  - Simplify if-else to ternary operator in `compute_transfer_gap()` (SIM108 compliance)
+  - Add type ignore comments for sklearn/pandas type stub limitations
+  - **Result:** All lint checks passing, no ruff errors
+
+### Added - Phase 3: Experiment Infrastructure (✅ Completed 2026-02-07)
+
+- Add Phase 3 experiment helpers for data loading, preprocessing, and evaluation
+  - `experiments/data_loading.py` (233 lines, 6 functions): Parquet loading with schema validation and missing genus_german fixes
+  - `experiments/preprocessing.py` (146 lines, 3 functions): Label encoding, feature scaling, and training data preparation utilities
+  - `experiments/evaluation.py` (149 lines, 3 functions): Metrics, per-class reports, and bootstrap confidence intervals
+  - `experiments/__init__.py`: Clean module exports for all 12 functions
+  - Feature extraction via exclusion-based discovery for Phase 3 outputs (144 Sentinel + 3 CHM features)
+  - Unit tests: 13 tests across test_data_loading.py, test_preprocessing.py, test_evaluation.py
+  - **Validation:** All 94 tests passing, lint/format/typecheck successful
+- Add Phase 3 model/training/ablation infrastructure
+  - `experiments/models.py`: Model factory, baselines, CNN1D, training helper
+  - `experiments/training.py`: Spatial CV, final training, save/load utilities
+  - `experiments/ablation.py`: CHM/proximity/outlier/feature selection pipeline
+  - Unit tests: test_models.py, test_training.py, test_ablation.py + shared fixtures
+
+### Added - Phase 3: Visualization & Error Analysis
+
+- Add evaluation error analysis utilities for confusion, metadata, spatial, and species diagnostics
+- Add Phase 3 visualization module with standardized plotting functions and helpers
+- Add evaluation analysis and visualization test suites
+
+### Added - Phase 3: Experiment Pipeline
+
+- Add Phase 3 experiment configuration (`configs/experiments/phase3_config.yaml`) and loader
+- Add Phase 3 JSON schemas for setup decisions, algorithm comparison, HP tuning, evaluation metrics, and fine-tuning curves
+- Add transfer evaluation utilities (transfer gap, robustness, McNemar tests, feature stability)
+- Add Optuna hyperparameter tuning helpers with configurable search spaces
+- Extend visualization utilities with ablation, transfer, and fine-tuning plots
+- Add Phase 3 exploratory notebooks (exp_07–exp_10) and runner notebooks (03a–03d)
+- Add Phase 3 integration test suite and unit tests for transfer + hp_tuning
+
 ### Fixed - Phase 2: Parquet Export
 
 - Fix geometry lookup deduplication breaking split validation (selection.py:334-337)
