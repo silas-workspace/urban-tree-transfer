@@ -92,7 +92,7 @@ setup_ablation:
         description: "Proximity-filtered dataset (exp_06 decision)"
     decision_rules:
       min_improvement: 0.02
-      max_sample_loss: 0.20
+      max_sample_loss: 0.25
       prefer_larger_dataset: true
 
   outliers:
