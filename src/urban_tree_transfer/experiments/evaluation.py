@@ -572,6 +572,48 @@ def analyze_species_breakdown(
     return results
 
 
+def compute_cohens_d(
+    values_a: np.ndarray,
+    values_b: np.ndarray,
+) -> float:
+    """Compute Cohen's d effect size between two samples.
+
+    Cohen's d quantifies the standardized mean difference between two groups.
+    Interpretation:
+    - |d| < 0.2: Negligible
+    - 0.2 <= |d| < 0.5: Small
+    - 0.5 <= |d| < 0.8: Medium
+    - |d| >= 0.8: Large
+
+    Args:
+        values_a: First sample (e.g., Berlin feature values).
+        values_b: Second sample (e.g., Leipzig feature values).
+
+    Returns:
+        Cohen's d effect size. Positive means values_a > values_b on average.
+
+    Raises:
+        ValueError: If inputs are empty or have insufficient variance.
+    """
+    if values_a.size == 0 or values_b.size == 0:
+        raise ValueError("Both samples must be non-empty.")
+
+    n1, n2 = len(values_a), len(values_b)
+    if n1 < 2 or n2 < 2:
+        raise ValueError("Each sample must have at least 2 values.")
+
+    mean1, mean2 = np.mean(values_a), np.mean(values_b)
+    var1, var2 = np.var(values_a, ddof=1), np.var(values_b, ddof=1)
+
+    # Pooled standard deviation
+    pooled_std = np.sqrt(((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2))
+
+    if pooled_std == 0:
+        raise ValueError("Pooled standard deviation is zero; cannot compute Cohen's d.")
+
+    return float((mean1 - mean2) / pooled_std)
+
+
 def fit_power_law(
     x_data: np.ndarray,
     y_data: np.ndarray,

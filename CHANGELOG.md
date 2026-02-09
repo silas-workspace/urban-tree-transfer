@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - exp_07: Cross-City Baseline Analysis (✅ 2026-02-09)
+
+**Exploratory Notebook Implementation**
+- Complete rewrite of exp_07_cross_city_baseline.ipynb following Phase 3 patterns
+- Implements all 6 required descriptive analyses for Berlin vs Leipzig comparison
+- Analysis 1: Class distribution comparison (stacked bar chart)
+- Analysis 2: Phenological profiles for top-5 genera (NDVI time series)
+- Analysis 3: CHM distribution per genus (violin plots)
+- Analysis 4: Feature distribution overlap (ridge plots with KDE)
+- Analysis 5: Cohen's d effect size heatmap (top-5 genera × top-20 features)
+- Analysis 6: Correlation structure comparison (side-by-side heatmaps)
+- Follows existing patterns: GitHub token installation, Drive paths, ExecutionLog, memory optimization
+- Purely descriptive (no JSON outputs, no training) for hypothesis generation
+- 12 cells with comprehensive documentation and interpretation guidance
+
+**Code Enhancements**
+- Add `compute_cohens_d()` function to evaluation.py for effect size computation
+- Implements pooled standard deviation formula for Cohen's d
+- Includes clear interpretation thresholds (negligible/small/medium/large)
+- Proper error handling for edge cases (empty samples, zero variance)
+- Full type hints and comprehensive docstring with interpretation guide
+
+### Changed - Phase 3: Production-Ready Runner Notebooks (✅ 2026-02-09)
+
+**03b_berlin_optimization.ipynb Refactoring**
+- Restructure notebook to follow runner_template.ipynb pattern (11 sections)
+- Add GitHub token handling + separate Optuna and PyTorch installation
+- Fix output directory paths (data/phase_3_experiments/models/ not outputs/phase_3/models/)
+- Add ExecutionLog integration for all major steps
+- Fix CNN1D structural parameter detection (auto-detect temporal features with _XX suffix)
+- Add proper NN champion handling (skip if no NN champion exists)
+- Add memory optimization (float32 conversion, gc.collect after each major section)
+- Improve error handling with try-except blocks and logging
+- Add comprehensive documentation and runtime requirements (2-4 hours, GPU recommended)
+- Model-agnostic design (works with any ML/NN champion from exp_10)
+- From 11 cells → 13 cells with proper structure and validation
+- Optuna configuration from config with TPE sampler and median pruner for efficiency
+- Simplified error analysis (5 key analyses: confusion matrix, per-genus F1, confused pairs, conifer/deciduous, feature importance)
+
+**03a_setup_fixation.ipynb Refactoring**
+- Restructure notebook to follow runner_template.ipynb pattern with proper sections
+- Add GitHub token handling from Colab Secrets with clear error messages
+- Remove unnecessary dependencies (optuna, pytorch-tabnet not needed for 03a)
+- Fix output directory paths (data/phase_3_experiments/ not outputs/phase_3/)
+- Add ExecutionLog integration for proper progress tracking
+- Add comprehensive validation section (file existence, feature count, NaN checks)
+- Add memory profiling with gc.collect() after each split
+- Improve error handling with try-except blocks and logging
+- Add detailed summary section with next steps
+- From 3 cells → 10 cells with proper structure
+
+**ablation.py Enhancements**
+- Add `optimize_dtypes()` function for memory optimization (float64→float32, int optimization)
+- Add automatic test split policy enforcement in `prepare_ablation_dataset()`
+- Test splits always use baseline proximity (no filtering) for unbiased evaluation
+- Add `optimize_memory` parameter (default: True) for dtype optimization
+- Add comprehensive metadata tracking (test_policy_applied, proximity_used)
+- Improve docstrings with examples and detailed parameter descriptions
+- Add validation for missing setup_decisions keys with clear error messages
+
+**Test Coverage**
+- Add `test_optimize_dtypes()` for memory optimization verification
+- Add `test_prepare_ablation_dataset_test_split_policy()` for automatic baseline override
+- Add `test_prepare_ablation_dataset_memory_optimization()` for dtype conversion
+- All 12 ablation tests passing (previously 9 tests)
+
+**Code Quality**
+- All lint checks passing (ruff check)
+- All format checks passing (ruff format)
+- All type checks passing (pyright 0 errors)
+- Memory savings: ~50% reduction (float64→float32 for feature matrices)
+
 ### Fixed - Phase 3: PRD 003e Audit Fixes - Complete (✅ 2026-02-07)
 
 **Phase 4: Testing & Polish**
