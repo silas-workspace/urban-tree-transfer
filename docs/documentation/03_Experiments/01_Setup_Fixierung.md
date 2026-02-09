@@ -381,7 +381,7 @@ Setup-Decisions (CHM-Strategie, Proximity, Outlier, Feature-Selektion) reduziere
 2. **Sample Sufficiency Assessment:** Vergleich mit Literatur (RF benötigt ~100-200 Samples/Klasse)
 3. **JM-Distance Separability Matrix:** Paarweise Jeffries-Matusita Distance zwischen allen Genera (sample-level, nur Berlin Train)
 4. **Hierarchical Clustering:** Ward-Linkage auf JM-Matrix für Genus-Gruppierung
-5. **Adaptive Threshold:** Percentile-basierte JM-Schwelle (z.B. 20th percentile) für Gruppierungsentscheidung
+5. **Adaptive Threshold:** Percentile-basierte JM-Schwelle (10th percentile) für Gruppierungsentscheidung
 6. **Grouping Decision:** Schlecht separierbare Genera gruppieren basierend auf JM < Threshold
 7. **KL-Divergence Validation:** Prüfung dass Splits weiterhin stratifiziert sind (Threshold: <0.15)
 
@@ -407,6 +407,10 @@ Setup-Decisions (CHM-Strategie, Proximity, Outlier, Feature-Selektion) reduziere
 3. Räumliche Autokorrelations-Prevention bleibt intakt
 4. KL-Divergence nach Filtering bestätigt Stratifizierung
 
+**Wahl des 10th Percentile (P10):** Wir wählen einen konservativen Cut, der nur die schwächsten ~10% der Genus-Paare
+gruppiert. Das reduziert übermäßige Zusammenlegungen bei insgesamt hoher Separierbarkeit und hält die Methodik
+datengestützt (relativer, datenadaptiver Threshold statt fixer Grenzwert).
+
 ### Output
 
 - **Config:** `outputs/phase_3_experiments/metadata/setup_decisions.json` (erweitert um `genus_selection` Section)
@@ -419,31 +423,52 @@ Setup-Decisions (CHM-Strategie, Proximity, Outlier, Feature-Selektion) reduziere
 
 ## Runner-Notebook: 03a_setup_fixation.ipynb
 
-Nach Abschluss aller Ablationen fasst dieses Runner-Notebook die Entscheidungen zusammen:
+Nach Abschluss aller Ablationen (exp_08, exp_08b, exp_08c, exp_09) und Genus-Selektion (exp_10) fasst dieses Runner-Notebook die Entscheidungen zusammen und erstellt die finalen ML-ready Datensätze.
 
 ### Inputs
 
-- `outputs/phase_3/metadata/setup_decisions.json` (erstellt durch exp_08, exp_08b, exp_08c, exp_09)
+- `outputs/phase_3_experiments/metadata/setup_decisions.json` (alle Ablations-Entscheidungen)
+- Phase-2-Splits (Baseline + Filtered Parquet-Dateien)
 
 ### Prozess
 
 1. **Lade und validiere** `setup_decisions.json`
 2. **Wende Entscheidungen an:**
-   - Selektiere CHM-Features
-   - Wähle Datensatz-Variante (baseline/filtered)
-   - Entferne Outlier (falls entschieden)
-   - Reduziere Features auf Top-k
-3. **Erstelle feature-reduced Datasets** für Experimente:
+   - CHM-Features (aus exp_08)
+   - Datensatz-Variante: baseline vs. filtered (aus exp_08b)
+   - Outlier-Removal Level (aus exp_08c)
+   - Feature-Reduktion (aus exp_09)
+   - Genus-Filterung (aus exp_10)
+3. **⚠️ Kritische methodische Entscheidung: Asymmetrische Proximity-Policy**
+   - **Train/Val/Finetune:** Proximity-Filter angewendet (falls in exp_08b gewählt)
+   - **Test-Splits (Berlin + Leipzig):** **Immer ungefiltert (baseline)** → Real-World-Szenario
+4. **Erstelle feature-reduced Datasets** für Experimente:
    - `berlin_train.parquet` (final)
    - `berlin_val.parquet` (final)
-   - `berlin_test.parquet` (final)
+   - `berlin_test.parquet` (final, **ungefiltert**)
    - `leipzig_finetune.parquet` (final)
-   - `leipzig_test.parquet` (final)
+   - `leipzig_test.parquet` (final, **ungefiltert**)
+
+### Rationale für ungefilterte Test-Splits
+
+**Methodische Begründung:**
+
+Die asymmetrische Proximity-Policy (Train/Val filtered, Test ungefiltert) folgt dem Prinzip der **realistischen Evaluierung**:
+
+1. **Training auf sauberen Samples:** Proximity-Filter sorgt für spektral reine Trainingssignale (keine mixed-genus Pixel) → robustes Feature-Learning
+2. **Evaluation auf Real-World-Komplexität:** Ungefilterte Test-Splits enthalten mixed-genus Proximities, wie sie in praktischen Anwendungen vorkommen → konservative Performance-Schätzung
+3. **Transfer-Szenario-Konformität:** Leipzig-Zielstadt hat keine Proximity-Filterung in realen Kartierungen → Test muss diese Komplexität abbilden
+
+**Konsequenz:** Alle Test-Metriken in Phase 3.3 (Transfer Evaluation) und 3.4 (Finetuning) sind **konservativer** (niedriger) als bei gefiltertem Test-Set, reflektieren aber echte Einsatzbedingungen.
+
+**Alternative Strategie (verworfen):**  
+Konsistente Filterung über alle Splits → würde optimistische Test-Performance liefern, die in der Praxis nicht erreichbar ist.
 
 ### Outputs
 
-- Prozessierte Datasets in `data/phase_3_experiments/`
-- Execution Log in `outputs/phase_3/logs/03a_setup_fixation.json`
+- **Finale Datasets:** `data/phase_3_experiments/` (5 Parquet-Dateien)
+- **Summary:** `outputs/phase_3_experiments/metadata/03a_summary.json`
+- **Execution Log:** `outputs/phase_3_experiments/logs/03a_setup_fixation_execution.json`
 
 ---
 
@@ -487,4 +512,4 @@ Siehe Abschnitte oben für vollständige Liste der Ablation-spezifischen Visuali
 
 ---
 
-_Letzte Aktualisierung: 2026-02-06_
+_Letzte Aktualisierung: 09.02.2026_

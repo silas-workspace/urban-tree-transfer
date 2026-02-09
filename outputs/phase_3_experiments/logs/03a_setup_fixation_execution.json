@@ -1,13 +1,13 @@
 {
   "notebook": "03a_setup_fixation",
-  "execution_start": "2026-02-09T17:33:21.587004",
-  "execution_end": "2026-02-09T17:34:09.365733",
+  "execution_start": "2026-02-09T19:21:36.305249",
+  "execution_end": "2026-02-09T19:30:03.430713",
   "steps": [
     {
       "name": "Load Setup Decisions",
       "status": "success",
-      "start_time": "2026-02-09T17:33:22.641803",
-      "end_time": "2026-02-09T17:33:23.172930",
+      "start_time": "2026-02-09T19:23:21.086926",
+      "end_time": "2026-02-09T19:23:21.522049",
       "records": null,
       "warnings": [],
       "errors": []
@@ -15,8 +15,8 @@
     {
       "name": "Apply Setup Decisions",
       "status": "success",
-      "start_time": "2026-02-09T17:33:23.185503",
-      "end_time": "2026-02-09T17:34:08.410002",
+      "start_time": "2026-02-09T19:24:35.290688",
+      "end_time": "2026-02-09T19:24:47.375244",
       "records": 5,
       "warnings": [],
       "errors": []
@@ -24,8 +24,8 @@
     {
       "name": "Validation",
       "status": "success",
-      "start_time": "2026-02-09T17:34:08.421428",
-      "end_time": "2026-02-09T17:34:09.354712",
+      "start_time": "2026-02-09T19:29:14.876351",
+      "end_time": "2026-02-09T19:29:15.799547",
       "records": null,
       "warnings": [],
       "errors": []
