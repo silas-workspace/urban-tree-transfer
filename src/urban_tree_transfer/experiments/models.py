@@ -342,6 +342,29 @@ else:
                 combined = self.dense_stack(combined)
             return self.output_layer(combined)
 
+        def predict(
+            self,
+            x_test: np.ndarray,
+            batch_size: int = 256,
+            device: str | None = None,
+        ) -> np.ndarray:
+            """Predict class labels for CNN1D."""
+            if torch is None:
+                raise ImportError("PyTorch is required to run CNN1D predictions.")
+            assert torch is not None
+            use_device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+            self.to(use_device)
+            self.eval()
+            dataset = torch.utils.data.TensorDataset(torch.from_numpy(x_test).float())
+            loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False)
+            preds: list[np.ndarray] = []
+            with torch.no_grad():
+                for (batch_x,) in loader:
+                    batch_x = batch_x.to(use_device)
+                    logits = self(batch_x)
+                    preds.append(torch.argmax(logits, dim=1).cpu().numpy())
+            return np.concatenate(preds)
+
         def get_init_params(self) -> dict[str, Any]:
             """Return initialization parameters for cloning the model."""
             return dict(self._init_params)

@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Speed up 03b HP tuning with configurable subset sampling, 1-fold tuning CV, and narrower XGBoost search
 - Fix HP tuning schema validation by including model_name and best_value in Optuna results
 - Align 03b evaluation output with evaluation_metrics schema to avoid validation errors
+- Add CNN1D GPU-ready predict method and GPU-aware logic in 03c/03d with skip-if-exists guards
 
 ### Changed - 03b Methodology Docs (✅ 2026-02-09)
 
