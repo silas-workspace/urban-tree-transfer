@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Allow Phase 3 data loading without CHM feature columns when excluded by setup decisions
 - Add resume logic in 03b to reuse existing HP tuning results and trained models instead of re-running
+- Validate 03b feature columns against setup_decisions config instead of hardcoded Sentinel count
 
 ### Changed - exp_10: JM-Based Genus Grouping (✅ 2026-02-09)
 

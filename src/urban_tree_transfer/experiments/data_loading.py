@@ -116,6 +116,7 @@ def get_feature_columns(
     df: pd.DataFrame,
     include_chm: bool = True,
     chm_features: list[str] | None = None,
+    expected_features: list[str] | None = None,
 ) -> list[str]:
     """Extract feature column names (CHM + Sentinel-2) from DataFrame.
 
@@ -124,12 +125,14 @@ def get_feature_columns(
         include_chm: Whether to include CHM features.
         chm_features: Specific CHM features to include (default: all 3).
                       Options: ["CHM_1m", "CHM_1m_zscore", "CHM_1m_percentile"].
+        expected_features: Optional list of expected feature columns. When provided,
+            validates presence and returns columns in this order.
 
     Returns:
-        Sorted list of feature column names.
+        Sorted list of feature column names, or the expected list if provided.
 
     Raises:
-        ValueError: If feature counts are unexpected or inputs invalid.
+        ValueError: If expected features are missing or inputs invalid.
     """
     exclude_cols = _ID_COLUMNS | {_TARGET_COLUMN} | _METADATA_COLUMNS | _OUTLIER_COLUMNS
 
@@ -145,6 +148,12 @@ def get_feature_columns(
     chm_available = [col for col in _CHM_FEATURES if col in all_columns]
     sentinel_features = [col for col in all_columns if col not in _CHM_FEATURES]
 
+    if expected_features is not None:
+        missing_expected = [col for col in expected_features if col not in all_columns]
+        if missing_expected:
+            raise ValueError(f"Missing expected features: {missing_expected}")
+        return list(expected_features)
+
     if include_chm:
         if chm_features is None:
             chm_selected = chm_available
@@ -156,18 +165,6 @@ def get_feature_columns(
         feature_columns = sentinel_features + chm_selected
     else:
         feature_columns = sentinel_features
-
-    sentinel_count = len(sentinel_features)
-    expected_sentinel = 144
-    if sentinel_count != expected_sentinel:
-        raise ValueError(f"Expected {expected_sentinel} Sentinel features, found {sentinel_count}")
-
-    chm_count = len([col for col in feature_columns if col in _CHM_FEATURES])
-    expected_total = expected_sentinel + chm_count
-    if len(feature_columns) != expected_total:
-        raise ValueError(
-            f"Feature count mismatch: expected {expected_total}, found {len(feature_columns)}"
-        )
 
     return sorted(feature_columns)
 
