@@ -361,6 +361,58 @@ exp_08 (CHM)  →  exp_08b (Proximity)  →  exp_08c (Outlier)  →  exp_09 (Fea
 
 ---
 
+## Genus Selection Validation (exp_10)
+
+**Ausführungsdatum:** [NACH AUSFÜHRUNG AUSFÜLLEN]
+**Status:** [NACH AUSFÜHRUNG AUSFÜLLEN]
+**Zweck:** Validierung dass alle Genera nach Setup-Decisions noch ≥500 Samples haben
+
+### Problem
+
+Phase 1 filtert auf Genera mit ≥500 Samples → **30 viable genera**.
+Setup-Decisions (CHM-Strategie, Proximity, Outlier, Feature-Selektion) reduzieren Datensatz weiter.
+
+**Risiko:** Einige Genera könnten unter 500-Sample-Threshold gefallen sein.
+
+### Analysen
+
+1. **Sample Count Validation:** Tatsächliche Genus-Counts nach Setup-Decisions
+2. **Sample Sufficiency Assessment:** Vergleich mit Literatur (RF benötigt ~100-200 Samples/Klasse)
+3. **Separability Matrix:** Genus-Centroid-Distanzen im finalen 50-Feature-Space
+4. **Hierarchical Clustering:** Ward-Linkage für Genus-Gruppierung
+5. **Grouping Decision:** Schlecht separierbare Genera gruppieren (z.B. Rosaceae-Gruppe)
+6. **KL-Divergence Validation:** Prüfung dass Splits weiterhin stratifiziert sind (Threshold: <0.15)
+
+### Entscheidung
+
+**[WIRD NACH AUSFÜHRUNG AUSGEFÜLLT]**
+
+**Gewählte Strategie:** exclude_low_sample_and_group_similar
+
+**Finale Genus-Liste:** [N Klassen]
+- Ausgeschlossene Genera: [...]
+- Gruppierte Genera: [...]
+
+**Reasoning:** [...]
+
+### Methodische Validität
+
+**Genus-Filtering nach Spatial Splits ist methodisch unproblematisch**, weil:
+1. Block-Grenzen (1200m) sind geografisch fix (nicht genus-abhängig)
+2. Train/Val/Test Block-Zuordnungen bleiben unverändert
+3. Räumliche Autokorrelations-Prevention bleibt intakt
+4. KL-Divergence nach Filtering bestätigt Stratifizierung
+
+### Output
+
+- **Config:** `outputs/phase_3_experiments/metadata/genus_selection_final.json`
+- **Visualisierungen:**
+  - `genus_sample_counts.png` - Sample-Counts mit 500-Threshold
+  - `genus_separability_heatmap.png` - Genus-Distanz-Matrix im finalen Feature-Space
+  - `genus_dendrogram.png` - Hierarchisches Clustering (Ward-Linkage)
+
+---
+
 ## Runner-Notebook: 03a_setup_fixation.ipynb
 
 Nach Abschluss aller Ablationen fasst dieses Runner-Notebook die Entscheidungen zusammen:

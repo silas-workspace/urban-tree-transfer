@@ -420,12 +420,21 @@ PUBLICATION_STYLE = {
 
 **Problem:**
 MIN_SAMPLES_PER_GENUS = 500 wird in Phase 1 (Data Processing) angewendet, resultiert in 30 viable genera. Phase 2c wendet jedoch weitere Filter an:
+
 - **Proximity-Filter (5m):** Entfernt ~20% der Samples (mixed-genus proximity)
 - **Outlier-Removal:** Entfernt weitere ~1-2% der Samples (high/medium outliers)
 
-**Folge:** Genus-Sample-Counts können unter 500-Threshold fallen, ohne dass dies validiert wird.
+**Folge:** Genus-Sample-Counts können unter 500-Threshold fallen, ohne dass dies in der Data Processing Pipeline validiert wird.
 
-### Empfohlene Implementierung
+### Aktuelle Lösung (Interims-Ansatz)
+
+**Status:** Der Sample-Count-Filter wird **nachträglich in Phase 3 exp_10** angewendet.
+
+**Begründung:** Phase 2 wurde bereits vollständig ausgeführt. Eine Neuberechnung der Feature Engineering Pipeline (~20h Rechenzeit) ist nicht praktikabel. Das exploratory notebook exp_10 validiert die Genus-Auswahl nachträglich und stellt sicher, dass alle Experimente mit konsistenten, validierten Genera arbeiten.
+
+### Empfohlene Implementierung (Future Work - Pipeline-Überarbeitung)
+
+**Wann:** Bei einer zukünftigen Überarbeitung der Feature Engineering Pipeline
 
 **Ort:** Am Ende von `02c_final_preparation.ipynb`, nach Proximity-Filter und vor Export der finalen Splits
 
@@ -441,14 +450,20 @@ Phase 2b: Data Quality (Outlier Detection)
 Phase 2c: Final Preparation
   ├─ Proximity Filter (5m) → ~20% Sample-Reduktion
   ├─ Outlier Removal → ~1-2% Sample-Reduktion
-  └─ Re-apply MIN_SAMPLES_PER_GENUS Filter ← **NEU**
+  └─ Re-apply MIN_SAMPLES_PER_GENUS Filter ← **FUTURE: Hier einfügen**
       ↓ Finale Genus-Liste (12-30 Genera)
       ↓ Export gefilterte Datensätze
 Phase 3: Training/Evaluation
-  ↓ Nutzt nur validierte Genera
+  ↓ Nutzt nur validierte Genera (keine nachträgliche Filterung nötig)
 ```
 
-### Code-Implementierung
+**Vorteil dieser Integration:**
+
+- ✅ Saubere Separation of Concerns (Data Processing vs. Experiments)
+- ✅ Alle Phase 3 Notebooks starten mit validierten Genera
+- ✅ exp_10 kann sich auf Separabilität/Gruppierung fokussieren (nicht Sample-Counting)
+
+### Code-Implementierung (für zukünftige Pipeline-Revision)
 
 **Hinzufügen am Ende von Notebook 02c (vor Split-Export):**
 
@@ -512,38 +527,22 @@ with open(genus_filter_path, "w") as f:
 print(f"\nExported: {genus_filter_path}")
 ```
 
-### Output Metadata
+**Output Metadata:** `outputs/phase_2_splits/metadata/genus_filter_phase2c.json`
 
-**Neue Datei:** `outputs/phase_2_splits/metadata/genus_filter_phase2c.json`
+### Migration-Plan (bei Pipeline-Überarbeitung)
 
-```json
-{
-  "phase1_genera_count": 30,
-  "phase2c_genera_count": 16,
-  "excluded_genera": ["CORYLUS", "MALUS", ...],
-  "final_viable_genera": ["ACER", "BETULA", ...],
-  "min_samples_threshold": 500,
-  "sample_counts": {
-    "berlin": {"ACER": 95234, "TILIA": 78123, ...},
-    "leipzig": {"ACER": 18234, "TILIA": 15432, ...}
-  }
-}
-```
+**Schritt 1:** Filter in Phase 2c integrieren (siehe Code oben)
 
-### Integration mit Phase 3
+**Schritt 2:** exp_10 vereinfachen
 
-**exp_10 (Genus Selection Validation)** startet dann mit bereits gefilterten Datensätzen:
-- **KEINE Sample-Count-Validierung mehr nötig** (wurde in Phase 2c gemacht)
-- **Fokus:** Separabilitäts-Analyse, Genus-Gruppierung, finale Empfehlung
-- **Input:** `genus_filter_phase2c.json` (Review der Phase 2c Entscheidung)
+- Entfernen: Sample-Count-Validierung (wird in Phase 2c gemacht)
+- Behalten: Separabilitäts-Analyse, Genus-Gruppierung
+- Umbenennen: "Genus Selection Review" statt "Genus Selection Validation"
 
-### Vorteile dieser Implementierung
+**Schritt 3:** Phase 2 Pipeline neu ausführen
 
-✅ **Saubere Pipeline:** Filter ist Teil der Datenverarbeitung, nicht der Experimente  
-✅ **Reproduzierbarkeit:** Alle Phase 3 Notebooks starten mit validierten Genera  
-✅ **Effizienz:** exp_10 muss nicht erneut Sample-Counts berechnen  
-✅ **Transparenz:** Metadata dokumentiert welche Genera warum ausgeschlossen wurden  
-✅ **Konsistenz:** Alle Experimente nutzen identische Genus-Liste
+- Outputs mit neuen, finalen Genus-Listen generieren
+- Alle Phase 3 Notebooks nutzen dann automatisch gefilterte Datensätze
 
 ### Warum nicht bereits implementiert?
 
@@ -551,9 +550,92 @@ print(f"\nExported: {genus_filter_path}")
 
 **Scope Phase 2:** Der ursprüngliche PRD 002 fokussierte auf Feature-Extraktion und Datensatz-Splits, nicht auf Re-Validierung der Genus-Auswahl nach Filterung.
 
+**Rechenzeit:** Phase 2 wurde bereits vollständig durchgeführt (~20h). Eine Neuberechnung nur für diesen Filter ist ökonomisch nicht vertretbar im aktuellen Projektzeitplan.
+
 ### Priorität
 
-**Hoch:** Sollte implementiert werden bevor Phase 3 Runner-Notebooks (03b-03d) ausgeführt werden. Die aktuelle Phase 3 exploratory phase kann mit unvalidierten Genera arbeiten, aber finale Ergebnisse sollten auf sauberer Genus-Liste basieren.
+**Interims-Lösung (JETZT):** exp_10 führt Sample-Count-Filter durch ✅
+
+**Langfristig (FUTURE WORK):** Bei Pipeline-Revision Filter in Phase 2c verschieben 📋
+
+---
+
+## 6. Genus-Auswahl-Validierung (Post-Setup-Decisions Filter-Kaskade)
+
+### Problem
+
+`MIN_SAMPLES_PER_GENUS = 500` wird in Phase 1 angewendet → 30 viable genera.
+Phase 3 Setup-Decisions (CHM, Proximity, Outlier, Feature-Selektion) reduzieren Datensatz weiter.
+
+**Folge:** Genus-Sample-Counts können unter 500-Threshold fallen.
+
+### Workflow
+
+```
+Phase 1: filter_viable_genera()
+↓ 30 genera mit ≥500 Samples
+Phase 2a-2c: Feature Extraction, Quality Control, Splits
+↓ (keine Genus-Änderung)
+Phase 3 exp_08-09: Setup Decisions
+↓ CHM/Proximity/Outlier/Feature-Strategie definiert
+Phase 3 exp_10: Genus Selection Validation ← **NEU**
+↓ Sample-Count + Separability-basierte Genus-Selektion
+↓ Gruppierung schlecht separierbarer Genera
+↓ Finale Genus-Liste (12-20 Klassen erwartet)
+Phase 3 exp_11+: Algorithm Training
+↓ Nutzt finale, gruppierte Genus-Liste
+```
+
+### Implementierung
+
+**Ort:** `notebooks/exploratory/exp_10_genus_selection_validation.ipynb`
+
+**Analysen:**
+1. Setup-Decisions laden und anwenden (CHM, Proximity, Outlier, Features)
+2. Sample-Counts auf finalem Datensatz validieren (≥500 Threshold)
+3. Genus-Separabilität im finalen Feature-Space berechnen (Euclidean Distance)
+4. Hierarchisches Clustering (Ward-Linkage) für Genus-Gruppierung
+5. Schlecht separierbare Genera gruppieren (z.B. Rosaceae-Gruppe)
+
+**Output:** `genus_selection_final.json` (genutzt von exp_11, 03b, 03c, 03d)
+
+### Strategie: Exclude & Group
+
+**Stufe 1:** Exclude Low-Sample Genera
+- Entferne Genera mit <500 Samples in mindestens einer Stadt
+- Begründung: Statistische Power (RF benötigt ~100-200 Samples, wir nutzen 500 für Transfer-Robustheit)
+
+**Stufe 2:** Group Similar Genera
+- Hierarchisches Clustering auf Genus-Centroids im finalen Feature-Space
+- Gruppiere Genera mit geringer Inter-Genus-Distanz (Distance < Threshold)
+- Z.B. Rosaceae-Gruppe: PRUNUS + MALUS + PYRUS
+- **Vorteil:** Mehr Samples pro Klasse, optimistische Trennbarkeit
+- **Nachteil:** Verlust von Granularität
+
+### Methodische Validität: Genus-Filtering nach Spatial Splits
+
+**✅ Methodisch unproblematisch**, weil:
+1. Block-Grenzen (1200m) sind geografisch fix (nicht genus-abhängig)
+2. Train/Val/Test Block-Zuordnungen bleiben unverändert
+3. Räumliche Autokorrelations-Prevention bleibt intakt
+4. KL-Divergence nach Filtering bestätigt Stratifizierung (Threshold: <0.15)
+
+**Validation:** exp_10 berechnet KL-Divergence zwischen Splits nach Genus-Filtering als Sanity Check.
+
+### Future Work
+
+**Vergleich: Gruppiert vs. Ungrouped**
+
+Aktuelle Analyse nutzt gruppierte Genera für optimistische Trennbarkeit.
+Zukünftige Studien sollten untersuchen:
+- Performance-Unterschied: Gruppiert vs. Einzeln
+- Trade-off: Granularität vs. Klassifikations-Accuracy
+- Genus-spezifische Insights die durch Gruppierung verloren gehen
+
+### Referenzen
+
+- Breiman, L. (2001). Random Forests. *Machine Learning*, 45(1), 5-32.
+- Belgiu, M., & Drăguţ, L. (2016). Random forest in remote sensing. *ISPRS Journal*, 114, 24-31.
 
 ---
 
@@ -567,7 +649,7 @@ print(f"\nExported: {genus_filter_path}")
 | Nadel-/Laubbaum-Spalte im Datensatz         | Nicht implementiert | Hoch (benötigt in Phase-3-Analysen)            |
 | Performance-Optimierung der Notebooks       | Nicht implementiert | Mittel-Hoch (wichtig für Phase 3)              |
 | Konsolidierung der Notebook-Konfigurationen | Nicht implementiert | Mittel (wichtig für systematische Experimente) |
-| **Genus-Filter nach Phase 2c**              | **Empfohlen**       | **Hoch (vor Phase 3 Runner-Notebooks)**        |
+| **Genus-Filter nach Phase 2c**              | **Future Work**     | **Mittel (bei Pipeline-Revision)**             |
 
 ---
 

@@ -40,10 +40,7 @@ Ein exploratives Notebook zur **Validierung und Finalisierung der Genus-Auswahl*
 - Zukünftige Studies, die Pipeline auf andere Städte anwenden
 
 **Hauptanwendung:**
-Nach Phase 2c Filter:** Review der Genus-Reduktion durch Phase 2c (30 → N Genera)
-2. **Vor Berlin-Optimierung (03b):** Separabilitäts-basierte finale Genus-Selektion
-3. **In Publikation:** Transparente Dokumentation: Filter-Kaskade + Separabilitäts-Analyse
-4. **Methodische Rechtfertigung:** Warum bestimmte Genera ausgeschlossen/gruppiert wurden
+Nach Phase 2c Filter:** Review der Genus-Reduktion durch Phase 2c (30 → N Genera) 2. **Vor Berlin-Optimierung (03b):** Separabilitäts-basierte finale Genus-Selektion 3. **In Publikation:** Transparente Dokumentation: Filter-Kaskade + Separabilitäts-Analyse 4. **Methodische Rechtfertigung:\*\* Warum bestimmte Genera ausgeschlossen/gruppiert wurden
 
 **Gelöstes Problem:**
 
@@ -57,18 +54,12 @@ Nach Phase 2c Filter:** Review der Genus-Reduktion durch Phase 2c (30 → N Gene
 
 ## ✅ Success Criteria
 
-### Phase 0: Phase 2c Filter Integration (PREREQUISITE)
-
-- [ ] **Phase 2c Updated:** MIN_SAMPLES_PER_GENUS Filter am Ende von `02c_final_preparation.ipynb` hinzugefügt
-- [ ] **Metadata exportiert:** `genus_filter_phase2c.json` mit finaler Genus-Liste + excluded genera
-- [ ] **Datensätze gefiltert:** Nur noch viable genera in exported splits
-
 ### Phase 1: exp_10 Notebook Creation
 
 - [ ] **Neue Datei:** `notebooks/exploratory/exp_10_genus_selection_validation.ipynb` erstellt
-- [ ] **4 Analysen implementiert:** Phase 2c Filter Review, JM-Separability Matrix, Genus Grouping Options, Final Recommendation
+- [ ] **5 Analysen implementiert:** Sample Count Validation, Sample Sufficiency, JM-Separability Matrix, Genus Grouping Options, Final Recommendation
 - [ ] **Config exportiert:** `outputs/phase_3_experiments/metadata/genus_selection_final.json`
-- [ ] **Visualisierungen:** Dendrogram, JM Heatmap, Phase 2c Filter Review Plot
+- [ ] **Visualisierungen:** Dendrogram, Sample Count Bar Chart, JM Heatmap
 - [ ] **Notebook ausführbar in Colab:** Package Installation, Data Loading funktioniert
 
 ### Phase 2: exp_10→exp_11 Renaming
@@ -177,15 +168,12 @@ selected_features = setup_config["feature_selection"]["selected_features"]
 
 **Location:** `notebooks/exploratory/exp_10_genus_selection_validation.ipynb`
 
-**IMPORTANT NOTE:** 
-Sample-count filtering (MIN_SAMPLES_PER_GENUS ≥500) is performed **in Phase 2c** (`02c_final_preparation.ipynb`).
-This notebook focuses on:
-1. **Review** of Phase 2c genus filtering results
-2. **Separability analysis** (JM-distance matrix)
-3. **Grouping recommendations** (optional genus clustering)
-4. **Final genus selection** (exclude low-separability vs. group similar)
+**IMPORTANT NOTE:**
+Sample-count filtering (MIN_SAMPLES_PER_GENUS ≥500) wird **in diesem Notebook durchgeführt**.
 
-**Structure (13 cells):**
+**Future Work:** Bei einer Pipeline-Überarbeitung sollte dieser Filter in Phase 2c (`02c_final_preparation.ipynb`) verschoben werden, wodurch exp_10 vereinfacht wird.
+
+**Structure (15 cells):**
 
 ```markdown
 ## Cell 1: Markdown - Overview
@@ -930,24 +918,17 @@ berlin_train = filter_by_genus_config(berlin_train, genus_config)
 - [ ] **Backup exp_10:** Copy current `exp_10_algorithm_comparison.ipynb` to `exp_10_algorithm_comparison_BACKUP.ipynb`
 - [ ] **Check exp_10 status:** If exp_10 already completed, results need validation against new genus list
 
-### Phase 0: Phase 2c Filter Integration (PREREQUISITE - 1 hour)
-
-- [ ] Update `notebooks/runners/02c_final_preparation.ipynb`
-- [ ] Add MIN_SAMPLES_PER_GENUS filter cell before split export
-- [ ] Export `genus_filter_phase2c.json` with final genera + excluded genera
-- [ ] Test Phase 2c: validate 12-20 final genera
-- [ ] Update `phase_2_final_summary.json`: include genus filter stats
-
-### Phase 1: exp_10 Notebook (1-2 hours)
+### Phase 1: exp_10 Notebook (2-3 hours)
 
 - [ ] Create `notebooks/exploratory/exp_10_genus_selection_validation.ipynb`
-- [ ] Implement Section 1: Review Phase 2c Filter Results (load `genus_filter_phase2c.json`)
-- [ ] Implement Section 2: JM Separability Matrix
-- [ ] Implement Section 3: Genus Grouping Exploration
-- [ ] Implement Section 4: Final Recommendation & Export
+- [ ] Implement Section 1: Sample Count Validation
+- [ ] Implement Section 2: Sample Sufficiency Assessment
+- [ ] Implement Section 3: JM Separability Matrix
+- [ ] Implement Section 4: Genus Grouping Exploration
+- [ ] Implement Section 5: Decision & Export
 - [ ] Test notebook in Colab
 - [ ] Execute notebook → generate `genus_selection_final.json`
-- [ ] Review: separability analysis + grouping recommendations
+- [ ] Review results: validate expected 12-20 final genera
 
 ### Phase 2: exp_10→exp_11 Renaming (30 min)
 
@@ -1020,8 +1001,9 @@ berlin_train = filter_by_genus_config(berlin_train, genus_config)
 **Mitigation:**
 
 - Falls <10 Genera übrig: Diskussion ob Proximity-Threshold zu streng (5m → 3m?)
-- Alternative: Gruppierung ähnlicher Genera statt Ausschluss
+- Alternative: Gruppierung ähnlicher Genera in exp_10 statt Ausschluss
 - **Entscheidungsregel:** Minimum 8 Genera für wissenschaftliche Validität
+- **Future:** Bei Pipeline-Revision könnte Proximity-Threshold angepasst werden
 
 ### Risk 3: JM-Distanz-Daten nicht ausreichend
 
@@ -1070,7 +1052,7 @@ berlin_train = filter_by_genus_config(berlin_train, genus_config)
 
 ## 📅 Timeline
 
-**Total Estimated Time:** 4-6 hours implementation + 1-2 hours execution
+**Total Estimated Time:** 4-5 hours implementation + 1-2 hours execution
 
 | Phase | Tasks                     | Time   | Who        | Dependencies        |
 | ----- | ------------------------- | ------ | ---------- | ------------------- |
@@ -1085,10 +1067,10 @@ berlin_train = filter_by_genus_config(berlin_train, genus_config)
 **Critical Path:**
 
 ```
-PRD → exp_10 Creation → Execute exp_10 → exp_11 Integration → Documentation
+PRD → Phase 2c Integration → Execute 02c → exp_10 Creation → Execute exp_10 → exp_11 Integration → Documentation
 ```
 
-**Earliest Start:** ASAP (exp_10 algorithm comparison läuft parallel)
+**Earliest Start:** ASAP (Phase 2c must be updated before exp_10 can run)
 
 **Deadline:** Before 03b Berlin Optimization starts (CRITICAL)
 

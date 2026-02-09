@@ -7,6 +7,105 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - exp_10: Genus Selection Validation & exp_10→exp_11 Renumbering (✅ 2026-02-09)
+
+**Exploratory Notebook: exp_10_genus_selection_validation.ipynb**
+- Create new notebook for post-setup-decisions genus validation and grouping
+- Load setup_decisions.json and apply all strategies (CHM, proximity, outlier, feature selection)
+- Validate sample counts after filtering (≥500 samples per genus threshold)
+- Analyze genus separability in final 50-feature space (Euclidean distance between centroids)
+- Hierarchical clustering (Ward linkage) to identify poorly separable genus groups
+- Group similar genera to maintain optimistic separability (e.g., Rosaceae group: PRUNUS + MALUS + PYRUS)
+- Export `genus_selection_final.json` with final class list and genus-to-group mapping
+- KL-divergence validation (<0.15) to ensure stratification maintained after genus filtering
+- 3 visualizations: sample counts bar chart, separability heatmap, hierarchical clustering dendrogram
+- 11 cells following exp_07/exp_09 patterns with comprehensive documentation
+
+**exp_10 → exp_11 Renumbering**
+- Rename exp_10_algorithm_comparison.ipynb → exp_11_algorithm_comparison.ipynb (preserves git history)
+- Add genus config import to exp_11: loads genus_selection_final.json after data loading
+- Map original genera to final classes (handles grouped genera via genus_to_final mapping)
+- Filter all splits to viable genera before training
+- Update all output paths: exp_10_algorithm_comparison/ → exp_11_algorithm_comparison/
+- Update notebook title, log name, and JSON metadata exports to reference exp_11
+- Update dependency: exp_11 now depends on exp_10 (genus selection)
+
+**Runner Notebook Integration**
+- Update 03a_setup_fixation.ipynb: add informational genus validation check
+  - Reports if genus_selection_final.json exists and shows final class count
+  - Non-blocking check (doesn't halt execution if missing)
+  - Updated next steps to include exp_10 and exp_11 in sequence
+- Update 03b_berlin_optimization.ipynb: add genus filtering after data loading
+  - Load genus config, map genera to final classes, filter all splits (train/val/test)
+  - Raise error if genus_selection_final.json missing (exp_10 must run first)
+  - Compact filtering logic using globals() to handle all split variables
+- Update 03c_transfer_evaluation.ipynb: add genus filtering after data loading
+  - Same filtering logic as 03b for Berlin and Leipzig splits
+- Update 03d_finetuning.ipynb: add genus filtering after data loading
+  - Same filtering logic as 03b/03c for all splits
+
+**Documentation Updates**
+- Update 00_Experiment_Overview.md:
+  - Add exp_10 row to exploratory notebooks table (genus selection validation)
+  - Rename exp_10 → exp_11 in algorithm comparison row
+  - Update dependency graph to show: exp_09 → 03a → exp_10 → genus_selection_final.json → [exp_11, 03b, 03c, 03d]
+  - Update CV references from exp_10 to exp_11
+  - Update hyperparameter tuning section (Coarse Grid Search now exp_11)
+  - Update 03b dependencies to include exp_10 and exp_11
+- Update 01_Setup_Fixierung.md:
+  - Add comprehensive "Genus Selection Validation (exp_10)" section before Runner-Notebook section
+  - Document problem, analyses, decision criteria, methodological validity
+  - Include note on genus filtering after spatial splits (methodologically sound)
+  - List outputs: genus_selection_final.json and 3 visualizations
+- Update 05_Ergebnisse.md:
+  - Update progress status to mention exp_10 pending
+  - Add new "Exp 10: Genus Selection Validation" section with pending placeholders
+  - Add new "Exp 11: Algorithm Comparison" section (depends on exp_10)
+  - Move old exp_10 content to exp_11 section
+- Update 05_Methodische_Erweiterungen.md (Phase 2):
+  - Add Section 6: "Genus-Auswahl-Validierung (Post-Setup-Decisions Filter-Kaskade)"
+  - Document workflow from Phase 1 (30 genera) → Setup Decisions → exp_10 (12-20 final classes)
+  - Explain exclude_low_sample_and_group_similar strategy
+  - Document methodological validity of genus filtering after spatial splits
+  - Add future work note: comparison grouped vs. ungrouped genera for granularity analysis
+  - Include references (Breiman 2001, Belgiu & Drăguţ 2016)
+- Update 06_Methodische_Erweiterungen.md (Phase 3):
+  - Replace all exp_10 references with exp_11 (Grid Search section)
+- Update FIGURE_DOCUMENTATION.md:
+  - Add new "Exp 10: Genus Selection Validation" section with 3 figures
+  - Update "Exp 10: Algorithm Comparison" → "Exp 11: Algorithm Comparison"
+  - Update folder reference: exp_10_algorithm_comparison/ → exp_11_algorithm_comparison/
+
+**Context & Rationale**
+- Phase 1 filters to 30 genera (≥500 samples per genus)
+- Setup decisions (CHM, proximity, outlier, features) reduce dataset further
+- Risk: Some genera may fall below 500-sample threshold after filtering
+- Solution: exp_10 validates counts, groups similar genera, and exports final config
+- Expected output: 12-18 final classes (grouped genera for optimistic separability)
+- Genus filtering after spatial splits is methodologically valid (blocks are geographic, not genus-dependent)
+- exp_11 and all runner notebooks (03b/03c/03d) now load and apply genus config
+- Ensures consistent class list across all Phase 3 experiments
+
+**Methodological Note**
+- Genus grouping (e.g., Rosaceae) maintains optimistic separability
+- Trade-off: More samples per class vs. loss of genus-level granularity
+- Future work: Compare performance of grouped vs. ungrouped classifications
+
+### Added - exp_10: Grid Search Optimization Documentation (✅ 2026-02-09)
+
+**Methodological Documentation**
+- Add Section 11 "Grid Search Optimierung" to 06_Methodische_Erweiterungen.md
+- Document pragmatic champion selection approach for exp_10 Algorithm Comparison
+- Provide 4 optimization strategies for future runs (Progressive Grid, Early Stopping, Optuna, Parallelization)
+- Justify manual XGBoost/CNN-1D selection based on partial grid results (10/96 configs)
+- Update summary table with Grid Search entry and timestamp (2026-02-09)
+
+**Context:**
+- exp_10 grid search too time-consuming (96 XGBoost configs = 8-16h)
+- Early stopping after 10 configs showed clear XGBoost superiority (F1: 0.4489 vs RF: 0.4334)
+- CNN-1D chosen over TabNet (better suited for temporal Sentinel-2 data, no extra dependency)
+- Documented approach enables reproducible champion selection for future iterations
+
 ### Added - exp_07: Cross-City Baseline Analysis (✅ 2026-02-09)
 
 **Exploratory Notebook Implementation**

@@ -77,12 +77,17 @@ Die Experimente gliedern sich in drei aufeinander aufbauende Phasen:
 
 ### Champion-Selektion
 
-Nach dem initialen Vergleich werden zwei "Champions" ausgewählt:
+Nach dem initialen Vergleich in **exp_10** (Algorithm Comparison) werden zwei "Champions" ausgewählt:
 
 - **1 ML Champion** (RF oder XGBoost): Bestes ML-Modell nach Validation F1
 - **1 NN Champion** (1D-CNN oder TabNet): Bestes NN nach Validation F1
 
-Beide Champions werden HP-getuned und für Transfer getestet.
+**Aktuelle Auswahl (09.02.2026):**
+
+- **ML Champion:** XGBoost (Val F1 = 0.449, Train-Val Gap = 0.501)
+- **NN Champion:** CNN-1D (Val F1 = 0.420, Train-Val Gap = 0.430)
+
+⚠️ **Hinweis:** Die Auswahl erfolgte auf Basis einer unvollständigen Analyse mit teilweisen Grid Searches. Bei einem Full Re-Run der Pipeline wird exp_10 mit umfassendem Grid Search wiederholt. Beide Champions werden in Phase 3.2 (03b) mit Hyperparameter-Tuning optimiert.
 
 ---
 
@@ -143,7 +148,7 @@ Da Bäume räumlich autokorreliert sind (benachbarte Bäume ähneln sich), verwe
 
 ### Fold-Konfiguration
 
-- **Alle CV-Durchläufe (exp_08, exp_09, exp_10, 03b):** 3-Fold Spatial Block CV
+- **Alle CV-Durchläufe (exp_08, exp_09, exp_11, 03b):** 3-Fold Spatial Block CV
 - **Finale Evaluation (03b Test, 03c, 03d):** Hold-out Test Set (kein CV)
 
 **Begründung:** 3-Fold ist für Setup-Entscheidungen und Tuning ausreichend und deutlich schneller. Die finale Leistung wird ohnehin auf dem unabhängigen Hold-out Test Set gemessen.
@@ -165,7 +170,7 @@ Wir verwenden **Optuna** mit folgenden Einstellungen:
 
 ### Tuning-Ablauf
 
-1. **Coarse Grid Search** (exp_10): Grobe Hyperparameter-Bereiche, wenige Kombinationen
+1. **Coarse Grid Search** (exp_11): Grobe Hyperparameter-Bereiche, wenige Kombinationen
 2. **Fine Optuna Search** (03b): Präzise Suche im vielversprechendsten Bereich
 
 ---
@@ -211,21 +216,22 @@ Dies ermöglicht Aussagen wie: "Berlin Test F1 = 0.62 [0.59, 0.65]"
 
 ### Exploratory Notebooks
 
-| Notebook                    | Zweck                                  | Abhängigkeiten   |
-| --------------------------- | -------------------------------------- | ---------------- |
-| exp_07_cross_city_baseline  | Deskriptive Analyse Berlin vs. Leipzig | Keine (optional) |
-| exp_08_chm_ablation         | CHM-Strategie bestimmen                | Keine            |
-| exp_08b_proximity_ablation  | Baseline vs. Filtered Datensatz        | exp_08           |
-| exp_08c_outlier_ablation    | Outlier-Removal-Strategie bestimmen    | exp_08b          |
-| exp_09_feature_reduction    | Feature-Anzahl optimieren              | exp_08c          |
-| exp_10_algorithm_comparison | 4 Algorithmen vergleichen              | exp_09, 03a      |
+| Notebook                    | Zweck                                       | Abhängigkeiten   |
+| --------------------------- | ------------------------------------------- | ---------------- |
+| exp_07_cross_city_baseline  | Deskriptive Analyse Berlin vs. Leipzig      | Keine (optional) |
+| exp_08_chm_ablation         | CHM-Strategie bestimmen                     | Keine            |
+| exp_08b_proximity_ablation  | Baseline vs. Filtered Datensatz             | exp_08           |
+| exp_08c_outlier_ablation    | Outlier-Removal-Strategie bestimmen         | exp_08b          |
+| exp_09_feature_reduction    | Feature-Anzahl optimieren                   | exp_08c          |
+| exp_10_genus_selection      | Genus-Auswahl validieren & gruppieren       | exp_09, 03a      |
+| exp_11_algorithm_comparison | 4 Algorithmen vergleichen (Coarse Grid)     | exp_10           |
 
 ### Runner Notebooks
 
 | Notebook                | Zweck                       | Abhängigkeiten                   |
 | ----------------------- | --------------------------- | -------------------------------- |
 | 03a_setup_fixation      | Datensätze vorbereiten      | exp_08, exp_08b, exp_08c, exp_09 |
-| 03b_berlin_optimization | Champions HP-tunen          | exp_10                           |
+| 03b_berlin_optimization | Champions HP-tunen          | exp_10, exp_11                   |
 | 03c_transfer_evaluation | Zero-Shot Transfer messen   | 03b                              |
 | 03d_finetuning          | Fine-Tuning Curve erstellen | 03c                              |
 
@@ -237,11 +243,24 @@ Dies ermöglicht Aussagen wie: "Berlin Test F1 = 0.62 [0.59, 0.65]"
 Critical Path:
 ─────────────
 
-exp_08 ──→ exp_08b ──→ exp_08c ──→ exp_09 ──→ 03a ──→ exp_10 ──→ 03b ──→ 03c ──→ 03d
-  │           │           │          │                  │          │       │       │
-  ▼           ▼           ▼          ▼                  ▼          ▼       ▼       ▼
-CHM      Proximity     Outlier   Features            Algos      Models  Transfer Finetune
-Decision  Decision    Decision   Selected           Compared    Tuned   Tested   Tested
+exp_08 ──→ exp_08b ──→ exp_08c ──→ exp_09 ──→ 03a
+  │           │           │          │          │
+  ▼           ▼           ▼          ▼          ▼
+CHM      Proximity     Outlier   Features   Setup
+Decision  Decision    Decision   Selected  Applied
+                                              │
+                                              ▼
+                                          exp_10 ──→ genus_selection_final.json
+                                              │              │
+                                              ▼              ▼
+                                          exp_11 ───────→ [loaded by exp_11, 03b, 03c, 03d]
+                                              │
+                                              ▼
+                                          03b ──→ 03c ──→ 03d
+                                          │       │       │
+                                          ▼       ▼       ▼
+                                        Models  Transfer Finetune
+                                        Tuned   Tested   Tested
 
 
 Optional (parallel):
