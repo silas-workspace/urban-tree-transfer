@@ -270,6 +270,10 @@ transfer_evaluation:
 finetuning:
   fractions: [0.10, 0.25, 0.50, 1.0]
   ml_warm_start_estimators: 100
+  nn_epochs: 50
+  nn_batch_size: 64
+  nn_val_ratio: 0.10
+  ml_val_ratio: 0.10
   nn_lr_factor: 0.1
   powerlaw:
     fit_function: "y = a * x^b"

@@ -118,6 +118,7 @@ Vergleich verschiedener Strategien für das Fine-Tuning von Neural Networks.
 
 - **ML (XGBoost):** Warm-Start mit zusätzlichen Estimators
 - **NN:** Full Fine-Tune mit 0.1× Learning Rate
+- **Hinweis für nächsten Durchlauf:** Aus dem Leipzig-Fine-Tuning-Split sollte ein eigener Validierungs-Split abgezweigt werden, damit Early Stopping/Monitoring weder für ML noch für NN auf dem Test-Set erfolgt.
 
 ---
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix XGBoost fine-tuning to avoid duplicate `n_estimators` when warm-starting from pretrained params
+- Fix XGBoost 2.x GPU warm-start to use `tree_method="hist"` with `device="cuda"` instead of removed `gpu_hist`
+- Fix NN fine-tuning config defaults to avoid missing `nn_epochs`/`nn_batch_size` errors
+- Fix NN fine-tuning to use a Leipzig validation split instead of the test set
+- Fix ML fine-tuning to use a Leipzig validation split instead of the test set
+
 ### Fixed - Complete Dual Dataset Implementation (2026-02-09)
 
 **Problem:** Section 2.5 for CNN dataset creation was missing in 03a_setup_fixation.ipynb, causing `results_cnn` NameError and no `*_cnn.parquet` files being created. Only XGBoost datasets were generated despite dual dataset architecture being planned.

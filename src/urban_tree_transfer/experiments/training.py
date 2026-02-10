@@ -271,6 +271,8 @@ def finetune_xgboost(
     x_finetune: np.ndarray,
     y_finetune: np.ndarray,
     n_additional_estimators: int = 100,
+    x_val: np.ndarray | None = None,
+    y_val: np.ndarray | None = None,
 ) -> Any:
     """Fine-tune XGBoost model with additional trees.
 
@@ -311,16 +313,31 @@ def finetune_xgboost(
     if current_n_estimators is None:
         current_n_estimators = 100  # XGBoost default
 
+    params = pretrained_model.get_params()
+    params.pop("n_estimators", None)
+
+    def _parse_major_version(version_str: str) -> int:
+        try:
+            return int(version_str.split(".")[0])
+        except (ValueError, AttributeError):
+            return 0
+
+    xgb_major = _parse_major_version(getattr(xgboost, "__version__", "0"))
+    if params.get("tree_method") == "gpu_hist" and xgb_major >= 2:
+        params["tree_method"] = "hist"
+        params["device"] = "cuda"
+        if params.get("predictor") == "gpu_predictor":
+            params["predictor"] = "auto"
     finetuned_model = xgboost.XGBClassifier(
-        **pretrained_model.get_params(),
+        **params,
         n_estimators=current_n_estimators + n_additional_estimators,
     )
 
-    finetuned_model.fit(
-        x_finetune,
-        y_finetune,
-        xgb_model=pretrained_model.get_booster(),
-    )
+    fit_kwargs: dict[str, Any] = {"xgb_model": pretrained_model.get_booster()}
+    if x_val is not None and y_val is not None:
+        fit_kwargs["eval_set"] = [(x_val, y_val)]
+
+    finetuned_model.fit(x_finetune, y_finetune, **fit_kwargs)
 
     return finetuned_model
 
