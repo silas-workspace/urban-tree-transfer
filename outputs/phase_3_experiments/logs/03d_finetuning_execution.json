@@ -1,0 +1,152 @@
+{
+  "notebook": "03d_finetuning",
+  "execution_start": "2026-02-10T01:56:57.733160",
+  "execution_end": "2026-02-10T02:13:49.655009",
+  "steps": [
+    {
+      "name": "Load Models & Metadata",
+      "status": "success",
+      "start_time": "2026-02-10T01:56:58.626419",
+      "end_time": "2026-02-10T01:57:01.732696",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Load Leipzig Data",
+      "status": "success",
+      "start_time": "2026-02-10T01:57:01.743735",
+      "end_time": "2026-02-10T01:57:11.154736",
+      "records": 119815,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "ML Fine-Tuning",
+      "status": "success",
+      "start_time": "2026-02-10T01:57:11.168195",
+      "end_time": "2026-02-10T02:00:01.184352",
+      "records": 4,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "NN Fine-Tuning",
+      "status": "success",
+      "start_time": "2026-02-10T02:00:01.196749",
+      "end_time": "2026-02-10T02:06:16.009897",
+      "records": 4,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "From-Scratch Baselines",
+      "status": "success",
+      "start_time": "2026-02-10T02:06:16.020234",
+      "end_time": "2026-02-10T02:08:06.703859",
+      "records": 4,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "McNemar Tests",
+      "status": "error",
+      "start_time": "2026-02-10T02:08:06.712462",
+      "end_time": "2026-02-10T02:08:07.790848",
+      "records": null,
+      "warnings": [],
+      "errors": [
+        "int too large to convert to float"
+      ]
+    },
+    {
+      "name": "McNemar Tests",
+      "status": "error",
+      "start_time": "2026-02-10T02:09:56.877586",
+      "end_time": "2026-02-10T02:09:58.734774",
+      "records": null,
+      "warnings": [],
+      "errors": [
+        "'statistic'"
+      ]
+    },
+    {
+      "name": "McNemar Tests",
+      "status": "success",
+      "start_time": "2026-02-10T02:10:52.574820",
+      "end_time": "2026-02-10T02:10:54.019187",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Power-Law Curve Fitting",
+      "status": "success",
+      "start_time": "2026-02-10T02:11:08.356397",
+      "end_time": "2026-02-10T02:11:08.569672",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Per-Genus Recovery",
+      "status": "success",
+      "start_time": "2026-02-10T02:11:23.660368",
+      "end_time": "2026-02-10T02:11:23.736933",
+      "records": 68,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Generate Visualizations",
+      "status": "error",
+      "start_time": "2026-02-10T02:11:31.709970",
+      "end_time": "2026-02-10T02:11:31.865945",
+      "records": null,
+      "warnings": [],
+      "errors": [
+        "'zero_shot_metrics'"
+      ]
+    },
+    {
+      "name": "Generate Visualizations",
+      "status": "error",
+      "start_time": "2026-02-10T02:12:29.012290",
+      "end_time": "2026-02-10T02:12:29.015758",
+      "records": null,
+      "warnings": [],
+      "errors": [
+        "'zero_shot_metrics'"
+      ]
+    },
+    {
+      "name": "Generate Visualizations",
+      "status": "error",
+      "start_time": "2026-02-10T02:12:43.048485",
+      "end_time": "2026-02-10T02:12:43.052880",
+      "records": null,
+      "warnings": [],
+      "errors": [
+        "'zero_shot_metrics'"
+      ]
+    },
+    {
+      "name": "Generate Visualizations",
+      "status": "success",
+      "start_time": "2026-02-10T02:13:41.421450",
+      "end_time": "2026-02-10T02:13:43.150495",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Save Results",
+      "status": "success",
+      "start_time": "2026-02-10T02:13:45.743911",
+      "end_time": "2026-02-10T02:13:45.956202",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

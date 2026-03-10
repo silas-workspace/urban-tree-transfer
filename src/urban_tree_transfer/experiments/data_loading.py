@@ -185,12 +185,13 @@ def load_berlin_splits(
     # ✅ FIXED: No more _filtered suffix, always load baseline files
     if variant != "baseline":
         import warnings
+
         warnings.warn(
             f"variant='{variant}' is deprecated. Always loading baseline files.",
             DeprecationWarning,
             stacklevel=2,
         )
-    
+
     train_path = data_dir / "berlin_train.parquet"
     val_path = data_dir / "berlin_val.parquet"
     test_path = data_dir / "berlin_test.parquet"
@@ -218,12 +219,13 @@ def load_leipzig_splits(
     # ✅ FIXED: No more _filtered suffix, always load baseline files
     if variant != "baseline":
         import warnings
+
         warnings.warn(
             f"variant='{variant}' is deprecated. Always loading baseline files.",
             DeprecationWarning,
             stacklevel=2,
         )
-    
+
     finetune_path = data_dir / "leipzig_finetune.parquet"
     test_path = data_dir / "leipzig_test.parquet"
 
@@ -252,12 +254,13 @@ def load_berlin_splits_cnn(
     # ✅ FIXED: Always load _cnn suffix (no _filtered_cnn anymore)
     if variant != "baseline":
         import warnings
+
         warnings.warn(
             f"variant='{variant}' is deprecated. Always loading _cnn files.",
             DeprecationWarning,
             stacklevel=2,
         )
-    
+
     train_path = data_dir / "berlin_train_cnn.parquet"
     val_path = data_dir / "berlin_val_cnn.parquet"
     test_path = data_dir / "berlin_test_cnn.parquet"
@@ -288,12 +291,13 @@ def load_leipzig_splits_cnn(
     # ✅ FIXED: Always load _cnn suffix (no _filtered_cnn anymore)
     if variant != "baseline":
         import warnings
+
         warnings.warn(
             f"variant='{variant}' is deprecated. Always loading _cnn files.",
             DeprecationWarning,
             stacklevel=2,
         )
-    
+
     finetune_path = data_dir / "leipzig_finetune_cnn.parquet"
     test_path = data_dir / "leipzig_test_cnn.parquet"
 

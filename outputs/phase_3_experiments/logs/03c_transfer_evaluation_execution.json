@@ -1,0 +1,128 @@
+{
+  "notebook": "03c_transfer_evaluation",
+  "execution_start": "2026-02-10T00:56:48.972504",
+  "execution_end": "2026-02-10T01:10:45.076713",
+  "steps": [
+    {
+      "name": "Load Berlin Models",
+      "status": "error",
+      "start_time": "2026-02-10T00:56:49.806260",
+      "end_time": "2026-02-10T00:56:51.572409",
+      "records": null,
+      "warnings": [],
+      "errors": [
+        "CNN1D.__init__() got an unexpected keyword argument 'batch_size'"
+      ]
+    },
+    {
+      "name": "Load Berlin Models",
+      "status": "error",
+      "start_time": "2026-02-10T01:00:10.272569",
+      "end_time": "2026-02-10T01:00:10.439897",
+      "records": null,
+      "warnings": [],
+      "errors": [
+        "name 'all_params' is not defined"
+      ]
+    },
+    {
+      "name": "Load Berlin Models",
+      "status": "success",
+      "start_time": "2026-02-10T01:01:03.289022",
+      "end_time": "2026-02-10T01:01:05.758069",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Load Leipzig Data",
+      "status": "success",
+      "start_time": "2026-02-10T01:01:54.389875",
+      "end_time": "2026-02-10T01:02:04.526384",
+      "records": 30480,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Zero-Shot ML Evaluation",
+      "status": "success",
+      "start_time": "2026-02-10T01:02:18.651878",
+      "end_time": "2026-02-10T01:03:22.942346",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Transfer Gap Analysis",
+      "status": "success",
+      "start_time": "2026-02-10T01:03:22.950236",
+      "end_time": "2026-02-10T01:03:22.950545",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Leipzig From-Scratch Baseline",
+      "status": "success",
+      "start_time": "2026-02-10T01:03:22.959258",
+      "end_time": "2026-02-10T01:04:07.881386",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Feature Stability",
+      "status": "success",
+      "start_time": "2026-02-10T01:04:07.893179",
+      "end_time": "2026-02-10T01:04:07.952614",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Per-Genus Robustness",
+      "status": "success",
+      "start_time": "2026-02-10T01:04:07.967897",
+      "end_time": "2026-02-10T01:04:07.977264",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Hypothesis Testing",
+      "status": "success",
+      "start_time": "2026-02-10T01:04:07.985561",
+      "end_time": "2026-02-10T01:04:07.990432",
+      "records": 4,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "NN Champion Evaluation",
+      "status": "success",
+      "start_time": "2026-02-10T01:08:51.113285",
+      "end_time": "2026-02-10T01:09:54.785102",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Generate Visualizations",
+      "status": "success",
+      "start_time": "2026-02-10T01:09:54.794361",
+      "end_time": "2026-02-10T01:09:56.636977",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Save Results",
+      "status": "success",
+      "start_time": "2026-02-10T01:10:41.884762",
+      "end_time": "2026-02-10T01:10:41.906517",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

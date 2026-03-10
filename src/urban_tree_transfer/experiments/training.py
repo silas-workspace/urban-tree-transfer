@@ -333,7 +333,10 @@ def finetune_xgboost(
         n_estimators=current_n_estimators + n_additional_estimators,
     )
 
-    fit_kwargs: dict[str, Any] = {"xgb_model": pretrained_model.get_booster()}
+    fit_kwargs: dict[str, Any] = {
+        "xgb_model": pretrained_model.get_booster(),
+        "verbose": False,
+    }
     if x_val is not None and y_val is not None:
         fit_kwargs["eval_set"] = [(x_val, y_val)]
 

@@ -1,65 +1,124 @@
 {
   "notebook": "03a_setup_fixation",
-  "completed_at": "2026-02-09T19:30:03.430636+00:00",
+  "completed_at": "2026-02-09T22:43:09.050198+00:00",
   "setup_decisions": {
     "chm": "no_chm",
     "proximity": "filtered",
     "outlier": "no_removal",
-    "n_features": 50
+    "n_features_reduced": 50
   },
   "test_split_policy": "Test splits always use baseline proximity (no filtering)",
-  "splits_processed": 5,
-  "total_samples": 788199,
-  "splits": [
-    {
-      "split": "berlin_train",
-      "n_samples": 463654,
-      "n_features": 50,
-      "outliers_removed": 0,
-      "genus_filtering": "Yes",
-      "genera_removed": 8161,
-      "test_policy_applied": false,
-      "proximity_used": "filtered"
-    },
-    {
-      "split": "berlin_val",
-      "n_samples": 97972,
-      "n_features": 50,
-      "outliers_removed": 0,
-      "genus_filtering": "Yes",
-      "genera_removed": 1631,
-      "test_policy_applied": false,
-      "proximity_used": "filtered"
-    },
-    {
-      "split": "berlin_test",
-      "n_samples": 106758,
-      "n_features": 50,
-      "outliers_removed": 0,
-      "genus_filtering": "Yes",
-      "genera_removed": 2222,
-      "test_policy_applied": true,
-      "proximity_used": "baseline"
-    },
-    {
-      "split": "leipzig_finetune",
-      "n_samples": 89335,
-      "n_features": 50,
-      "outliers_removed": 0,
-      "genus_filtering": "Yes",
-      "genera_removed": 1745,
-      "test_policy_applied": false,
-      "proximity_used": "filtered"
-    },
-    {
-      "split": "leipzig_test",
-      "n_samples": 30480,
-      "n_features": 50,
-      "outliers_removed": 0,
-      "genus_filtering": "Yes",
-      "genera_removed": 611,
-      "test_policy_applied": true,
-      "proximity_used": "baseline"
-    }
-  ]
+  "dual_dataset_strategy": "XGBoost (reduced features) + CNN1D (full temporal sequences)",
+  "xgboost_datasets": {
+    "splits_processed": 5,
+    "total_samples": 788199,
+    "splits": [
+      {
+        "split": "berlin_train",
+        "n_samples": 463654,
+        "n_features": 50,
+        "outliers_removed": 0,
+        "genus_filtering": "Yes",
+        "genera_removed": 8161,
+        "test_policy_applied": false,
+        "proximity_used": "filtered"
+      },
+      {
+        "split": "berlin_val",
+        "n_samples": 97972,
+        "n_features": 50,
+        "outliers_removed": 0,
+        "genus_filtering": "Yes",
+        "genera_removed": 1631,
+        "test_policy_applied": false,
+        "proximity_used": "filtered"
+      },
+      {
+        "split": "berlin_test",
+        "n_samples": 106758,
+        "n_features": 50,
+        "outliers_removed": 0,
+        "genus_filtering": "Yes",
+        "genera_removed": 2222,
+        "test_policy_applied": true,
+        "proximity_used": "baseline"
+      },
+      {
+        "split": "leipzig_finetune",
+        "n_samples": 89335,
+        "n_features": 50,
+        "outliers_removed": 0,
+        "genus_filtering": "Yes",
+        "genera_removed": 1745,
+        "test_policy_applied": false,
+        "proximity_used": "filtered"
+      },
+      {
+        "split": "leipzig_test",
+        "n_samples": 30480,
+        "n_features": 50,
+        "outliers_removed": 0,
+        "genus_filtering": "Yes",
+        "genera_removed": 611,
+        "test_policy_applied": true,
+        "proximity_used": "baseline"
+      }
+    ]
+  },
+  "cnn_datasets": {
+    "splits_processed": 5,
+    "total_samples": 788199,
+    "splits": [
+      {
+        "split": "berlin_train_cnn",
+        "n_samples": 463654,
+        "n_features": 144,
+        "outliers_removed": 0,
+        "genus_filtering": "Yes",
+        "genera_removed": 8161,
+        "test_policy_applied": false,
+        "proximity_used": "filtered"
+      },
+      {
+        "split": "berlin_val_cnn",
+        "n_samples": 97972,
+        "n_features": 144,
+        "outliers_removed": 0,
+        "genus_filtering": "Yes",
+        "genera_removed": 1631,
+        "test_policy_applied": false,
+        "proximity_used": "filtered"
+      },
+      {
+        "split": "berlin_test_cnn",
+        "n_samples": 106758,
+        "n_features": 144,
+        "outliers_removed": 0,
+        "genus_filtering": "Yes",
+        "genera_removed": 2222,
+        "test_policy_applied": true,
+        "proximity_used": "baseline"
+      },
+      {
+        "split": "leipzig_finetune_cnn",
+        "n_samples": 89335,
+        "n_features": 144,
+        "outliers_removed": 0,
+        "genus_filtering": "Yes",
+        "genera_removed": 1745,
+        "test_policy_applied": false,
+        "proximity_used": "filtered"
+      },
+      {
+        "split": "leipzig_test_cnn",
+        "n_samples": 30480,
+        "n_features": 144,
+        "outliers_removed": 0,
+        "genus_filtering": "Yes",
+        "genera_removed": 611,
+        "test_policy_applied": true,
+        "proximity_used": "baseline"
+      }
+    ]
+  }
 }

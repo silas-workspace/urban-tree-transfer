@@ -1,3 +1,7 @@
+# Pi agent runtime (plans, reviews — not source)
+.pi/plans/
+.pi/reviews/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -52,8 +56,12 @@ htmlcov/
 .ruff_cache/
 
 # OS
-.DS_Store
+**/.DS_Store
 Thumbs.db
+
+# Claude / Copilot artifacts (not for this repo)
+.claude/
+.github/copilot-instructions.md
 
 # Project-specific data (large files, not for repo)
 data/
@@ -62,21 +70,6 @@ data/
 *.tif
 *.tiff
 *.geotiff
-
-# Literature work (thesis preparation, not for code repo)
-docs/literature/*
-!docs/literature/LITERATURE.md
-
-# Thesis drafts and templates (not for code repo)
-docs/thesis/
-
-# Presentation materials (not for code repo)
-docs/Presentation/
-
-*.docx
-*.odt
-*_template.md
-*_draft.md
 
 # Credentials
 .env
@@ -87,10 +80,12 @@ docs/Presentation/
 credentials/
 secrets/
 
-# Large files
+# Large model/data files
 *.zip
 *.tar.gz
 *.h5
 *.hdf5
 *.pkl
 *.pickle
+*.pt
+*.pth

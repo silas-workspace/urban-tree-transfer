@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import comb
 from typing import Any
 
 import numpy as np
@@ -211,6 +210,7 @@ def mcnemar_test(
     y_true: np.ndarray,
     y_pred_a: np.ndarray,
     y_pred_b: np.ndarray,
+    alpha: float = 0.05,
 ) -> dict[str, float]:
     """McNemar exact test for paired classifier comparison.
 
@@ -238,14 +238,21 @@ def mcnemar_test(
         p_value = 2.0 * _binom_cdf(min(b, c), n, 0.5)
         p_value = min(p_value, 1.0)
 
-    return {"b": float(b), "c": float(c), "p_value": float(p_value)}
+    statistic = 0.0 if n == 0 else (abs(b - c) - 1.0) ** 2 / n
+
+    return {
+        "b": float(b),
+        "c": float(c),
+        "statistic": float(statistic),
+        "p_value": float(p_value),
+        "significant": bool(p_value < alpha),
+    }
 
 
 def _binom_cdf(k: int, n: int, p: float) -> float:
-    total = 0.0
-    for i in range(k + 1):
-        total += comb(n, i) * (p**i) * ((1 - p) ** (n - i))
-    return total
+    from scipy.stats import binom
+
+    return float(binom.cdf(k, n, p))
 
 
 def summarize_hypotheses(

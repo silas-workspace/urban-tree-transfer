@@ -1,124 +1,31 @@
 # Urban Tree Transfer
 
-**Last Updated**: 2026-01-21
 **Status**: ACTIVE
+
 **Owner**: Silas Pignotti
 
----
+**Repository**: github.com/silas-workspace/urban-tree-transfer
 
-## Overview
-
-Cross-City Transfer Learning für urbane Baumgattungs-Klassifikation mit Sentinel-2 Satellitendaten.
-
-**Problem**: ML-Modelle zur Baumklassifikation zeigen erhebliche Leistungseinbußen bei Anwendung auf neue Städte. Die benötigte Menge an lokalen Trainingsdaten für effektives Fine-Tuning ist unklar.
-
-**Forschungsfrage**: Wie gut lassen sich ML/DL-Modelle zur Baumgattungs-Klassifikation von Berlin auf Leipzig übertragen, und wie viel lokale Daten sind für Performance-Recovery erforderlich?
+**Last Updated**: 2026-03-10
 
 ---
 
-## Objectives
+## Project Description
 
-- [ ] **Phase 1**: Optimales Modell für Single-City-Klassifikation (Berlin) finden
-- [ ] **Phase 2**: Transfer-Performance quantifizieren (Berlin → Leipzig Zero-Shot)
-- [ ] **Phase 3**: Fine-Tuning-Effizienz bestimmen (Datenmenge vs. Performance-Recovery)
+Automated genus-level classification of urban trees based on multitemporal Sentinel-2 satellite
+imagery (reference year 2021). The project investigates cross-city transferability of ML/DL models
+trained on a data-rich source domain (Berlin) and applied to a data-scarce target domain (Leipzig).
 
----
+**Research Question**: How well do ML/DL tree genus classification models transfer from Berlin to
+Leipzig, and how much local data is required for performance recovery via fine-tuning?
 
-## Architecture
+Three sequential experiments:
 
-### High-Level Structure
+1. **Berlin Optimization** -- Model training and hyperparameter optimization on Berlin data
+2. **Zero-Shot Transfer** -- Direct application of Berlin-trained models to Leipzig (no retraining)
+3. **Fine-Tuning Analysis** -- Incremental fine-tuning with increasing amounts of local Leipzig data
 
-```
-urban-tree-transfer/
-├── src/                          # Python-Package (installierbar)
-│   ├── config/                   # Pfade, Städte, Features
-│   ├── data_processing/          # Boundaries, Trees, Elevation, CHM, Sentinel
-│   ├── feature_engineering/      # Extraction, QC, Selection, Splits
-│   ├── experiments/              # Models, Training, Evaluation
-│   └── utils/                    # IO, Visualization
-├── configs/                      # YAML-Konfigurationen
-│   ├── cities/                   # berlin.yaml, leipzig.yaml
-│   └── experiments/              # phase_1.yaml, phase_2.yaml, phase_3.yaml
-├── notebooks/
-│   ├── runners/                  # Colab-Runner (importieren src/)
-│   └── exploratory/              # Entwicklungs-Notebooks
-├── docs/documentation/           # Methodikdokumentation
-└── pyproject.toml
-```
-
-### Key Components
-
-| Component               | Purpose                                  | Status   |
-| ----------------------- | ---------------------------------------- | -------- |
-| **Data Processing**     | Download, Harmonisierung, CHM-Erstellung | Planning |
-| **Feature Engineering** | Extraktion, QC, Selection, Splits        | Planning |
-| **Experiments**         | Model Training, Evaluation, Transfer     | Planning |
-
-### Dependencies
-
-**External Services**:
-
-- Google Earth Engine: Sentinel-2 Download
-- Google Drive: Datenspeicher
-- Google Colab: GPU-Ausführung
-
-**Data Sources**:
-
-- Berlin Baumkataster: WFS via gdi.berlin.de
-- Leipzig Baumkataster: WFS via geodienste.leipzig.de
-- DOM/DGM: Landesvermessung Berlin/Sachsen
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.10+
-- uv (Package Manager)
-- Google Account (für Colab/Drive)
-
-### Installation
-
-```bash
-git clone https://github.com/SilasPignotti/urban-tree-transfer.git
-cd urban-tree-transfer
-uv sync
-```
-
-### Colab Usage
-
-```python
-# In Google Colab
-!pip install git+https://github.com/SilasPignotti/urban-tree-transfer.git -q
-
-from google.colab import drive
-drive.mount('/content/drive')
-
-from src.config import get_data_dir
-from src.feature_engineering import extraction
-```
-
----
-
-## Current Status
-
-### Completed
-
-- [x] Projektdesign und Forschungsfrage definiert
-- [x] Methodische Grundlagen dokumentiert
-- [x] Verzeichnisstruktur erstellt
-
-### In Progress
-
-- [ ] Code-Struktur aufbauen (src/ Package)
-- [ ] Leipzig-Datenquellen verifizieren
-
-### Planned
-
-- [ ] Phase 1: Berlin-Optimierung
-- [ ] Phase 2: Transfer-Evaluation
-- [ ] Phase 3: Fine-Tuning-Analyse
+**Primary Metric**: Weighted F1-Score
 
 ---
 
@@ -126,43 +33,104 @@ from src.feature_engineering import extraction
 
 ### Cities
 
-| Stadt       | Rolle             | Daten                      |
-| ----------- | ----------------- | -------------------------- |
-| **Berlin**  | Training (Source) | ~800k Bäume, DOM/DGM 2021  |
-| **Leipzig** | Transfer-Ziel     | Baumkataster, DOM/DGM 2022 |
+| City | Role | Data |
+|------|------|------|
+| **Berlin** | Source Domain (Training) | ~800k trees, DOM/DGM 2021 |
+| **Leipzig** | Target Domain (Transfer) | ~57k trees, DOM/DGM 2022, ~190 km from Berlin |
 
-### Methods
+### Models
 
-| Methode           | Typ | Beschreibung                         |
-| ----------------- | --- | ------------------------------------ |
-| **Random Forest** | ML  | Baseline, interpretierbar            |
-| **XGBoost**       | ML  | Gradient Boosting                    |
-| **1D-CNN**        | DL  | Temporale Convolution auf Features   |
-| **TabNet**        | DL  | Attention-basiert für tabulare Daten |
+| Model | Type | Description |
+|-------|------|-------------|
+| **Random Forest** | ML | Baseline, interpretable |
+| **XGBoost** | ML | Gradient Boosting, class balancing via `scale_pos_weight` |
+| **1D-CNN** | DL | Temporal convolution on feature vectors |
+| **TabNet** | DL | Attention-based architecture for tabular data |
 
-### Features
+### Feature Set (147 features after selection)
 
-- **Spektral**: 10 Sentinel-2 Bänder (B02-B12)
-- **Indices**: NDVI, EVI, Red-Edge, Wasser-Indices
-- **Temporal**: Monatliche Komposite (April-November)
-- **Strukturell**: CHM (optional, mit Vorsicht)
+- **Spectral**: 10 Sentinel-2 L2A bands (B02-B12) as monthly composites via Google Earth Engine
+- **Vegetation Indices**: 13 indices (NDVI, EVI, Red-Edge variants, water indices, etc.)
+- **Temporal**: 8 selected months (April-November, JM-Distance-based selection from 12)
+- **Structural**: Canopy Height Model (CHM) derived from DOM/DGM difference
 
----
+### CRS
 
-## Documentation
-
-- [Projektübersicht](documentation/00_Projektdesign_und_Methodik/01_Projektuebersicht.md)
-- [Methodische Grundlagen](documentation/00_Projektdesign_und_Methodik/02_Methodische_Grundlagen.md)
-- [Refactoring Plan](documentation/00_Projektdesign_und_Methodik/00_Refactoring_Plan.md)
+EPSG:25833 (ETRS89 / UTM Zone 33N)
 
 ---
 
-## Technical Details
+## Pipeline Overview
 
-### Coordinate Systems
+### Phase 1: Data Processing (complete)
 
-- **Berlin Source**: EPSG:25833
-- **Leipzig Source**: EPSG:25833
+Raw data acquisition and harmonization. 1,072,999 trees, ~24 GB total.
+
+- Sentinel-2 L2A download via Google Earth Engine (monthly composites, vegetation period 2021)
+- Canopy Height Model generation from DOM (Digital Surface Model) and DGM (Digital Terrain Model)
+- Tree cadastre integration (Berlin WFS via gdi.berlin.de, Leipzig WFS via geodienste.leipzig.de)
+- Boundary extraction and spatial subsetting
+
+### Phase 2: Feature Engineering (complete)
+
+Full pipeline from raw spatial data to ML-ready datasets. 983,782 trees after QC, 147 final features.
+
+Pipeline steps in order:
+
+1. **Temporal Selection** -- JM-Distance-based month selection (8 of 12 months retained)
+2. **CHM Assessment** -- Genus-specific height validation, Welch-ANOVA, Cohen's d effect sizes
+3. **Correlation Analysis** -- Pearson-based redundancy removal (|r| > 0.95)
+4. **Outlier Detection** -- Tripartite approach (Z-Score, Mahalanobis, IQR), consensus-based flagging
+5. **Spatial Autocorrelation** -- Moran's I analysis, block size determination (1200m)
+6. **Mixed-Genus Proximity** -- 5m proximity filter, dual-dataset strategy (strict/relaxed)
+7. **Feature Extraction** -- Position correction via CHM centroid, point-sampling from rasters
+8. **Data Quality** -- Temporal interpolation for NaN values, CHM normalization, NDVI plausibility checks
+9. **Final Preparation** -- Redundancy removal, outlier flagging, spatial block assignment, stratified splits
+
+Key parameters: 1200m block size, 5m proximity threshold, 79.5% retention after proximity filter.
+
+### Phase 3: Experiments (complete)
+
+Three sequential experiments executed:
+
+1. **Berlin Optimization**: Hyperparameter tuning (Optuna) for all 4 models on Berlin spatial-CV
+2. **Zero-Shot Transfer**: Best Berlin models applied directly to Leipzig test set
+3. **Fine-Tuning**: Leipzig training subsets (10%-100%) used for fine-tuning, learning curves analyzed
+
+Evaluation: Weighted F1, per-genus F1, confusion matrices, feature importance (RF/XGBoost),
+attention weights (TabNet).
+
+---
+
+## Architecture
+
+```
+urban-tree-transfer/
+├── src/                          # Python package (installable)
+│   ├── config/                   # Paths, cities, features
+│   ├── data_processing/          # Boundaries, Trees, Elevation, CHM, Sentinel
+│   ├── feature_engineering/      # Extraction, QC, Selection, Splits
+│   ├── experiments/              # Models, Training, Evaluation
+│   └── utils/                    # IO, Visualization
+├── configs/                      # YAML configurations
+│   ├── cities/                   # berlin.yaml, leipzig.yaml
+│   └── experiments/              # phase_1.yaml, phase_2.yaml, phase_3.yaml
+├── notebooks/
+│   ├── runners/                  # Colab runner notebooks (import src/)
+│   └── exploratory/              # Development notebooks
+└── pyproject.toml
+```
+
+### External Dependencies
+
+- **Google Earth Engine**: Sentinel-2 L2A composite download
+- **Google Drive**: Data storage (~24 GB)
+- **Google Colab**: GPU execution (T4/A100), ~12h runtime limit, 12-25 GB RAM
+
+### Key Libraries
+
+Python 3.10+, GeoPandas, rasterio, scikit-learn, XGBoost, PyTorch (1D-CNN, TabNet),
+Optuna, scipy, numpy, pandas
 
 ### Data Formats
 
@@ -170,17 +138,37 @@ from src.feature_engineering import extraction
 - **ML-Ready**: Parquet (.parquet)
 - **Config**: YAML (.yaml)
 - **Metadata**: JSON (.json)
-
-### Random Seed
-
-`42` für alle stochastischen Prozesse
+- **Random Seed**: 42
 
 ---
 
-## Related Resources
+## Known Limitations
 
-- **Legacy Repo**: [tree-classification](https://github.com/SilasPignotti/tree-classification)
+- Single-year snapshot (2021) -- no multi-year temporal generalization
+- Only two cities (Berlin -> Leipzig) -- limited geographic diversity
+- Genus-level classification only (not species)
+- Sentinel-2 10m resolution with single-pixel point sampling
+- Global spatial block size (1200m) for heterogeneous urban landscape
+- Unweighted outlier consensus across three methods
+- Linear interpolation for temporal NaN values
+- Computational constraints (Google Colab), single-person project
 
 ---
 
-**Last Reviewed**: 2026-01-21
+## Known Improvements (tagged)
+
+Priority improvements for potential rework:
+
+- **[Rework]**: XGBoost class balancing strategy, Welch-ANOVA assumptions, Spearman correlation
+  supplement, Mahalanobis stability, visualization decoupling from notebooks, CHM documentation
+  inconsistencies, KL-Divergence justification, hypothesis testing for transfer results
+- **[Paper]**: Multi-pixel sampling, soft-weighting for outliers, phenological phase features,
+  bootstrap confidence intervals, seasonal autocorrelation, weighted consensus, domain adaptation
+
+Full list maintained in Notion (Improvements & Limitationen).
+
+---
+
+## Related
+
+- **Documentation SSOT**: Notion workspace (full methodology documentation migrated from repo)

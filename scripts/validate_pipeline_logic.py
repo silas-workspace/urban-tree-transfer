@@ -30,24 +30,29 @@ section_2_marker = "SECTION 2.5:" if "SECTION 2.5:" in content else "SECTION 3:"
 section_2_no_skip = "skip_feature_selection=True" not in content.split(section_2_marker)[0]
 print(f"✓ Section 2 uses reduced features: {section_2_no_skip}")
 
-# Check Section 2.5: CNN datasets  
+# Check Section 2.5: CNN datasets
 section_25_found = "SECTION 2.5: Create CNN1D Datasets" in content
 print(f"\n✓ Section 2.5 (CNN) found: {section_25_found}")
 
 # Check that Section 2.5 uses skip_feature_selection=True
 if section_25_found:
-    section_25_uses_skip = "skip_feature_selection=True" in content.split("SECTION 2.5:")[1].split("SECTION 3:")[0]
+    section_25_uses_skip = (
+        "skip_feature_selection=True" in content.split("SECTION 2.5:")[1].split("SECTION 3:")[0]
+    )
     print(f"✓ Section 2.5 uses full features: {section_25_uses_skip}")
 else:
     section_25_uses_skip = False
-    print(f"✗ Section 2.5 NOT FOUND - CNN datasets not created!")
+    print("✗ Section 2.5 NOT FOUND - CNN datasets not created!")
 
 # Check that both sections save with correct naming
 # Section 2: split_name = f"{city}_{split}", then OUTPUT_DIR / f"{split_name}.parquet"
 # Note: Notebooks have escaped JSON strings, so check for both variants
 xgb_pattern_1 = 'split_name = f"{city}_{split}"' in content
 xgb_pattern_2 = 'split_name = f\\"{city}_{split}\\"' in content
-xgb_save = 'OUTPUT_DIR / f"{split_name}.parquet"' in content or 'OUTPUT_DIR / f\\"{split_name}.parquet\\"' in content
+xgb_save = (
+    'OUTPUT_DIR / f"{split_name}.parquet"' in content
+    or 'OUTPUT_DIR / f\\"{split_name}.parquet\\"' in content
+)
 xgb_save_pattern = (xgb_pattern_1 or xgb_pattern_2) and xgb_save
 
 # Section 2.5: split_name = f"{city}_{split}_cnn", then OUTPUT_DIR / f"{split_name}.parquet"
@@ -66,14 +71,20 @@ print(f"✓ Validation checks CNN datasets: {validation_cnn}")
 
 # Check that CNN validation expects MORE features than XGBoost
 if validation_cnn and "SECTION 3:" in content:
-    validation_section = content.split("SECTION 3:")[1].split("SECTION 4:")[0] if "SECTION 4:" in content else content.split("SECTION 3:")[1]
+    validation_section = (
+        content.split("SECTION 3:")[1].split("SECTION 4:")[0]
+        if "SECTION 4:" in content
+        else content.split("SECTION 3:")[1]
+    )
     # Check for the comparison logic that validates CNN has more features
-    cnn_more_features_check = ("len(feature_cols) <= len(setup" in validation_section and 
-                               "Expected more features than XGBoost" in validation_section)
+    cnn_more_features_check = (
+        "len(feature_cols) <= len(setup" in validation_section
+        and "Expected more features than XGBoost" in validation_section
+    )
     print(f"✓ CNN validation checks for more features: {cnn_more_features_check}")
 else:
     cnn_more_features_check = False
-    print(f"✗ CNN validation section not found")
+    print("✗ CNN validation section not found")
 
 print("\n" + "=" * 70)
 print("VALIDATION: 03b Berlin Optimization")
@@ -91,13 +102,17 @@ print(f"✓ ML validates against expected_features_reduced: {ml_expected_feature
 
 # Check NN dataset loading
 nn_load_berlin_splits_cnn = "load_berlin_splits_cnn(INPUT_DIR)" in content_03b
-nn_full_features_comment = "# IMPORTANT: Detect temporal features from FULL feature set" in content_03b
+nn_full_features_comment = (
+    "# IMPORTANT: Detect temporal features from FULL feature set" in content_03b
+)
 print(f"\n✓ NN uses load_berlin_splits_cnn(): {nn_load_berlin_splits_cnn}")
 print(f"✓ NN uses full temporal features (comment present): {nn_full_features_comment}")
 
 # Check preprocessing uses correct datasets
 ml_preprocessing = "train_df_ml[feature_cols_ml]" in content_03b
-nn_preprocessing = "train_df_nn[feature_cols_nn]" in content_03b if nn_load_berlin_splits_cnn else True
+nn_preprocessing = (
+    "train_df_nn[feature_cols_nn]" in content_03b if nn_load_berlin_splits_cnn else True
+)
 print(f"\n✓ ML preprocessing uses ML datasets: {ml_preprocessing}")
 print(f"✓ NN preprocessing uses NN datasets: {nn_preprocessing}")
 
@@ -116,7 +131,9 @@ print(f"✓ NN HP tuning uses x_tune_scaled_nn: {nn_hp_tuning}")
 
 # Check evaluation uses correct datasets
 ml_evaluation = "ml_model.predict(x_test_scaled_ml)" in content_03b
-nn_evaluation = "nn_model.predict(x_test_scaled_nn)" in content_03b if nn_load_berlin_splits_cnn else True
+nn_evaluation = (
+    "nn_model.predict(x_test_scaled_nn)" in content_03b if nn_load_berlin_splits_cnn else True
+)
 print(f"\n✓ ML evaluation uses x_test_scaled_ml: {ml_evaluation}")
 print(f"✓ NN evaluation uses x_test_scaled_nn: {nn_evaluation}")
 
