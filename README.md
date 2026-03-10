@@ -17,11 +17,12 @@ Requires Python 3.10+. GPU optional (CPU fallback available for CNN1D).
 ## Running
 
 The pipeline runs in Google Colab via notebooks in `notebooks/runners/`.
-Install the package in Colab from GitHub, mount Drive, and run notebooks
-in order: `01` → `02a/b/c` → `03a/b/c/d`.
+Colab installs the package directly from the `main` branch — push all changes
+before opening a notebook, otherwise Colab runs stale code.
 
-Exploratory analysis notebooks (`notebooks/exploratory/exp_XX_*.ipynb`) feed
-setup decisions into the runner notebooks and must be executed first.
+Run in order: exploratory notebooks (`exp_XX_`) first, then runners
+`01` → `02a/b/c` → `03a/b/c/d`. Each phase writes outputs to Google Drive;
+download and commit to `outputs/` before starting the next phase.
 
 ## Development
 
