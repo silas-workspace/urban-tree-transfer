@@ -320,7 +320,9 @@ if RUN_NOTEBOOK:
 # %%
 if RUN_NOTEBOOK:
     log.start_step("Validate Baseline Splits")
-    
+
+    # KL-divergence threshold: 0.07, empirically derived from spatial block-based
+    # splitting with genus stratification (typical range: 0.01-0.05)
     berlin_validation = validate_split_stratification(
         berlin_train, berlin_val, berlin_test,
         split_names=["train", "val", "test"],
