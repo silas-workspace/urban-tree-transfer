@@ -605,8 +605,6 @@ log.end_step(status="success", records=len(retained_temporal_cols))
 # SECTION 8: Save JSON config
 # ============================================================
 
-log.start_step("JSON Output")
-
 def build_rationale(removed_bases: set[str], corr_b: pd.DataFrame, corr_l: pd.DataFrame) -> dict[str, str]:
     rationale = {}
     for base in sorted(removed_bases):
@@ -802,6 +800,14 @@ output_json["spearman_supplement"] = {
 }
 
 log.end_step(status="success", records=len(spearman_divergent))
+
+
+# %%
+# ============================================================
+# SECTION 10: JSON Output
+# ============================================================
+
+log.start_step("JSON Output")
 
 json_path = METADATA_DIR / "correlation_removal.json"
 json_path.write_text(json.dumps(output_json, indent=2), encoding="utf-8")
