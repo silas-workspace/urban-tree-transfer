@@ -402,8 +402,8 @@ def test_hypothesis(
             group1_val = hypothesis.get("group1_value", "")
             group2_val = hypothesis.get("group2_value", "")
 
-            if group_var not in genus_data.columns:
-                result["conclusion"] = f"Missing group column: {group_var}"
+            if group_var not in genus_data.columns or metric_var not in genus_data.columns:
+                result["conclusion"] = f"Missing required columns: {group_var}, {metric_var}"
                 return result
 
             group1_series: pd.Series = genus_data[genus_data[group_var] == group1_val][
@@ -425,7 +425,7 @@ def test_hypothesis(
             p_value = float(mw_pval)  # type: ignore[arg-type]
             n1 = len(group1_series)
             n2 = len(group2_series)
-            effect_size = float(1.0 - (2.0 * statistic) / (n1 * n2))
+            effect_size = float((2.0 * statistic) / (n1 * n2) - 1.0)
             result["statistic"] = statistic
             result["p_value"] = p_value
             result["effect_size"] = effect_size

@@ -121,5 +121,23 @@ def test_hypothesis_effect_sizes() -> None:
         genus_data=spearman_data,
     )
 
-    assert "effect_size" in mann_whitney_result
+    assert mann_whitney_result["effect_size"] == pytest.approx(-1.0)
     assert "effect_size" in spearman_result
+
+
+def test_hypothesis_mann_whitney_missing_metric_column() -> None:
+    genus_data = pd.DataFrame({"is_conifer": [True, False, True, False]})
+
+    result = transfer.test_hypothesis(
+        {
+            "id": "H2",
+            "test_type": "mann_whitney",
+            "group_variable": "is_conifer",
+            "metric_variable": "transfer_gap",
+            "group1_value": True,
+            "group2_value": False,
+        },
+        genus_data=genus_data,
+    )
+
+    assert result["conclusion"] == "Missing required columns: is_conifer, transfer_gap"

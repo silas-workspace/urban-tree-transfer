@@ -250,7 +250,7 @@ transfer_evaluation:
       metric_variable: transfer_gap
       group1_value: true
       group2_value: false
-      expected_direction: lower_for_group1
+      expected_direction: negative_for_group1
       literature: "Fassnacht 2016"
       alpha: 0.05
     - id: H3

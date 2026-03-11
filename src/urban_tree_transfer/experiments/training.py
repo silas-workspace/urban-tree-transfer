@@ -290,6 +290,9 @@ def finetune_xgboost(
         x_finetune: Fine-tuning features of shape (n_samples, n_features)
         y_finetune: Fine-tuning labels of shape (n_samples,)
         n_additional_estimators: Number of additional boosting rounds
+        x_val: Optional validation features used for evaluation during fine-tuning.
+        y_val: Optional validation labels used for evaluation during fine-tuning.
+        sample_weight: Optional per-sample training weights for class balancing.
 
     Returns:
         Fine-tuned XGBoost model
