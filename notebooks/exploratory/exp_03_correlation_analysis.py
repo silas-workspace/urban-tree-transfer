@@ -124,12 +124,13 @@ INPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 OUTPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
+REPORT_DIR = DRIVE_DIR / "outputs" / "report"
 
 CITIES = ["berlin", "leipzig"]
 SAMPLE_SIZE = 10_000
 CORRELATION_THRESHOLD = 0.95
 
-for d in [METADATA_DIR, LOGS_DIR]:
+for d in [METADATA_DIR, LOGS_DIR, REPORT_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 feature_config = load_feature_config()
@@ -846,6 +847,22 @@ print(f"Saved JSON: {json_path}")
 
 log.end_step(status="success", records=len(removed_temporal_features))
 
+
+# %%
+report_path = REPORT_DIR / "correlation_matrix.json"
+report_output = {
+    "pearson": {
+        "spectral_bands": combined_pearson_bands,
+        "vegetation_indices": combined_pearson_indices,
+    },
+    "spearman": {
+        "spectral_bands": bands_spearman,
+        "vegetation_indices": indices_spearman,
+    },
+    "disagreements": output_json["spearman_supplement"]["divergent_pairs"],
+}
+report_path.write_text(json.dumps(report_output, indent=2), encoding="utf-8")
+print(f"Saved report JSON: {report_path}")
 
 
 # %%
