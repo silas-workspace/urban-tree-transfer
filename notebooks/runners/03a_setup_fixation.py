@@ -93,11 +93,8 @@ from urban_tree_transfer.config import RANDOM_SEED
 from urban_tree_transfer.experiments import ablation, data_loading
 from urban_tree_transfer.utils import (
     ExecutionLog,
-    setup_plotting,
     validate_setup_decisions,
 )
-
-setup_plotting()
 warnings.filterwarnings("ignore", category=UserWarning)
 
 log = ExecutionLog("03a_setup_fixation")
@@ -117,10 +114,9 @@ OUTPUT_DIR = DATA_DIR / "phase_3_experiments"
 
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
-FIGURES_DIR = OUTPUT_DIR / "figures"
 
 # Create output directories
-for d in [OUTPUT_DIR, METADATA_DIR, LOGS_DIR, FIGURES_DIR]:
+for d in [OUTPUT_DIR, METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 

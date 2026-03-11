@@ -102,15 +102,11 @@ from urban_tree_transfer.experiments import (
     models,
     training,
     transfer,
-    visualization,
 )
 from urban_tree_transfer.utils import (
     ExecutionLog,
-    setup_plotting,
     validate_finetuning_curve,
 )
-
-setup_plotting()
 warnings.filterwarnings("ignore", category=UserWarning)
 
 log = ExecutionLog("03d_finetuning")
@@ -129,10 +125,9 @@ OUTPUT_DIR = DATA_DIR / "phase_3_experiments"
 
 METADATA_DIR = OUTPUT_DIR / "metadata"
 MODEL_DIR = OUTPUT_DIR / "models"
-FIGURES_DIR = OUTPUT_DIR / "figures"
 LOGS_DIR = OUTPUT_DIR / "logs"
 
-for path in [METADATA_DIR, MODEL_DIR, FIGURES_DIR, LOGS_DIR]:
+for path in [METADATA_DIR, MODEL_DIR, LOGS_DIR]:
     path.mkdir(parents=True, exist_ok=True)
 
 config = load_experiment_config()  # ✅ FIXED: removed "phase3" argument
@@ -768,83 +763,6 @@ except Exception as e:
 
 # %%
 # ============================================================
-# SECTION 9: Visualizations
-# ============================================================
-
-log.start_step("Generate Visualizations")
-
-try:
-    print("\n" + "=" * 70)
-    print("Generating Visualizations")
-    print("=" * 70)
-    
-    # Load zero-shot metrics from transfer evaluation
-    transfer_eval_path = METADATA_DIR / "transfer_evaluation.json"
-    if not transfer_eval_path.exists():
-        raise FileNotFoundError(
-            f"Transfer evaluation not found at {transfer_eval_path}\n"
-            "Run 03c_transfer_evaluation.ipynb first."
-        )
-    
-    transfer_eval = json.loads(transfer_eval_path.read_text())
-    
-    # 1. Fine-tuning curves (ML with baselines)
-    print("\n[1/3] ML fine-tuning curve with baselines...")
-    zero_shot_metrics = transfer_eval.get("zero_shot_metrics")
-    if zero_shot_metrics is None:
-        zero_shot_metrics = transfer_eval.get("metadata", {}).get("ml_zero_shot_metrics")
-    if zero_shot_metrics is None:
-        raise KeyError("zero_shot_metrics missing in transfer_evaluation.json")
-
-    baselines = {
-        "zero_shot": zero_shot_metrics["f1_score"],
-        "from_scratch_full": ml_baseline_results[-1]["f1_score"],
-    }
-    
-    visualization.plot_finetuning_curve(
-        ml_results,
-        baselines=baselines,
-        output_path=FIGURES_DIR / "ml_finetuning_curve.png",
-    )
-    print(f"  ✅ Saved: ml_finetuning_curve.png")
-    
-    # 2. ML vs NN comparison
-    print("\n[2/3] ML vs NN fine-tuning comparison...")
-    visualization.plot_finetuning_ml_vs_nn(
-        ml_results,
-        nn_results,
-        output_path=FIGURES_DIR / "ml_vs_nn_finetuning.png",
-    )
-    print(f"  ✅ Saved: ml_vs_nn_finetuning.png")
-    
-    # 3. Per-genus recovery heatmap
-    print("\n[3/3] Per-genus recovery heatmap...")
-    
-    # Transform per_genus_df to dict[float, dict[str, float]]
-    per_genus_by_fraction = {}
-    for frac in fractions:
-        frac_data = per_genus_df[per_genus_df["fraction"] == frac]
-        per_genus_by_fraction[frac] = dict(zip(frac_data["genus"], frac_data["f1_score"]))
-    
-    visualization.plot_finetuning_per_genus_recovery(
-        per_genus_by_fraction,
-        class_labels,
-        output_path=FIGURES_DIR / "per_genus_recovery.png",
-    )
-    print(f"  ✅ Saved: per_genus_recovery.png")
-    
-    print("\n" + "=" * 70)
-    print(f"Figures saved to: {FIGURES_DIR}")
-    print("=" * 70)
-    
-    log.end_step(status="success")
-    
-except Exception as e:
-    log.end_step(status="error", errors=[str(e)])
-    raise
-
-# %%
-# ============================================================
 # SECTION 10: Save Results
 # ============================================================
 
@@ -1002,10 +920,6 @@ print(f"  FT vs From-scratch: {'Significant' if mcnemar_ft_vs_fs['significant'] 
 
 print(f"\nOutputs:")
 print(f"  Results:  {curve_path}")
-print(f"  Figures:  {FIGURES_DIR}")
-print(f"    - ml_finetuning_curve.png")
-print(f"    - ml_vs_nn_finetuning.png")
-print(f"    - per_genus_recovery.png")
 print(f"  Logs:     {log_path}")
 print(f"  Summary:  {summary_path}")
 

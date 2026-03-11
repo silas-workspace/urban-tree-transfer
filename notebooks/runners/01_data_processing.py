@@ -88,11 +88,8 @@ from urban_tree_transfer.data_processing import (
 from urban_tree_transfer.utils import (
     ExecutionLog,
     generate_validation_report,
-    setup_plotting,
     validate_dataset,
 )
-
-setup_plotting()
 log = ExecutionLog("01_data_processing")
 
 print("OK: Package imports complete")

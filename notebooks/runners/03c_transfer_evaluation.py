@@ -95,20 +95,16 @@ from sklearn.preprocessing import StandardScaler
 from urban_tree_transfer.config import load_experiment_config, RANDOM_SEED
 from urban_tree_transfer.experiments import (
     data_loading,
+    evaluation,
+    models,
     preprocessing,
     training,
-    evaluation,
-    visualization,
-    models,
     transfer,
 )
 from urban_tree_transfer.utils import (
     ExecutionLog,
-    setup_plotting,
     validate_evaluation_metrics,
 )
-
-setup_plotting()
 warnings.filterwarnings("ignore", category=UserWarning)
 
 log = ExecutionLog("03c_transfer_evaluation")
@@ -128,10 +124,9 @@ OUTPUT_DIR = DATA_DIR / "phase_3_experiments"
 
 METADATA_DIR = OUTPUT_DIR / "metadata"
 MODELS_DIR = OUTPUT_DIR / "models"
-FIGURES_DIR = OUTPUT_DIR / "figures"
 LOGS_DIR = OUTPUT_DIR / "logs"
 
-for path in [METADATA_DIR, MODELS_DIR, FIGURES_DIR, LOGS_DIR]:
+for path in [METADATA_DIR, MODELS_DIR, LOGS_DIR]:
     path.mkdir(parents=True, exist_ok=True)
 
 config = load_experiment_config()  # ✅ FIXED: removed "phase3" argument
@@ -710,65 +705,6 @@ except Exception as e:
 
 # %%
 # ============================================================
-# SECTION 10: Visualizations
-# ============================================================
-
-log.start_step("Generate Visualizations")
-
-try:
-    print("\n" + "=" * 70)
-    print("Generating Visualizations")
-    print("=" * 70)
-    
-    # 1. Confusion matrix comparison
-    print(f"\n1. Confusion matrix comparison...")
-    berlin_cm = np.array(berlin_eval["confusion_matrix"])
-    leipzig_cm = ml_transfer_metrics["confusion_matrix"]
-    
-    visualization.plot_confusion_comparison(
-        berlin_cm,
-        leipzig_cm,
-        class_labels,
-        source_name="Berlin",  # ✅ Required parameter
-        target_name="Leipzig",  # ✅ Required parameter
-        output_path=FIGURES_DIR / "confusion_comparison.png",
-    )
-    
-    # 2. Per-genus transfer (use robustness dict)
-    print(f"2. Per-genus transfer plot...")
-    visualization.plot_per_genus_transfer(
-        robustness,  # ✅ Pass dict[str, dict] (robustness already in correct format)
-        class_labels,
-        output_path=FIGURES_DIR / "per_genus_transfer.png",
-    )
-    
-    # 3. Conifer vs deciduous transfer
-    print(f"3. Conifer vs deciduous transfer...")
-    genus_transfer_data = {
-        genus: {
-            "berlin_f1": robustness[genus]["source_f1"],
-            "leipzig_f1": robustness[genus]["target_f1"],
-        }
-        for genus in class_labels
-        if genus in robustness
-    }
-    
-    visualization.plot_transfer_conifer_deciduous(
-        genus_transfer_data,
-        set(config["genus_groups"]["conifer"]),
-        output_path=FIGURES_DIR / "transfer_conifer_deciduous.png",
-    )
-    
-    print(f"\n✅ Visualizations saved to: {FIGURES_DIR}")
-    
-    log.end_step(status="success")
-    
-except Exception as e:
-    log.end_step(status="error", errors=[str(e)])
-    raise
-
-# %%
-# ============================================================
 # SECTION 11: Save Results
 # ============================================================
 
@@ -908,7 +844,6 @@ for category in ["robust", "medium", "poor"]:
 print(f"\nOutputs:")
 print(f"  Metadata: {eval_path.name}")
 print(f"  Summary:  03c_summary.json")
-print(f"  Figures:  {FIGURES_DIR}")
 print(f"  Logs:     {log_path}")
 
 print(f"\nNext Steps:")

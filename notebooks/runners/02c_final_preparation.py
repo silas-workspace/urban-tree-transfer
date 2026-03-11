@@ -84,7 +84,7 @@ if RUN_NOTEBOOK:
         apply_proximity_filter,
         analyze_genus_specific_impact,
     )
-    from urban_tree_transfer.utils import ExecutionLog, setup_plotting
+    from urban_tree_transfer.utils import ExecutionLog
     
     from pathlib import Path
     from datetime import datetime, timezone
@@ -93,10 +93,7 @@ if RUN_NOTEBOOK:
     import geopandas as gpd
     import pandas as pd
     import numpy as np
-    import matplotlib.pyplot as plt
-    import seaborn as sns
     
-    setup_plotting()
     log = ExecutionLog("02c_final_preparation")
     
     print("OK: Package imports complete")
@@ -109,16 +106,13 @@ if RUN_NOTEBOOK:
     OUTPUT_DIR = DRIVE_DIR / "data" / "phase_2_splits"
     METADATA_DIR = DRIVE_DIR / "data" / "phase_2_features" / "metadata"
     LOGS_DIR = OUTPUT_DIR / "logs"
-    FIGURES_DIR = OUTPUT_DIR / "figures"
     
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    FIGURES_DIR.mkdir(parents=True, exist_ok=True)
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
     
     print(f"Input (Phase 2):  {INPUT_DIR}")
     print(f"Output (Splits):  {OUTPUT_DIR}")
     print(f"Metadata (JSON):  {METADATA_DIR}")
-    print(f"Figures:          {FIGURES_DIR}")
     print(f"Logs (Drive):     {LOGS_DIR}")
     print(f"Random seed:      {RANDOM_SEED}")
 
@@ -491,58 +485,6 @@ if RUN_NOTEBOOK:
 
 # %%
 if RUN_NOTEBOOK:
-    log.start_step("Summary Visualizations")
-    
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    
-    berlin_sizes = {
-        "Train": [len(berlin_train), len(berlin_train_filt)],
-        "Val": [len(berlin_val), len(berlin_val_filt)],
-        "Test": [len(berlin_test), len(berlin_test_filt)],
-    }
-    x = np.arange(len(berlin_sizes))
-    width = 0.35
-    axes[0].bar(x - width / 2, [berlin_sizes[k][0] for k in berlin_sizes], width, label="Baseline")
-    axes[0].bar(x + width / 2, [berlin_sizes[k][1] for k in berlin_sizes], width, label="Filtered")
-    axes[0].set_title("Berlin Split Sizes")
-    axes[0].set_ylabel("Number of Trees")
-    axes[0].set_xticks(x)
-    axes[0].set_xticklabels(berlin_sizes.keys())
-    axes[0].legend()
-    
-    leipzig_sizes = {
-        "Finetune": [len(leipzig_finetune), len(leipzig_finetune_filt)],
-        "Test": [len(leipzig_test), len(leipzig_test_filt)],
-    }
-    x = np.arange(len(leipzig_sizes))
-    axes[1].bar(x - width / 2, [leipzig_sizes[k][0] for k in leipzig_sizes], width, label="Baseline")
-    axes[1].bar(x + width / 2, [leipzig_sizes[k][1] for k in leipzig_sizes], width, label="Filtered")
-    axes[1].set_title("Leipzig Split Sizes")
-    axes[1].set_ylabel("Number of Trees")
-    axes[1].set_xticks(x)
-    axes[1].set_xticklabels(leipzig_sizes.keys())
-    axes[1].legend()
-    
-    fig.suptitle("Dataset Size Comparison: Baseline vs Filtered", fontsize=14, fontweight="bold")
-    plt.tight_layout()
-    fig.savefig(FIGURES_DIR / "split_size_comparison.png", dpi=300, bbox_inches="tight")
-    
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
-    berlin_train["genus_latin"].value_counts().plot.barh(ax=axes[0], color="#1f77b4")
-    axes[0].set_title("Berlin Train - Baseline")
-    axes[0].set_xlabel("Count")
-    berlin_train_filt["genus_latin"].value_counts().plot.barh(ax=axes[1], color="#ff7f0e")
-    axes[1].set_title("Berlin Train - Filtered")
-    axes[1].set_xlabel("Count")
-    fig.suptitle("Genus Distribution Comparison", fontsize=14, fontweight="bold")
-    plt.tight_layout()
-    fig.savefig(FIGURES_DIR / "genus_distribution_comparison.png", dpi=300, bbox_inches="tight")
-    
-    log.end_step(status="success")
-
-
-# %%
-if RUN_NOTEBOOK:
     log.start_step("Export Summary Metadata")
     
     summary = {
@@ -732,7 +674,6 @@ if RUN_NOTEBOOK:
     print("1. GeoPackages: data/phase_2_splits/*.gpkg")
     print("2. Parquet files: data/phase_2_splits/*.parquet")
     print("3. Summary: outputs/phase_2/metadata/phase_2_final_summary.json")
-    print("4. Figures: outputs/phase_2/figures/02c_final_prep/")
     print("Git commands:")
     print("  git add data/phase_2_splits/*.gpkg data/phase_2_splits/*.parquet outputs/phase_2/metadata/phase_2_final_summary.json")
     print("  git commit -m 'Add Phase 2 final splits (baseline + filtered) with Parquet export'")

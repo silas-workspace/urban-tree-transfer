@@ -81,11 +81,8 @@ if RUN_NOTEBOOK:
     from urban_tree_transfer.utils import (
         ExecutionLog,
         generate_validation_report,
-        setup_plotting,
         validate_dataset,
     )
-    
-    setup_plotting()
     log = ExecutionLog("02a_feature_extraction")
     
     print("OK: Package imports complete")
@@ -107,13 +104,12 @@ if RUN_NOTEBOOK:
     # Metadata, logs, figures inside data directory (like Phase 1)
     METADATA_DIR = OUTPUT_DIR / "metadata"
     LOGS_DIR = OUTPUT_DIR / "logs"
-    FIGURES_DIR = OUTPUT_DIR / "figures"
     
     # Cities to process (must match city column values and S2 file naming)
     CITIES = ["berlin", "leipzig"]
     
     # Create directories
-    for d in [OUTPUT_DIR, METADATA_DIR, LOGS_DIR, FIGURES_DIR]:
+    for d in [OUTPUT_DIR, METADATA_DIR, LOGS_DIR]:
         d.mkdir(parents=True, exist_ok=True)
     
     # Load feature configuration (static defaults from YAML)
@@ -126,7 +122,6 @@ if RUN_NOTEBOOK:
     print(f"Output (Phase 2a): {OUTPUT_DIR}")
     print(f"Metadata:          {METADATA_DIR}")
     print(f"Logs:              {LOGS_DIR}")
-    print(f"Figures:           {FIGURES_DIR}")
     print(f"Cities:            {CITIES}")
     print(f"Random seed:       {RANDOM_SEED}")
     print(f"Reference year:    {REFERENCE_YEAR}")

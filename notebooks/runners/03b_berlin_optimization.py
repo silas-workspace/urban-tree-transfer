@@ -103,30 +103,25 @@ import gc
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 from sklearn.model_selection import GroupShuffleSplit
 
 from urban_tree_transfer.config import load_experiment_config, RANDOM_SEED
 from urban_tree_transfer.experiments import (
     data_loading,
+    evaluation,
+    hp_tuning,
+    models,
     preprocessing,
     training,
-    evaluation,
-    visualization,
-    models,
-    hp_tuning,
 )
 from urban_tree_transfer.utils import (
     ExecutionLog,
-    setup_plotting,
     validate_algorithm_comparison,
-    validate_hp_tuning_result,
     validate_evaluation_metrics,
+    validate_hp_tuning_result,
     validate_setup_decisions,
 )
-
-setup_plotting()
 warnings.filterwarnings("ignore", category=UserWarning)
 
 log = ExecutionLog("03b_berlin_optimization")
@@ -147,10 +142,9 @@ OUTPUT_DIR = DATA_DIR / "phase_3_experiments"
 METADATA_DIR = OUTPUT_DIR / "metadata"
 MODELS_DIR = OUTPUT_DIR / "models"
 LOGS_DIR = OUTPUT_DIR / "logs"
-FIGURES_DIR = OUTPUT_DIR / "figures" / "berlin_optimization"
 
 # Create output directories
-for d in [METADATA_DIR, MODELS_DIR, LOGS_DIR, FIGURES_DIR]:
+for d in [METADATA_DIR, MODELS_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # Load experiment configuration
@@ -160,7 +154,6 @@ print(f"Input (Phase 3 Datasets): {INPUT_DIR}")
 print(f"Output (Phase 3):         {OUTPUT_DIR}")
 print(f"Metadata:                 {METADATA_DIR}")
 print(f"Models:                   {MODELS_DIR}")
-print(f"Figures:                  {FIGURES_DIR}")
 print(f"Logs:                     {LOGS_DIR}")
 print(f"Random seed:              {RANDOM_SEED}")
 print(f"CV folds:                 {config['global']['cv_folds']}")
@@ -899,7 +892,7 @@ except Exception as e:
 
 # %%
 # ============================================================
-# SECTION 9: Error Analysis & Visualizations (H4)
+# SECTION 9: Error Analysis (H4)
 # ============================================================
 
 log.start_step("Error Analysis")
@@ -910,25 +903,6 @@ try:
     print("=" * 70)
     
     class_labels = list(idx_to_label.values())
-    
-    # 1. Confusion matrix
-    print(f"\n1. Generating confusion matrix...")
-    visualization.plot_confusion_matrix(
-        ml_cm,
-        class_labels,
-        output_path=FIGURES_DIR / "confusion_matrix.png",
-    )
-    
-    # 2. Per-genus F1 scores
-    print(f"2. Generating per-genus F1 plot...")
-    per_genus_f1 = {
-        row["genus"]: row["f1_score"]
-        for row in ml_per_class.to_dict(orient="records")
-    }
-    visualization.plot_per_genus_f1(
-        per_genus_f1,
-        output_path=FIGURES_DIR / "per_genus_f1.png",
-    )
     
     # 3. Worst confused pairs (FIXED: top_k instead of top_n)
     print(f"3. Analyzing worst confused pairs...")
@@ -974,11 +948,6 @@ try:
             }
         ).sort_values("importance", ascending=False)
         
-        visualization.plot_feature_importance(
-            importance_df.head(30),
-            output_path=FIGURES_DIR / "feature_importance.png",
-        )
-        
         print(f"\n   Top 5 features:")
         for _, row in importance_df.head(5).iterrows():
             print(f"     {row['feature']}: {row['importance']:.4f}")
@@ -986,7 +955,6 @@ try:
         print(f"   Feature importance not available for {ml_name}")
     
     print(f"\n✅ Error analysis complete")
-    print(f"   Figures saved to: {FIGURES_DIR}")
     
     log.end_step(status="success")
     
@@ -1099,7 +1067,6 @@ if nn_hp_results:
     print(f"    - hp_tuning_nn.json")
 print(f"    - berlin_evaluation.json")
 print(f"    - 03b_summary.json")
-print(f"  Figures: {FIGURES_DIR}")
 print(f"  Logs: {log_path}")
 
 print(f"\nNext Steps:")
