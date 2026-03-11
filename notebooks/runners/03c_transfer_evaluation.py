@@ -433,6 +433,7 @@ try:
     # Extract features and labels for Leipzig finetune (using ML features)
     x_finetune = leipzig_finetune_ml[ml_feature_cols].to_numpy()
     y_finetune = leipzig_finetune_ml["genus_latin"].map(label_to_idx).to_numpy()
+    sample_weight = preprocessing.compute_sample_weights(y_finetune)
     
     # Fit Leipzig-specific scaler (IMPORTANT for fair comparison!)
     print(f"\nFitting Leipzig-specific scaler...")
@@ -447,7 +448,7 @@ try:
     print(f"  Training samples: {len(x_finetune_scaled):,}")
     
     from_scratch_model = models.create_model(ml_name, model_params=from_scratch_params)
-    from_scratch_model.fit(x_finetune_scaled, y_finetune)
+    from_scratch_model.fit(x_finetune_scaled, y_finetune, sample_weight=sample_weight)
     
     # Evaluate
     from_scratch_preds = from_scratch_model.predict(x_test_leipzig_scaled)

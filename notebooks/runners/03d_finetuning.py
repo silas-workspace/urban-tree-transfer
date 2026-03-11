@@ -374,6 +374,7 @@ try:
             random_seed=RANDOM_SEED,
         )
         x_finetune, y_finetune = subsets[frac]
+        sample_weight = preprocessing.compute_sample_weights(y_finetune)
         
         # Scale with Berlin ML scaler for warm-start
         x_finetune_scaled = berlin_scaler_ml.transform(x_finetune)
@@ -387,6 +388,7 @@ try:
                 n_additional_estimators=n_estimators,
                 x_val=x_val_scaled_ml,
                 y_val=y_val_ml,
+                sample_weight=sample_weight,
             )
         except Exception as exc:
             if use_xgb_gpu and "GPU" in str(exc):
@@ -400,6 +402,7 @@ try:
                     n_additional_estimators=n_estimators,
                     x_val=x_val_scaled_ml,
                     y_val=y_val_ml,
+                    sample_weight=sample_weight,
                 )
             else:
                 raise
@@ -555,6 +558,7 @@ try:
             random_seed=RANDOM_SEED,
         )
         x_train, y_train = subsets[frac]
+        sample_weight = preprocessing.compute_sample_weights(y_train)
         
         # Leipzig-specific scaler (IMPORTANT for fair comparison!)
         leipzig_scaler = StandardScaler()
@@ -564,7 +568,7 @@ try:
         # Train from scratch with same hyperparameters as Berlin model
         baseline_params = ml_metadata.get("best_params", {})
         baseline_model = models.create_model(ml_name, model_params=baseline_params)
-        baseline_model.fit(x_train_scaled, y_train)
+        baseline_model.fit(x_train_scaled, y_train, sample_weight=sample_weight)
         
         # Evaluate on Leipzig test set
         preds = baseline_model.predict(x_test_leipzig_scaled)
