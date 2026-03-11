@@ -62,6 +62,7 @@ def build_objective(
     search_space: dict[str, Any],
     base_params: dict[str, Any] | None = None,
     fit_params: dict[str, Any] | None = None,
+    sample_weight: np.ndarray | None = None,
     random_seed: int = RANDOM_SEED,
 ) -> Any:
     """Build Optuna objective for a given model and dataset."""
@@ -97,6 +98,7 @@ def build_objective(
             groups,
             cv,
             fit_params=final_fit_params,
+            sample_weight=sample_weight,
         )
         trial.set_user_attr("train_val_gap", results["train_val_gap"])
         return float(results["val_f1_mean"])

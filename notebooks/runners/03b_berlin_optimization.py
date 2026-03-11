@@ -298,6 +298,11 @@ try:
     y_train, label_to_idx, idx_to_label = preprocessing.encode_genus_labels(
         train_df_ml["genus_latin"]
     )
+    ml_sample_weights = preprocessing.compute_sample_weights(y_train)
+    print(
+        f"Computed ML sample weights for {len(ml_sample_weights):,} training samples "
+        f"({np.unique(ml_sample_weights).size} class weights)"
+    )
     y_val = val_df_ml["genus_latin"].map(label_to_idx).to_numpy()
     y_test = test_df_ml["genus_latin"].map(label_to_idx).to_numpy()
     
@@ -342,6 +347,7 @@ try:
 
     x_tune_scaled_ml = x_train_scaled_ml[subset_positions]
     y_tune = y_train[subset_positions]
+    tune_sample_weights = preprocessing.compute_sample_weights(y_tune)
     groups_tune = tuning_df_ml["block_id"].values
 
     if tuning_cv_folds <= 1:
@@ -361,6 +367,7 @@ try:
     print(f"Combining train+val for final models...")
     x_combined_scaled_ml = np.vstack([x_train_scaled_ml, x_val_scaled_ml])
     y_combined = np.concatenate([y_train, y_val])
+    combined_sample_weights = preprocessing.compute_sample_weights(y_combined)
     
     print(f"  Train samples:    {len(x_train_scaled_ml):,}")
     print(f"  Val samples:      {len(x_val_scaled_ml):,}")
@@ -445,6 +452,17 @@ try:
         for param, values in ml_search_space.items():
             print(f"  {param}: {values}")
     
+        def compute_search_space_size(search_space: dict) -> int:
+            total = 1
+            for value in search_space.values():
+                if isinstance(value, dict):
+                    total *= compute_search_space_size(value)
+                elif isinstance(value, list):
+                    total *= len(value)
+            return total
+
+        total_grid_size = compute_search_space_size(ml_search_space)
+
         # Create Optuna study with pruning for efficiency
         ml_study = hp_tuning.create_study(
             direction="maximize",
@@ -460,6 +478,7 @@ try:
             groups=groups_tune,
             cv=cv_tuning,
             search_space=ml_search_space,
+            sample_weight=tune_sample_weights,
         )
     
         # Run Optuna optimization
@@ -471,6 +490,10 @@ try:
         print(f"  Timeout: {timeout}s ({timeout/3600:.1f}h)")
         print(f"  Sampler: {config['hp_tuning']['optuna']['sampler']}")
         print(f"  Pruner: {config['hp_tuning']['optuna']['pruner']}")
+        print(
+            f"NOTE: Optuna evaluated {n_trials} of {total_grid_size} possible combinations. "
+            "Champion selection is based on partial search results."
+        )
     
         ml_hp_results = hp_tuning.run_optuna_search(
             ml_study,
@@ -530,7 +553,12 @@ try:
         ml_model = models.create_model(ml_name, model_params=ml_best_params)
 
         print(f"\nTraining on combined train+val ({len(x_combined_scaled):,} samples)...")
-        ml_model = training.train_final_model(ml_model, x_combined_scaled, y_combined)
+        ml_model = training.train_final_model(
+            ml_model,
+            x_combined_scaled,
+            y_combined,
+            sample_weight=combined_sample_weights,
+        )
 
         # Save ML model
         training.save_model(
@@ -574,6 +602,10 @@ try:
         print(f"\n" + "=" * 70)
         print(f"NN CHAMPION: {nn_name.upper()}")
         print("=" * 70)
+        print(
+            "KNOWN ISSUE: TabNet evaluation was not possible due to pytorch-tabnet "
+            "dependency conflicts in Colab. NN comparison is limited to CNN-1D."
+        )
 
         # Add structural params for CNN1D (H4)
         structural_params = {}
@@ -820,6 +852,18 @@ try:
     ml_cm = evaluation.compute_confusion_matrix(
         y_test, ml_preds, labels=list(range(n_classes))
     )
+    ml_confidence_intervals = {}
+    for metric_name in ["f1_score", "precision", "recall", "accuracy"]:
+        ml_confidence_intervals[metric_name] = evaluation.bootstrap_confidence_interval(
+            y_test,
+            ml_preds,
+            lambda y_true_sample, y_pred_sample, key=metric_name: evaluation.compute_metrics(
+                y_true_sample,
+                y_pred_sample,
+            )[key],
+            n_bootstrap=config["metrics"]["n_bootstrap"],
+            confidence_level=config["metrics"]["confidence_level"],
+        )
     
     print(f"\nML Champion Test Results:")
     for metric, value in ml_metrics.items():
@@ -837,11 +881,24 @@ try:
 
     # NN predictions (using NN test data with full features - if exists)
     nn_cv_test_gap = None
+    nn_confidence_intervals = None
     if nn_name and "nn_model" in locals():
         print(f"\nEvaluating NN champion ({nn_name})...")
         print(f"  Features: {x_test_scaled_nn.shape[1]} (full temporal)")
         nn_preds = nn_model.predict(x_test_scaled_nn)
         nn_metrics = evaluation.compute_metrics(y_test, nn_preds)
+        nn_confidence_intervals = {}
+        for metric_name in ["f1_score", "precision", "recall", "accuracy"]:
+            nn_confidence_intervals[metric_name] = evaluation.bootstrap_confidence_interval(
+                y_test,
+                nn_preds,
+                lambda y_true_sample, y_pred_sample, key=metric_name: evaluation.compute_metrics(
+                    y_true_sample,
+                    y_pred_sample,
+                )[key],
+                n_bootstrap=config["metrics"]["n_bootstrap"],
+                confidence_level=config["metrics"]["confidence_level"],
+            )
 
         print(f"\nNN Champion Test Results:")
         for metric, value in nn_metrics.items():
@@ -864,6 +921,10 @@ try:
     eval_data = {
         "metrics": ml_metrics,
         "cv_test_gap": ml_cv_test_gap,
+        "confidence_intervals": {
+            "ml": ml_confidence_intervals,
+            "nn": nn_confidence_intervals,
+        },
         "per_class": ml_per_class.to_dict(orient="records"),
         "confusion_matrix": ml_cm.tolist(),
         "metadata": {

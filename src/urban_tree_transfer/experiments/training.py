@@ -53,6 +53,7 @@ def train_with_cv(
     groups: np.ndarray,
     cv: StratifiedGroupKFold,
     fit_params: dict[str, Any] | None = None,
+    sample_weight: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Train model with cross-validation and collect metrics."""
     fit_params = dict(fit_params or {})
@@ -97,7 +98,10 @@ def train_with_cv(
                 )
         else:
             fold_model = cast(Any, clone(model))
-            fold_model.fit(x_train, y_train, **fit_params)
+            fold_fit_params = dict(fit_params)
+            if sample_weight is not None:
+                fold_fit_params["sample_weight"] = sample_weight[train_idx]
+            fold_model.fit(x_train, y_train, **fold_fit_params)
             y_train_pred = fold_model.predict(x_train)
             y_val_pred = fold_model.predict(x_val)
 
@@ -126,6 +130,7 @@ def train_final_model(
     x_val: np.ndarray | None = None,
     y_val: np.ndarray | None = None,
     fit_params: dict[str, Any] | None = None,
+    sample_weight: np.ndarray | None = None,
 ) -> Any:
     """Train final model on full training data (Train+Val combined)."""
     fit_params = dict(fit_params or {})
@@ -150,7 +155,10 @@ def train_final_model(
         model.fit(x_train, y_train, eval_set=eval_set, **fit_params)
         return model
 
-    model.fit(x_train, y_train, **fit_params)
+    final_fit_params = dict(fit_params)
+    if sample_weight is not None:
+        final_fit_params["sample_weight"] = sample_weight
+    model.fit(x_train, y_train, **final_fit_params)
     return model
 
 
@@ -273,6 +281,7 @@ def finetune_xgboost(
     n_additional_estimators: int = 100,
     x_val: np.ndarray | None = None,
     y_val: np.ndarray | None = None,
+    sample_weight: np.ndarray | None = None,
 ) -> Any:
     """Fine-tune XGBoost model with additional trees.
 
@@ -281,6 +290,9 @@ def finetune_xgboost(
         x_finetune: Fine-tuning features of shape (n_samples, n_features)
         y_finetune: Fine-tuning labels of shape (n_samples,)
         n_additional_estimators: Number of additional boosting rounds
+        x_val: Optional validation features used for evaluation during fine-tuning.
+        y_val: Optional validation labels used for evaluation during fine-tuning.
+        sample_weight: Optional per-sample training weights for class balancing.
 
     Returns:
         Fine-tuned XGBoost model
@@ -339,6 +351,8 @@ def finetune_xgboost(
     }
     if x_val is not None and y_val is not None:
         fit_kwargs["eval_set"] = [(x_val, y_val)]
+    if sample_weight is not None:
+        fit_kwargs["sample_weight"] = sample_weight
 
     finetuned_model.fit(x_finetune, y_finetune, **fit_kwargs)
 
@@ -393,7 +407,7 @@ def finetune_neural_network(
         )
         new_lr = original_lr * lr_factor
 
-        train_cnn(
+        history = train_cnn(
             pretrained_model,
             x_finetune,
             y_finetune,
@@ -401,6 +415,7 @@ def finetune_neural_network(
             epochs=epochs,
             **train_kwargs,
         )
+        pretrained_model.finetune_history_ = history
 
         return pretrained_model
 
@@ -420,6 +435,7 @@ def finetune_neural_network(
             patience=train_kwargs.get("patience", 15),
             **{k: v for k, v in train_kwargs.items() if k != "patience"},
         )
+        pretrained_model.finetune_history_ = {}
 
         return pretrained_model
 

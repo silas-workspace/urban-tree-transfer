@@ -43,6 +43,30 @@ def encode_genus_labels(
     return encoded, label_to_idx, idx_to_label
 
 
+def compute_sample_weights(y: np.ndarray) -> np.ndarray:
+    """Compute inverse-frequency sample weights for class balancing.
+
+    Args:
+        y: Encoded class labels.
+
+    Returns:
+        Per-sample weights using n_total / (n_classes * n_class_i).
+
+    Raises:
+        ValueError: If y is empty.
+    """
+    if y.size == 0:
+        raise ValueError("y is empty.")
+
+    classes, counts = np.unique(y, return_counts=True)
+    n_total = y.shape[0]
+    n_classes = classes.shape[0]
+    class_weights = {
+        label: n_total / (n_classes * count) for label, count in zip(classes, counts, strict=True)
+    }
+    return np.array([class_weights[label] for label in y], dtype=float)
+
+
 def scale_features(
     x_train: pd.DataFrame,
     x_val: pd.DataFrame | None = None,

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pytest
 from sklearn.ensemble import RandomForestClassifier
 
@@ -43,6 +44,20 @@ def test_train_final_model(sample_dataset) -> None:
     model = RandomForestClassifier(n_estimators=10, random_state=42)
     trained = train_final_model(model, x, y)
     assert hasattr(trained, "estimators_")
+
+
+def test_train_with_cv_sample_weight(sample_dataset) -> None:
+    x = sample_dataset[["NDVI_06", "NDVI_07", "EVI_06"]].values
+    y = sample_dataset["genus_latin"].astype("category").cat.codes.values
+    groups = sample_dataset["block_id"].values
+    sample_weight = np.where(y == y.max(), 2.0, 1.0)
+    cv = create_spatial_block_cv(sample_dataset, n_splits=3)
+    model = RandomForestClassifier(n_estimators=10, random_state=42)
+
+    results = train_with_cv(model, x, y, groups, cv, sample_weight=sample_weight)
+
+    assert len(results["train_scores"]) == 3
+    assert len(results["val_scores"]) == 3
 
 
 def test_save_load_model_sklearn(tmp_path: Path, sample_dataset) -> None:
@@ -138,3 +153,29 @@ def test_finetune_neural_network(sample_features, sample_labels) -> None:
 
     assert finetuned.learning_rate == original_lr * 0.1
     assert isinstance(finetuned, CNN1D)
+
+
+def test_finetune_neural_network_stores_history(sample_features, sample_labels) -> None:
+    torch = pytest.importorskip("torch")
+    _ = torch
+
+    n_classes = len(set(sample_labels))
+    model = CNN1D(
+        n_temporal_bases=2,
+        n_months=5,
+        n_static_features=0,
+        n_classes=n_classes,
+        learning_rate=0.01,
+    )
+    model.fit(sample_features[:100], sample_labels[:100], epochs=5)
+
+    finetuned = finetune_neural_network(
+        model,
+        sample_features[100:],
+        sample_labels[100:],
+        epochs=5,
+        lr_factor=0.1,
+    )
+
+    assert "train_loss" in finetuned.finetune_history_
+    assert "best_epoch" in finetuned.finetune_history_

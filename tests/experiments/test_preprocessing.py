@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from urban_tree_transfer.experiments.preprocessing import (
+    compute_sample_weights,
     encode_genus_labels,
     scale_features,
 )
@@ -41,3 +42,16 @@ def test_scale_features_no_leakage() -> None:
     assert x_train_scaled.shape == (2, 2)
     assert x_val_scaled is not None
     assert np.abs(x_val_scaled.mean(axis=0)).min() > 1.0
+
+
+def test_compute_sample_weights() -> None:
+    imbalanced = np.array([0, 0, 0, 1])
+    imbalanced_weights = compute_sample_weights(imbalanced)
+
+    assert imbalanced_weights.sum() == pytest.approx(len(imbalanced))
+    assert imbalanced_weights[-1] > imbalanced_weights[0]
+
+    uniform = np.array([0, 0, 1, 1])
+    uniform_weights = compute_sample_weights(uniform)
+
+    assert np.allclose(uniform_weights, np.ones_like(uniform_weights))

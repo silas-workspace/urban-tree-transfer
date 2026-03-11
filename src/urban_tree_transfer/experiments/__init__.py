@@ -56,6 +56,7 @@ from urban_tree_transfer.experiments.models import (
     train_cnn,
 )
 from urban_tree_transfer.experiments.preprocessing import (
+    compute_sample_weights,
     encode_genus_labels,
     prepare_data_for_training,
     scale_features,
@@ -102,6 +103,7 @@ __all__ = [
     "compute_feature_stability",
     "compute_metrics",
     "compute_per_class_metrics",
+    "compute_sample_weights",
     "compute_transfer_gap",
     "compute_transfer_metrics",
     "compute_transfer_robustness_ranking",

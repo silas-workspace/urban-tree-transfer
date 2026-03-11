@@ -433,6 +433,7 @@ try:
     # Extract features and labels for Leipzig finetune (using ML features)
     x_finetune = leipzig_finetune_ml[ml_feature_cols].to_numpy()
     y_finetune = leipzig_finetune_ml["genus_latin"].map(label_to_idx).to_numpy()
+    sample_weight = preprocessing.compute_sample_weights(y_finetune)
     
     # Fit Leipzig-specific scaler (IMPORTANT for fair comparison!)
     print(f"\nFitting Leipzig-specific scaler...")
@@ -447,7 +448,7 @@ try:
     print(f"  Training samples: {len(x_finetune_scaled):,}")
     
     from_scratch_model = models.create_model(ml_name, model_params=from_scratch_params)
-    from_scratch_model.fit(x_finetune_scaled, y_finetune)
+    from_scratch_model.fit(x_finetune_scaled, y_finetune, sample_weight=sample_weight)
     
     # Evaluate
     from_scratch_preds = from_scratch_model.predict(x_test_leipzig_scaled)
@@ -605,42 +606,77 @@ try:
     print("\n" + "=" * 70)
     print("A-Priori Hypotheses Testing")
     print("=" * 70)
-    
-    # Prepare data for hypotheses
-    genus_data = pd.merge(
+
+    setup_path = METADATA_DIR / "setup_decisions.json"
+    if not setup_path.exists():
+        raise FileNotFoundError(
+            f"setup_decisions.json not found at {setup_path}\n"
+            "Run exp_10_genus_selection_validation.ipynb first."
+        )
+    setup = json.loads(setup_path.read_text())
+
+    grouping_analysis = setup["genus_selection"]["grouping_analysis"]
+    genus_to_final_mapping = grouping_analysis["genus_to_final_mapping"]
+    mean_jm_per_genus = grouping_analysis["mean_jm_per_genus"]
+
+    final_to_members: dict[str, list[str]] = {}
+    for original_genus, final_genus in genus_to_final_mapping.items():
+        final_to_members.setdefault(final_genus, []).append(original_genus)
+
+    conifer_genera = set(config["genus_groups"]["conifer"])
+
+    genus_summary = pd.merge(
         berlin_per_genus[["genus", "f1_score", "support"]].rename(
             columns={"f1_score": "berlin_f1", "support": "berlin_n"}
         ),
-        leipzig_per_genus[["genus", "f1_score"]].rename(
-            columns={"f1_score": "leipzig_f1"}
-        ),
+        leipzig_per_genus[["genus", "f1_score"]].rename(columns={"f1_score": "leipzig_f1"}),
         on="genus",
     )
-    genus_data["transfer_gap"] = genus_data["berlin_f1"] - genus_data["leipzig_f1"]
-    
-    # Test each hypothesis from config
-    hypotheses = config["transfer_evaluation"]["hypotheses"]
-    hypothesis_results = []
-    
-    for hyp in hypotheses:
-        print(f"\n{hyp['id']}: {hyp['description']}")
-        
-        result = transfer.test_hypothesis(
-            hyp,
-            genus_data=genus_data,
-            feature_importance=berlin_importance if stability else None,
+    genus_summary["transfer_gap"] = genus_summary["berlin_f1"] - genus_summary["leipzig_f1"]
+    genus_summary["is_conifer"] = genus_summary["genus"].map(
+        lambda genus: any(member in conifer_genera for member in final_to_members.get(genus, [genus]))
+    )
+    genus_summary["mean_jm_distance"] = genus_summary["genus"].map(
+        lambda genus: float(
+            np.mean([mean_jm_per_genus[member] for member in final_to_members.get(genus, [genus])])
         )
-        
+    )
+
+    sample_data = pd.DataFrame(
+        {
+            "genus": leipzig_test_ml["genus_latin"].to_numpy(),
+            "correct": (ml_preds == y_test).astype(int),
+        }
+    )
+
+    print(f"\nPrepared genus summary rows: {len(genus_summary)}")
+    print(f"Prepared per-sample rows:     {len(sample_data)}")
+
+    hypotheses = {hyp["id"]: hyp for hyp in config["transfer_evaluation"]["hypotheses"]}
+    hypothesis_results = []
+
+    for hyp_id in ["H1", "H2", "H3"]:
+        hyp = hypotheses[hyp_id]
+        test_data = sample_data if hyp_id == "H1" else genus_summary
+
+        print(f"\n{hyp['id']}: {hyp['description']}")
+        result = transfer.test_hypothesis(hyp, genus_data=test_data)
         hypothesis_results.append(result)
-        
+
         if "statistic" in result:
-            print(f"  Statistic: {result['statistic']:.3f}")
+            print(f"  Statistic:   {result['statistic']:.3f}")
         if "p_value" in result:
-            print(f"  p-value:   {result['p_value']:.4f}")
-        print(f"  Result:    {result['conclusion']}")
-    
+            print(f"  p-value:     {result['p_value']:.4f}")
+        if "effect_size" in result:
+            print(f"  Effect size: {result['effect_size']:.3f}")
+        print(f"  Result:      {result['conclusion']}")
+
+    hypothesis_path = METADATA_DIR / "hypothesis_tests.json"
+    hypothesis_path.write_text(json.dumps(hypothesis_results, indent=2))
+    print(f"\n✅ Saved: {hypothesis_path.name}")
+
     log.end_step(status="success", records=len(hypothesis_results))
-    
+
 except Exception as e:
     log.end_step(status="error", errors=[str(e)])
     raise
@@ -664,38 +700,55 @@ try:
         print(f"NN Champion Evaluation: {nn_name.upper()}")
         print("=" * 70)
         
-        # Predict with NN model (using NN-specific scaled data with full temporal features)
-        nn_preds = nn_model.predict(x_test_scaled_nn, device=nn_device)
-        
-        # Compute metrics
-        nn_transfer_metrics = transfer.compute_transfer_metrics(
-            y_test,
-            nn_preds,
-            class_labels=class_labels,
-            include_ci=True,
-            n_bootstrap=config["metrics"]["n_bootstrap"],
-        )
-        
-        nn_leipzig_f1 = nn_transfer_metrics["metrics"]["f1_score"]
-        
-        print(f"\nNN Zero-Shot Transfer:")
-        print(f"  F1:       {nn_leipzig_f1:.4f}")
-        print(f"  Accuracy: {nn_transfer_metrics['metrics']['accuracy']:.4f}")
-        
-        print(f"\nML vs NN Comparison:")
-        print(f"  ML F1: {leipzig_f1:.4f}")
-        print(f"  NN F1: {nn_leipzig_f1:.4f}")
-        print(f"  Difference: {nn_leipzig_f1 - leipzig_f1:+.4f}")
-        
-        # Select best transfer model
-        if nn_leipzig_f1 > leipzig_f1:
-            best_transfer_model = "nn"
-            best_transfer_f1 = nn_leipzig_f1
-            print(f"\n  ✅ Best transfer model: NN ({nn_name})")
-        else:
+        try:
+            nn_preds = nn_model.predict(x_test_scaled_nn, device=nn_device)
+            nn_transfer_metrics = transfer.compute_transfer_metrics(
+                y_test,
+                nn_preds,
+                class_labels=class_labels,
+                include_ci=True,
+                n_bootstrap=config["metrics"]["n_bootstrap"],
+            )
+            nn_leipzig_f1 = nn_transfer_metrics["metrics"]["f1_score"]
+
+            print(f"\nNN Zero-Shot Transfer:")
+            print(f"  F1:       {nn_leipzig_f1:.4f}")
+            print(f"  Accuracy: {nn_transfer_metrics['metrics']['accuracy']:.4f}")
+
+            print(f"\nML vs NN Comparison:")
+            print(f"  ML F1: {leipzig_f1:.4f}")
+            print(f"  NN F1: {nn_leipzig_f1:.4f}")
+            print(f"  Difference: {nn_leipzig_f1 - leipzig_f1:+.4f}")
+
+            if nn_leipzig_f1 > leipzig_f1:
+                best_transfer_model = "nn"
+                best_transfer_f1 = nn_leipzig_f1
+                print(f"\n  ✅ Best transfer model: NN ({nn_name})")
+            else:
+                best_transfer_model = "ml"
+                best_transfer_f1 = leipzig_f1
+                print(f"\n  ✅ Best transfer model: ML ({ml_name})")
+        except Exception as exc:
+            error_message = f"{type(exc).__name__}: {exc}"
+            print("\n⚠️  NN evaluation failed")
+            print(f"  Error type:    {type(exc).__name__}")
+            print(f"  Error message: {exc}")
+            print(f"  Test shape:    {x_test_scaled_nn.shape}")
+
+            nn_transfer_metrics = {
+                "metrics": {
+                    "f1_score": None,
+                    "accuracy": None,
+                    "precision": None,
+                    "recall": None,
+                },
+                "confidence_intervals": None,
+                "per_class": None,
+                "confusion_matrix": None,
+                "error": error_message,
+            }
             best_transfer_model = "ml"
             best_transfer_f1 = leipzig_f1
-            print(f"\n  ✅ Best transfer model: ML ({ml_name})")
         
         log.end_step(status="success")
 
@@ -711,6 +764,30 @@ except Exception as e:
 log.start_step("Save Results")
 
 try:
+    hypothesis_path = METADATA_DIR / "hypothesis_tests.json"
+    if not hypothesis_path.exists():
+        raise FileNotFoundError(
+            f"Hypothesis test results not found at {hypothesis_path}\n"
+            "Run Section 8 hypothesis testing first."
+        )
+
+    hypothesis_results = json.loads(hypothesis_path.read_text())
+    required_hypothesis_keys = {
+        "id",
+        "description",
+        "test_type",
+        "statistic",
+        "p_value",
+        "effect_size",
+        "conclusion",
+    }
+    for result in hypothesis_results:
+        missing = required_hypothesis_keys.difference(result)
+        if missing:
+            raise ValueError(
+                f"Invalid hypothesis test result for {result.get('id', 'unknown')}: missing {sorted(missing)}"
+            )
+
     # Compile transfer evaluation data (schema-compliant)
     transfer_eval_data = {
         "metrics": ml_transfer_metrics["metrics"],
@@ -736,7 +813,7 @@ try:
             "feature_stability": stability if stability else None,
             "per_genus_robustness": robustness,
             "robustness_ranking": ranking,
-            "hypothesis_tests": hypothesis_results,
+            "hypothesis_tests_path": hypothesis_path.name,
         },
     }
     
@@ -830,10 +907,15 @@ print(f"  Transfer (zero-shot): {leipzig_f1:.4f}")
 print(f"  From-Scratch:         {from_scratch_f1:.4f}")
 print(f"  Difference:           {leipzig_f1 - from_scratch_f1:+.4f}")
 
-if nn_model:
+if nn_model and nn_transfer_metrics["metrics"]["f1_score"] is not None:
     print(f"\nML vs NN:")
     print(f"  ML F1: {leipzig_f1:.4f}")
     print(f"  NN F1: {nn_transfer_metrics['metrics']['f1_score']:.4f}")
+    print(f"  Best: {best_transfer_model.upper()}")
+elif nn_model:
+    print(f"\nML vs NN:")
+    print(f"  ML F1: {leipzig_f1:.4f}")
+    print(f"  NN evaluation failed: {nn_transfer_metrics.get('error')}")
     print(f"  Best: {best_transfer_model.upper()}")
 
 print(f"\nRobustness Summary:")

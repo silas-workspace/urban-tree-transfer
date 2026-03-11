@@ -374,6 +374,7 @@ try:
             random_seed=RANDOM_SEED,
         )
         x_finetune, y_finetune = subsets[frac]
+        sample_weight = preprocessing.compute_sample_weights(y_finetune)
         
         # Scale with Berlin ML scaler for warm-start
         x_finetune_scaled = berlin_scaler_ml.transform(x_finetune)
@@ -387,6 +388,7 @@ try:
                 n_additional_estimators=n_estimators,
                 x_val=x_val_scaled_ml,
                 y_val=y_val_ml,
+                sample_weight=sample_weight,
             )
         except Exception as exc:
             if use_xgb_gpu and "GPU" in str(exc):
@@ -400,6 +402,7 @@ try:
                     n_additional_estimators=n_estimators,
                     x_val=x_val_scaled_ml,
                     y_val=y_val_ml,
+                    sample_weight=sample_weight,
                 )
             else:
                 raise
@@ -407,6 +410,16 @@ try:
         # Evaluate on Leipzig test set (using ML test data)
         preds = finetuned_model.predict(x_test_scaled_ml)
         metrics = evaluation.compute_metrics(y_test, preds)
+        ci_f1 = evaluation.bootstrap_confidence_interval(
+            y_test,
+            preds,
+            lambda y_true_sample, y_pred_sample: evaluation.compute_metrics(
+                y_true_sample,
+                y_pred_sample,
+            )["f1_score"],
+            n_bootstrap=config["metrics"]["n_bootstrap"],
+            confidence_level=config["metrics"]["confidence_level"],
+        )
         
         ml_results.append({
             "fraction": frac,
@@ -415,6 +428,7 @@ try:
             "accuracy": metrics["accuracy"],
             "precision": metrics["precision"],
             "recall": metrics["recall"],
+            "ci_f1": ci_f1,
             "predictions": preds.tolist(),
         })
         
@@ -449,6 +463,7 @@ try:
     finetune_cfg = config.get("finetuning", {})
     epochs = finetune_cfg.get("nn_epochs", 50)
     batch_size = finetune_cfg.get("nn_batch_size", 64)
+    lr_factor = finetune_cfg.get("nn_lr_factor", 0.1)
     if "nn_epochs" not in finetune_cfg or "nn_batch_size" not in finetune_cfg:
         print("⚠️  Missing nn_epochs/nn_batch_size in config; using defaults (epochs=50, batch_size=64)")
     
@@ -465,6 +480,11 @@ try:
         random_state=RANDOM_SEED,
     )
     x_val_scaled_nn = berlin_scaler_nn.transform(x_val_nn)
+
+    print("\nNN Fine-Tuning Diagnostics")
+    print(f"  berlin_scaler_nn.mean_[:3]: {berlin_scaler_nn.mean_[:3]}")
+    print(f"  Epochs from config:         {epochs}")
+    print(f"  Learning rate factor:       {lr_factor}")
     
     for frac in fractions:
         print(f"\n[{frac:.1%}] Fine-tuning with {int(frac * len(leipzig_finetune_nn))} samples...")
@@ -489,13 +509,33 @@ try:
             x_val=x_val_scaled_nn,
             y_val=y_val_nn,
             epochs=epochs,
+            lr_factor=lr_factor,
             batch_size=batch_size,
             device=nn_device,
         )
+        ft_history = getattr(finetuned_model, "finetune_history_", {})
+        if ft_history:
+            train_loss = ft_history.get("train_loss", [])
+            final_train_loss = train_loss[-1] if train_loss else None
+            print(f"  Final train_loss: {final_train_loss}")
+            print(f"  Stopped early:    {ft_history.get('stopped_early')}")
+            print(f"  Best epoch:       {ft_history.get('best_epoch')}")
+        else:
+            print("  No fine-tuning history returned")
         
         # Evaluate on Leipzig test set (using NN test data)
         preds = finetuned_model.predict(x_test_scaled_nn, device=nn_device)
         metrics = evaluation.compute_metrics(y_test, preds)
+        ci_f1 = evaluation.bootstrap_confidence_interval(
+            y_test,
+            preds,
+            lambda y_true_sample, y_pred_sample: evaluation.compute_metrics(
+                y_true_sample,
+                y_pred_sample,
+            )["f1_score"],
+            n_bootstrap=config["metrics"]["n_bootstrap"],
+            confidence_level=config["metrics"]["confidence_level"],
+        )
         
         nn_results.append({
             "fraction": frac,
@@ -504,6 +544,7 @@ try:
             "accuracy": metrics["accuracy"],
             "precision": metrics["precision"],
             "recall": metrics["recall"],
+            "ci_f1": ci_f1,
             "predictions": preds.tolist(),
         })
         
@@ -555,6 +596,7 @@ try:
             random_seed=RANDOM_SEED,
         )
         x_train, y_train = subsets[frac]
+        sample_weight = preprocessing.compute_sample_weights(y_train)
         
         # Leipzig-specific scaler (IMPORTANT for fair comparison!)
         leipzig_scaler = StandardScaler()
@@ -564,7 +606,7 @@ try:
         # Train from scratch with same hyperparameters as Berlin model
         baseline_params = ml_metadata.get("best_params", {})
         baseline_model = models.create_model(ml_name, model_params=baseline_params)
-        baseline_model.fit(x_train_scaled, y_train)
+        baseline_model.fit(x_train_scaled, y_train, sample_weight=sample_weight)
         
         # Evaluate on Leipzig test set
         preds = baseline_model.predict(x_test_leipzig_scaled)
@@ -757,6 +799,114 @@ try:
     
     log.end_step(status="success", records=len(per_genus_recovery))
     
+except Exception as e:
+    log.end_step(status="error", errors=[str(e)])
+    raise
+
+# %%
+# ============================================================
+# SECTION 9: Hypothesis H4 - Fine-Tuning Efficiency
+# ============================================================
+
+log.start_step("Hypothesis H4")
+
+try:
+    print("\n" + "=" * 70)
+    print("Hypothesis H4: Fine-Tuning Efficiency")
+    print("=" * 70)
+
+    transfer_eval_path = METADATA_DIR / "transfer_evaluation.json"
+    if not transfer_eval_path.exists():
+        raise FileNotFoundError(
+            f"transfer_evaluation.json not found at {transfer_eval_path}\n"
+            "Run 03c_transfer_evaluation.ipynb first."
+        )
+    transfer_eval = json.loads(transfer_eval_path.read_text())
+
+    berlin_per_genus = {
+        row["genus"]: row["f1_score"]
+        for row in berlin_eval["per_class"]
+    }
+    transfer_gap_by_genus = {
+        genus: values["absolute_drop"]
+        for genus, values in transfer_eval["metadata"]["per_genus_robustness"].items()
+    }
+
+    recovery_rows = []
+    for genus, berlin_genus_f1 in berlin_per_genus.items():
+        target_f1 = 0.9 * berlin_genus_f1
+        genus_curve = per_genus_df[per_genus_df["genus"] == genus].sort_values("fraction")
+        recovery_fraction = None
+        for _, row in genus_curve.iterrows():
+            if row["f1_score"] >= target_f1:
+                recovery_fraction = float(row["fraction"])
+                break
+
+        recovery_rows.append(
+            {
+                "genus": genus,
+                "berlin_f1": berlin_genus_f1,
+                "transfer_gap": transfer_gap_by_genus.get(genus),
+                "recovery_fraction": recovery_fraction,
+            }
+        )
+
+    recovery_df = pd.DataFrame(recovery_rows)
+    valid_recovery_df = recovery_df.dropna(subset=["transfer_gap", "recovery_fraction"])
+
+    from scipy.stats import spearmanr
+
+    if len(valid_recovery_df) < 3:
+        h4_result = {
+            "id": "H4",
+            "description": "Genera with larger zero-shot transfer gaps require more fine-tuning data",
+            "test_type": "spearman",
+            "statistic": None,
+            "p_value": None,
+            "effect_size": None,
+            "conclusion": "Insufficient data for Spearman test",
+        }
+    else:
+        statistic, p_value = spearmanr(
+            valid_recovery_df["transfer_gap"],
+            valid_recovery_df["recovery_fraction"],
+        )
+        statistic = float(statistic)
+        p_value = float(p_value)
+        h4_result = {
+            "id": "H4",
+            "description": "Genera with larger zero-shot transfer gaps require more fine-tuning data",
+            "test_type": "spearman",
+            "statistic": statistic,
+            "p_value": p_value,
+            "effect_size": statistic,
+            "conclusion": (
+                f"Significant rank correlation (rho={statistic:.3f}, p={p_value:.4f})"
+                if p_value < 0.05
+                else f"No significant rank correlation (rho={statistic:.3f}, p={p_value:.4f})"
+            ),
+        }
+
+    print(f"Valid genera with recovery threshold reached: {len(valid_recovery_df)}")
+    print(f"  Statistic:   {h4_result['statistic']}")
+    print(f"  p-value:     {h4_result['p_value']}")
+    print(f"  Effect size: {h4_result['effect_size']}")
+    print(f"  Result:      {h4_result['conclusion']}")
+
+    hypothesis_path = METADATA_DIR / "hypothesis_tests.json"
+    if not hypothesis_path.exists():
+        raise FileNotFoundError(
+            f"hypothesis_tests.json not found at {hypothesis_path}\n"
+            "Run 03c_transfer_evaluation.ipynb first."
+        )
+    hypothesis_results = json.loads(hypothesis_path.read_text())
+    hypothesis_results = [result for result in hypothesis_results if result.get("id") != "H4"]
+    hypothesis_results.append(h4_result)
+    hypothesis_path.write_text(json.dumps(hypothesis_results, indent=2))
+    print(f"\n✅ Updated: {hypothesis_path.name}")
+
+    log.end_step(status="success", records=len(valid_recovery_df))
+
 except Exception as e:
     log.end_step(status="error", errors=[str(e)])
     raise
