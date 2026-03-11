@@ -113,6 +113,7 @@ INPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 OUTPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
+REPORT_DIR = DRIVE_DIR / "outputs" / "report"
 
 CITIES = ["berlin", "leipzig"]
 MONTHS = list(range(1, 13))
@@ -121,7 +122,7 @@ MIN_SAMPLES_PER_GENUS = 500
 MAX_SAMPLES_PER_GENUS = 10000  # Balance: 10k gives stable JM estimates, ~80% faster than full dataset
 RANDOM_SEED = 42
 
-for d in [METADATA_DIR, LOGS_DIR]:
+for d in [METADATA_DIR, LOGS_DIR, REPORT_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 print(f"Input:  {INPUT_DIR}")
@@ -539,6 +540,15 @@ output = {
 output_path = METADATA_DIR / "temporal_selection.json"
 output_path.write_text(json.dumps(output, indent=2), encoding="utf-8")
 print(f"Saved JSON: {output_path}")
+
+
+# %%
+report_path = REPORT_DIR / "jm_distances.json"
+report_records = jm_df[
+    ["genus_pair", "month", "jm_distance", "city", "features_used"]
+].to_dict(orient="records")
+report_path.write_text(json.dumps(report_records, indent=2), encoding="utf-8")
+print(f"Saved report JSON: {report_path}")
 
 
 # %% [markdown]

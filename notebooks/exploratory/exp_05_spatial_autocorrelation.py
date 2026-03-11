@@ -124,6 +124,7 @@ INPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 OUTPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
+REPORT_DIR = DRIVE_DIR / "outputs" / "report"
 
 CITIES = ["berlin", "leipzig"]
 DISTANCE_LAGS = [100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 1000, 1200]
@@ -131,7 +132,7 @@ BLOCK_SIZE_CANDIDATES = [200, 300, 400, 500, 600, 800, 1000]
 SAMPLE_SIZE = 50_000  # set to None to disable sampling
 FORCE_RECOMPUTE = False
 
-for d in [METADATA_DIR, LOGS_DIR]:
+for d in [METADATA_DIR, LOGS_DIR, REPORT_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 feature_config = load_feature_config()
@@ -850,6 +851,18 @@ output_path.write_text(json.dumps(output, indent=2), encoding="utf-8")
 print(f"Saved JSON: {output_path}")
 
 log.end_step(status="success")
+
+
+# %%
+report_path = REPORT_DIR / "morans_i_decay.json"
+report_records = (
+    morans_df.groupby("distance_m")[["morans_i", "p_value"]]
+    .mean()
+    .reset_index()
+    .to_dict(orient="records")
+)
+report_path.write_text(json.dumps(report_records, indent=2), encoding="utf-8")
+print(f"Saved report JSON: {report_path}")
 
 
 # %%

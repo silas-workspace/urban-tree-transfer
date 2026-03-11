@@ -141,9 +141,11 @@ if RUN_NOTEBOOK:
     OUTPUT_DIR = DRIVE_DIR / "data" / "phase_2_splits"
     METADATA_DIR = DRIVE_DIR / "data" / "phase_2_features" / "metadata"
     LOGS_DIR = OUTPUT_DIR / "logs"
+    REPORT_DIR = DRIVE_DIR / "outputs" / "report"
     
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
     
     print(f"Input (Phase 2):  {INPUT_DIR}")
     print(f"Output (Splits):  {OUTPUT_DIR}")
@@ -727,6 +729,89 @@ if RUN_NOTEBOOK:
     print("✅ Geometry lookup validated")
     
     log.end_step()
+
+# %%
+# ============================================================================
+# REPORT EXPORT
+# ============================================================================
+
+if RUN_NOTEBOOK:
+    def summarize_splits(splits_by_city: dict[str, dict[str, gpd.GeoDataFrame]]) -> dict[str, dict[str, dict[str, int]]]:
+        return {
+            city: {
+                split_name: {
+                    "count": int(len(split_gdf)),
+                    "blocks": int(split_gdf["block_id"].nunique()),
+                }
+                for split_name, split_gdf in splits.items()
+            }
+            for city, splits in splits_by_city.items()
+        }
+
+    def genus_distribution_by_city(
+        splits_by_city: dict[str, dict[str, gpd.GeoDataFrame]],
+    ) -> dict[str, dict[str, int]]:
+        distribution = {}
+        for city, splits in splits_by_city.items():
+            combined = pd.concat(splits.values(), ignore_index=True)
+            counts = combined["genus_latin"].value_counts().sort_index()
+            distribution[city] = {genus: int(count) for genus, count in counts.items()}
+        return distribution
+
+    setup_path = (
+        DRIVE_DIR / "data" / "phase_3_experiments" / "metadata" / "setup_decisions.json"
+    )
+    is_conifer_map = {}
+    if setup_path.exists():
+        setup_data = json.loads(setup_path.read_text(encoding="utf-8"))
+        final_mapping = (
+            setup_data.get("genus_selection", {})
+            .get("grouping_analysis", {})
+            .get("genus_to_final_mapping", {})
+        )
+        if final_mapping:
+            for final_genus in sorted(set(final_mapping.values())):
+                source_genera = [
+                    genus for genus, mapped in final_mapping.items() if mapped == final_genus
+                ]
+                is_conifer_map[final_genus] = bool(
+                    any(genus in coniferous_genera for genus in source_genera)
+                )
+
+    if not is_conifer_map:
+        observed_genera = sorted(
+            set(pd.concat(city_data.values(), ignore_index=True)["genus_latin"].unique())
+        )
+        is_conifer_map = {
+            genus: bool(genus in coniferous_genera)
+            for genus in observed_genera
+        }
+
+    report_output = {
+        "created": datetime.now(timezone.utc).isoformat(),
+        "feature_columns": [
+            column for column in baseline_splits["berlin"]["train"].columns if column != "geometry"
+        ],
+        "tree_counts": {
+            "baseline_total": int(
+                sum(len(split_gdf) for splits in baseline_splits.values() for split_gdf in splits.values())
+            ),
+            "filtered_total": int(
+                sum(len(split_gdf) for splits in filtered_splits.values() for split_gdf in splits.values())
+            ),
+        },
+        "baseline_splits": summarize_splits(baseline_splits),
+        "filtered_splits": summarize_splits(filtered_splits),
+        "genus_distribution": {
+            "baseline": genus_distribution_by_city(baseline_splits),
+            "filtered": genus_distribution_by_city(filtered_splits),
+        },
+        "is_conifer_map": is_conifer_map,
+    }
+
+    report_path = REPORT_DIR / "pipeline_summary.json"
+    report_path.write_text(json.dumps(report_output, indent=2), encoding="utf-8")
+    print(f"Saved report JSON: {report_path}")
 
 # %%
 # ============================================================================

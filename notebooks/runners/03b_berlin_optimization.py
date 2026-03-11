@@ -136,9 +136,10 @@ OUTPUT_DIR = DATA_DIR / "phase_3_experiments"
 METADATA_DIR = OUTPUT_DIR / "metadata"
 MODELS_DIR = OUTPUT_DIR / "models"
 LOGS_DIR = OUTPUT_DIR / "logs"
+REPORT_DIR = DRIVE_DIR / "outputs" / "report"
 
 # Create output directories
-for d in [METADATA_DIR, MODELS_DIR, LOGS_DIR]:
+for d in [METADATA_DIR, MODELS_DIR, LOGS_DIR, REPORT_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # Load experiment configuration
@@ -1016,6 +1017,38 @@ try:
 except Exception as e:
     log.end_step(status="error", errors=[str(e)])
     raise
+
+# %%
+try:
+    report_algo_path = REPORT_DIR / "algorithm_comparison.json"
+    report_algo_path.write_text(algo_path.read_text(encoding="utf-8"), encoding="utf-8")
+    print(f"Saved report JSON: {report_algo_path}")
+
+    if "importance_df" in globals():
+        report_importance_path = REPORT_DIR / "feature_importances.json"
+        report_importance = importance_df.head(20)[["feature", "importance"]].to_dict(
+            orient="records"
+        )
+        report_importance_path.write_text(json.dumps(report_importance, indent=2), encoding="utf-8")
+        print(f"Saved report JSON: {report_importance_path}")
+
+    report_confusion_path = REPORT_DIR / "confusion_matrix_berlin.json"
+    row_sums = ml_cm.sum(axis=1, keepdims=True)
+    normalized_cm = np.divide(
+        ml_cm,
+        row_sums,
+        out=np.zeros_like(ml_cm, dtype=float),
+        where=row_sums > 0,
+    )
+    report_confusion = {
+        "matrix": ml_cm.tolist(),
+        "labels": class_labels,
+        "normalized": normalized_cm.tolist(),
+    }
+    report_confusion_path.write_text(json.dumps(report_confusion, indent=2), encoding="utf-8")
+    print(f"Saved report JSON: {report_confusion_path}")
+except Exception as e:
+    print(f"WARNING: Failed to export report JSONs: {e}")
 
 # %%
 # ============================================================================

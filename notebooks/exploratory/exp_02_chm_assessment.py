@@ -123,6 +123,7 @@ INPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 OUTPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
+REPORT_DIR = DRIVE_DIR / "outputs" / "report"
 
 CITIES = ["berlin", "leipzig"]
 MIN_SAMPLES_PER_GENUS = 500
@@ -130,7 +131,7 @@ MIN_SAMPLES_PER_GENUS = 500
 # trees below ~2m CHM are indistinguishable from ground-level vegetation
 DETECTION_THRESHOLD_M = 2.0
 
-for d in [METADATA_DIR, LOGS_DIR]:
+for d in [METADATA_DIR, LOGS_DIR, REPORT_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 print(f"Input:  {INPUT_DIR}")
@@ -581,6 +582,15 @@ try:
 except Exception as e:
     log.end_step(status="error", errors=[str(e)])
     raise
+
+
+# %%
+report_path = REPORT_DIR / "chm_assessment.json"
+report_records = cohens_df[
+    ["genus", "cohens_d", "ci_low", "ci_high", "n_berlin", "n_leipzig"]
+].to_dict(orient="records")
+report_path.write_text(json.dumps(report_records, indent=2), encoding="utf-8")
+print(f"Saved report JSON: {report_path}")
 
 
 # %% [markdown]

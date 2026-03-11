@@ -218,6 +218,7 @@ def create_stratified_splits_leipzig(
 
     return finetune_gdf, test_gdf
 
+
 # KL threshold of 0.07 is empirically derived: spatial block-based splitting
 # with genus stratification produces KL-divergences in the range 0.01-0.05
 # for well-stratified splits. The 0.07 threshold allows for variance from
