@@ -76,12 +76,9 @@ from urban_tree_transfer.experiments import (
     training,
     evaluation,
     models,
-    visualization,
 )
 from urban_tree_transfer.utils import (
     ExecutionLog,
-    save_figure,
-    setup_plotting,
     validate_algorithm_comparison,
 )
 
@@ -94,9 +91,7 @@ import gc
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
-setup_plotting()
 log = ExecutionLog("exp_11_algorithm_comparison")
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -114,9 +109,8 @@ OUTPUT_DIR = DRIVE_DIR / "data" / "phase_3_experiments"
 
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
-FIGURES_DIR = OUTPUT_DIR / "figures" / "exp_11_algorithm_comparison"
 
-for d in [METADATA_DIR, LOGS_DIR, FIGURES_DIR]:
+for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # Load experiment configuration
@@ -125,7 +119,6 @@ config = load_experiment_config()
 print(f"Input (Phase 2 Splits): {INPUT_DIR}")
 print(f"Output (Phase 3):       {OUTPUT_DIR}")
 print(f"Metadata:               {METADATA_DIR}")
-print(f"Figures:                {FIGURES_DIR}")
 print(f"Logs:                   {LOGS_DIR}")
 print(f"Random seed:            {RANDOM_SEED}")
 print(f"CV folds:               {config['global']['cv_folds']}")
@@ -571,38 +564,6 @@ log.end_step(status="success")
 
 # %%
 # ============================================================
-# SECTION 6: Visualizations
-# ============================================================
-
-log.start_step("Visualizations")
-
-# 1. Algorithm comparison
-visualization.plot_algorithm_comparison(
-    results_df,
-    output_path=FIGURES_DIR / "algorithm_comparison.png",
-)
-print(f"Saved: {FIGURES_DIR / 'algorithm_comparison.png'}")
-
-# 2. Train-Val gap analysis
-visualization.plot_train_val_gap(
-    results_df,
-    output_path=FIGURES_DIR / "train_val_gap.png",
-)
-print(f"Saved: {FIGURES_DIR / 'train_val_gap.png'}")
-
-# 3. Performance ladder
-ladder_df = results_df.rename(columns={"algorithm": "name", "val_f1_mean": "f1_score"})
-ladder_df["category"] = "model"
-visualization.plot_performance_ladder(
-    ladder_df,
-    output_path=FIGURES_DIR / "performance_ladder.png",
-)
-print(f"Saved: {FIGURES_DIR / 'performance_ladder.png'}")
-
-log.end_step(status="success")
-
-# %%
-# ============================================================
 # SECTION 7: Save Results & Validate
 # ============================================================
 
@@ -638,32 +599,3 @@ except Exception as e:
 
 log.end_step(status="success")
 
-# %%
-# ============================================================
-# SECTION 8: Summary & Next Steps
-# ============================================================
-
-# Save execution log
-log.summary()
-log_path = LOGS_DIR / f"{log.notebook}_execution.json"
-log.save(log_path)
-print(f"Execution log saved: {log_path}")
-
-print("\n" + "=" * 70)
-print("EXPERIMENT COMPLETE: exp_11 Algorithm Comparison")
-print("=" * 70)
-print(f"\nAlgorithms Tested: {len(results)}")
-print(f"  Baselines: {len(results_df[results_df['type'] == 'baseline'])}")
-print(f"  ML Models: {len(results_df[results_df['type'] == 'ml'])}")
-print(f"  NN Models: {len(results_df[results_df['type'] == 'nn'])}")
-print(f"\nChampions for HP Tuning:")
-print(f"  ML: {ml_champion.get('algorithm', 'none')}")
-print(f"  NN: {nn_champion.get('algorithm', 'none')}")
-print(f"\nOutputs:")
-print(f"  - JSON: {algo_path} (✅ validated)")
-print(f"  - Figures: {FIGURES_DIR}")
-print(f"  - Logs: {log_path}")
-print(f"\nNext Steps:")
-print(f"  1. Review algorithm comparison plots")
-print(f"  2. Run 03b_berlin_optimization.ipynb (Phase 3.3)")
-print("=" * 70)

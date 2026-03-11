@@ -67,9 +67,8 @@ from urban_tree_transfer.experiments import (
     preprocessing,
     training,
     models,
-    visualization,
 )
-from urban_tree_transfer.utils import ExecutionLog, save_figure, setup_plotting
+from urban_tree_transfer.utils import ExecutionLog
 
 from pathlib import Path
 from datetime import datetime, timezone
@@ -79,9 +78,7 @@ import gc
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
-setup_plotting()
 log = ExecutionLog("exp_08_chm_ablation")
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -99,9 +96,8 @@ OUTPUT_DIR = DRIVE_DIR / "data" / "phase_3_experiments"
 
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
-FIGURES_DIR = OUTPUT_DIR / "figures" / "exp_08_chm_ablation"
 
-for d in [METADATA_DIR, LOGS_DIR, FIGURES_DIR]:
+for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # Load experiment configuration
@@ -112,7 +108,6 @@ rules = config["setup_ablation"]["chm"]["decision_rules"]
 print(f"Input (Phase 2 Splits): {INPUT_DIR}")
 print(f"Output (Phase 3):       {OUTPUT_DIR}")
 print(f"Metadata:               {METADATA_DIR}")
-print(f"Figures:                {FIGURES_DIR}")
 print(f"Logs:                   {LOGS_DIR}")
 print(f"Random seed:            {RANDOM_SEED}")
 print(f"CV folds:               {config['global']['cv_folds']}")
@@ -350,24 +345,6 @@ log.end_step(status="success")
 
 # %%
 # ============================================================
-# SECTION 5: Visualizations
-# ============================================================
-
-log.start_step("Visualizations")
-
-# Plot ablation comparison
-fig = visualization.plot_ablation_comparison(
-    results_df,
-    title="CHM Strategy Comparison (3-Fold Spatial Block CV)",
-    output_path=FIGURES_DIR / "chm_ablation_results.png",
-)
-
-print(f"Saved: {FIGURES_DIR / 'chm_ablation_results.png'}")
-
-log.end_step(status="success")
-
-# %%
-# ============================================================
 # SECTION 6: Save Decision to JSON
 # ============================================================
 
@@ -404,28 +381,3 @@ print(f"   (when all strategies are complete: CHM, Proximity, Outlier, Features)
 
 log.end_step(status="success")
 
-# %%
-# ============================================================
-# SECTION 7: Summary & Next Steps
-# ============================================================
-
-# Save execution log
-log.summary()
-log_path = LOGS_DIR / f"{log.notebook}_execution.json"
-log.save(log_path)
-print(f"Execution log saved: {log_path}")
-
-print("\n" + "=" * 70)
-print("EXPERIMENT COMPLETE: exp_08 CHM Ablation")
-print("=" * 70)
-print(f"\nDecision: {decision}")
-print(f"Val F1:   {final_row['val_f1_mean']:.4f} ± {final_row['val_f1_std']:.4f}")
-print(f"Train-Val Gap: {final_row['train_val_gap']:.4f}")
-print(f"\nOutputs:")
-print(f"  - JSON: {setup_path}")
-print(f"  - Figures: {FIGURES_DIR}")
-print(f"  - Logs: {log_path}")
-print(f"\nNext Steps:")
-print(f"  1. Review decision and plots")
-print(f"  2. Run exp_08b_proximity_ablation.ipynb")
-print("=" * 70)

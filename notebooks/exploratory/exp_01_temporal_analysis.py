@@ -65,8 +65,7 @@ print("Google Drive mounted")
 # %%
 # Package imports
 from urban_tree_transfer.config import PROJECT_CRS
-from urban_tree_transfer.utils import ExecutionLog, save_figure, setup_plotting
-from urban_tree_transfer.utils.plotting import PUBLICATION_STYLE
+from urban_tree_transfer.utils import ExecutionLog
 
 from itertools import combinations
 from pathlib import Path
@@ -77,10 +76,7 @@ import re
 import geopandas as gpd
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-setup_plotting()
 log = ExecutionLog("exp_01_temporal_analysis")
 
 print("OK: Package imports complete")
@@ -96,7 +92,6 @@ INPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 OUTPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
-PLOTS_DIR = OUTPUT_DIR / "figures" / "exp_01_temporal"
 
 CITIES = ["berlin", "leipzig"]
 MONTHS = list(range(1, 13))
@@ -105,12 +100,11 @@ MIN_SAMPLES_PER_GENUS = 500
 MAX_SAMPLES_PER_GENUS = 10000  # Balance: 10k gives stable JM estimates, ~80% faster than full dataset
 RANDOM_SEED = 42
 
-for d in [METADATA_DIR, LOGS_DIR, PLOTS_DIR]:
+for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 print(f"Input:  {INPUT_DIR}")
 print(f"Output: {METADATA_DIR}")
-print(f"Plots:  {PLOTS_DIR}")
 print(f"Cities: {CITIES}")
 
 # %% [markdown]
@@ -300,84 +294,6 @@ except Exception as e:
 #
 # Generate publication-quality plots for temporal JM trends and genus-pair heatmaps.
 
-# %%
-# Plot 1: JM Distance Line Chart (Berlin vs Leipzig)
-plot_df = (
-    jm_df.groupby(["city", "month"])["jm_distance"]
-    .agg(["mean", "std"])
-    .reset_index()
-)
-
-city_colors = {
-    "berlin": "#1f77b4",
-    "leipzig": "#ff7f0e",
-}
-
-fig, ax = plt.subplots(figsize=(12, 6))
-for city in CITIES:
-    subset = plot_df[plot_df["city"] == city]
-    ax.errorbar(
-        subset["month"],
-        subset["mean"],
-        yerr=subset["std"],
-        label=city.title(),
-        color=city_colors.get(city),
-        marker="o",
-        linewidth=2,
-        capsize=3,
-    )
-
-ax.set_title("Temporal Separability (JM Distance) by Month", fontsize=14)
-ax.set_xlabel("Month", fontsize=12)
-ax.set_ylabel("Mean JM Distance", fontsize=12)
-ax.set_xticks(MONTHS)
-ax.grid(True, alpha=0.3)
-ax.legend(loc="best", fontsize=10)
-
-save_figure(fig, PLOTS_DIR / "jm_distance_by_month.png", dpi=300)
-print(f"Saved: {PLOTS_DIR / 'jm_distance_by_month.png'}")
-
-
-# %%
-# Plot 2: JM Distance Heatmaps (top genus pairs)
-TOP_GENUS_COUNT = 6  # 6 genera -> 15 pairs
-
-for city in CITIES:
-    df_city = city_data[city]
-    top_genera = df_city["genus_latin"].value_counts().head(TOP_GENUS_COUNT).index.tolist()
-    top_pairs = [f"{a} vs {b}" for a, b in combinations(top_genera, 2)]
-
-    heatmap_df = jm_df[(jm_df["city"] == city) & (jm_df["genus_pair"].isin(top_pairs))]
-    if heatmap_df.empty:
-        print(f"No heatmap data for {city}.")
-        continue
-
-    pivot = heatmap_df.pivot(index="genus_pair", columns="month", values="jm_distance")
-    pivot = pivot.reindex(index=top_pairs)
-
-    fig, ax = plt.subplots(figsize=(14, 8))
-    sns.heatmap(
-        pivot,
-        annot=True,
-        fmt=".2f",
-        cmap="viridis",
-        cbar_kws={"label": "JM Distance"},
-        ax=ax,
-    )
-
-    ax.set_title(
-        f"Genus Separability Across Months ({city.title()})",
-        fontsize=14,
-    )
-    ax.set_xlabel("Month", fontsize=12)
-    ax.set_ylabel("Genus Pair", fontsize=12)
-    ax.set_xticklabels([f"{m:02d}" for m in MONTHS], rotation=0)
-
-    filename = f"jm_heatmap_{city}.png"
-    save_figure(fig, PLOTS_DIR / filename, dpi=300)
-    print(f"Saved: {PLOTS_DIR / filename}")
-
-
 # %% [markdown]
 # ## Cross-City JM Consistency Analysis
 #
@@ -478,51 +394,6 @@ try:
 except Exception as e:
     log.end_step(status="error", errors=[str(e)])
     raise
-
-# %%
-# Plot: Rank consistency scatter plot
-fig, ax = plt.subplots(figsize=(10, 10))
-
-# Scatter plot with month labels
-for month in MONTHS:
-    ax.scatter(
-        rank_berlin[month],
-        rank_leipzig[month],
-        s=200,
-        alpha=0.6,
-        color="steelblue",
-        edgecolors="black",
-        linewidth=1.5,
-    )
-    ax.text(
-        rank_berlin[month] + 0.15,
-        rank_leipzig[month] + 0.15,
-        str(month),
-        fontsize=11,
-        ha="left",
-    )
-
-# Diagonal line (perfect consistency)
-ax.plot([1, 12], [1, 12], "r--", linewidth=2, alpha=0.5, label="Perfect Consistency")
-
-# Formatting
-ax.set_xlabel("Rank in Berlin (1=best, 12=worst)", fontsize=12)
-ax.set_ylabel("Rank in Leipzig (1=best, 12=worst)", fontsize=12)
-ax.set_title(
-    f"Cross-City JM Rank Consistency\nSpearman ρ = {rho:.3f} (p={p_value:.4f})",
-    fontsize=14,
-)
-ax.set_xlim(0.5, 12.5)
-ax.set_ylim(0.5, 12.5)
-ax.set_xticks(range(1, 13))
-ax.set_yticks(range(1, 13))
-ax.grid(True, alpha=0.3)
-ax.legend(loc="lower right", fontsize=10)
-ax.set_aspect("equal")
-
-save_figure(fig, PLOTS_DIR / "jm_rank_consistency.png", dpi=300)
-print(f"Saved: {PLOTS_DIR / 'jm_rank_consistency.png'}")
-
 
 # %% [markdown]
 # ## Month Selection Logic
@@ -651,61 +522,6 @@ print(f"Saved JSON: {output_path}")
 
 # %% [markdown]
 # ## Summary & Manual Sync Instructions
-
-# %%
-print("=" * 60)
-print("TEMPORAL SELECTION SUMMARY")
-print("=" * 60)
-print("\n--- CROSS-CITY CONSISTENCY ---")
-print(f"Spearman ρ: {rho:.3f} (p={p_value:.4f})")
-print(f"Interpretation: {consistency_interpretation}")
-print(f"Top-8 overlap: {len(consistent_months)}/8 months")
-if berlin_specific or leipzig_specific:
-    print("City-specific months:")
-    if berlin_specific:
-        print(f"  Berlin-only: {berlin_specific}")
-    if leipzig_specific:
-        print(f"  Leipzig-only: {leipzig_specific}")
-print(f"Selection method: {selection_method_used}")
-print("")
-print("Total months analyzed: 12")
-print(f"Months selected: {len(selected_months)}")
-print(f"Selected: {selected_months}")
-print(f"Mean JM (selected): {monthly_jm[selected_months].mean():.3f}")
-selected_mean = monthly_jm[selected_months].mean()
-if selected_mean < 0.7:
-    interpretation = "low separability"
-elif selected_mean < 1.0:
-    interpretation = "moderate separability"
-else:
-    interpretation = "good separability"
-print(f"Interpretation: {interpretation} (JM range: 0=overlap, 1=acceptable, 2=perfect)")
-print(f"Mean JM (rejected): {monthly_jm[rejected_months].mean():.3f}")
-print("\nSeasonal Coverage:")
-print(f"  Spring (3-5):  {len([m for m in selected_months if 3 <= m <= 5])}/3")
-print(f"  Summer (6-8):  {len([m for m in selected_months if 6 <= m <= 8])}/3")
-print(f"  Autumn (9-11): {len([m for m in selected_months if 9 <= m <= 11])}/3")
-print(f"  Winter (12,1,2): {len([m for m in selected_months if m in [12, 1, 2]])}/3")
-print("\nJM Distance Quality:")
-print(f"  Selected months mean: {monthly_jm[selected_months].mean():.3f}")
-print(f"  Rejected months mean: {monthly_jm[rejected_months].mean():.3f}")
-print(f"  Overall range: [{jm_df['jm_distance'].min():.3f}, {jm_df['jm_distance'].max():.3f}]")
-print("\nNote: Legacy JM values were typically 0.5-1.2. Values are used for")
-print("      relative comparison between months, not absolute thresholds.")
-
-# Save execution log
-log.summary()
-log_path = LOGS_DIR / f"{log.notebook}_execution.json"
-log.save(log_path)
-print(f"Execution log saved: {log_path}")
-
-print("\n--- JSON OUTPUT ---")
-print(f"  {output_path.name}")
-
-print("\n--- PLOTS CREATED ---")
-for f in sorted(PLOTS_DIR.glob("*.png")):
-    print(f"  {f.name}")
-
 
 # %% [markdown]
 # ## ⚠️ Manual Sync Required

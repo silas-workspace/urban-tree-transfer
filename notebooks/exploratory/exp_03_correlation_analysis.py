@@ -61,8 +61,7 @@ from urban_tree_transfer.config.loader import (
     get_spectral_bands,
     get_vegetation_indices,
 )
-from urban_tree_transfer.utils import ExecutionLog, save_figure, setup_plotting
-from urban_tree_transfer.utils.plotting import PUBLICATION_STYLE
+from urban_tree_transfer.utils import ExecutionLog
 
 from pathlib import Path
 from datetime import datetime, timezone
@@ -72,8 +71,6 @@ import re
 import geopandas as gpd
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 from scipy.stats import pearsonr
 from scipy.cluster.hierarchy import linkage, leaves_list
@@ -81,7 +78,6 @@ from scipy.spatial.distance import squareform
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedShuffleSplit
 
-setup_plotting()
 log = ExecutionLog("exp_03_correlation")
 
 print("OK: Package imports complete")
@@ -97,13 +93,12 @@ INPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 OUTPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
-FIGURES_DIR = OUTPUT_DIR / "figures" / "exp_03_correlation"
 
 CITIES = ["berlin", "leipzig"]
 SAMPLE_SIZE = 10_000
 CORRELATION_THRESHOLD = 0.95
 
-for d in [METADATA_DIR, LOGS_DIR, FIGURES_DIR]:
+for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 feature_config = load_feature_config()
@@ -115,7 +110,6 @@ index_families = feature_config["vegetation_indices"]
 
 print(f"Input (Phase 2):  {INPUT_DIR}")
 print(f"Output (JSONs):   {METADATA_DIR}")
-print(f"Figures:          {FIGURES_DIR}")
 print(f"Logs (Drive):     {LOGS_DIR}")
 print(f"Cities:           {CITIES}")
 print(f"Random seed:      {RANDOM_SEED}")
@@ -576,87 +570,6 @@ log.end_step(status="success", records=len(retained_temporal_cols))
 
 # %%
 # ============================================================
-# SECTION 7: Generate visualizations
-# ============================================================
-
-log.start_step("Visualizations")
-
-def plot_heatmap(corr_df: pd.DataFrame, title: str, path: Path, cluster: bool = True,
-                 separators: list[int] | None = None) -> None:
-    if cluster:
-        order = reorder_by_clustering(corr_df)
-        corr_df = corr_df.loc[order, order]
-
-    fig, ax = plt.subplots(figsize=(12, 10))
-    sns.heatmap(
-        corr_df,
-        cmap="RdBu_r",
-        center=0,
-        annot=True,
-        fmt=".2f",
-        annot_kws={"size": 10},
-        ax=ax,
-    )
-
-    ax.set_title(title)
-
-    # Highlight high-correlation cells
-    for i in range(corr_df.shape[0]):
-        for j in range(corr_df.shape[1]):
-            if i == j:
-                continue
-            if abs(corr_df.iloc[i, j]) > CORRELATION_THRESHOLD:
-                ax.add_patch(
-                    plt.Rectangle((j, i), 1, 1, fill=False, edgecolor="black", linewidth=2)
-                )
-
-    if separators:
-        for sep in separators:
-            ax.axhline(sep, color="black", linewidth=2)
-            ax.axvline(sep, color="black", linewidth=2)
-
-    plt.tight_layout()
-    save_figure(fig, path, dpi=300)
-
-# Bands heatmaps (clustered)
-for city in CITIES:
-    corr_df = corr_dict_to_df(bands_corr[city])
-    plot_heatmap(
-        corr_df,
-        title=f"Spectral Bands Correlation - {city.title()}",
-        path=FIGURES_DIR / f"bands_heatmap_{city}.png",
-        cluster=True,
-    )
-
-# Indices heatmaps (cluster within families, with separators)
-family_order = ["broadband", "red_edge", "water"]
-indices_order = []
-separators = []
-count = 0
-for fam in family_order:
-    fam_items = index_families[fam]
-    # cluster within family using Berlin correlations (ordering only)
-    fam_df = corr_dict_to_df(indices_corr["berlin"]).loc[fam_items, fam_items]
-    fam_order = reorder_by_clustering(fam_df)
-    indices_order.extend(fam_order)
-    count += len(fam_order)
-    separators.append(count)
-
-for city in CITIES:
-    corr_df = corr_dict_to_df(indices_corr[city]).loc[indices_order, indices_order]
-    plot_heatmap(
-        corr_df,
-        title=f"Vegetation Indices Correlation - {city.title()}",
-        path=FIGURES_DIR / f"indices_heatmap_{city}.png",
-        cluster=False,
-        separators=separators[:-1],
-    )
-
-log.end_step(status="success", records=4)
-
-
-# %%
-# ============================================================
 # SECTION 8: Save JSON config
 # ============================================================
 
@@ -798,55 +711,4 @@ print(f"Saved JSON: {json_path}")
 
 log.end_step(status="success", records=len(removed_temporal_features))
 
-
-# %%
-# ============================================================
-# SUMMARY & MANUAL SYNC INSTRUCTIONS
-# ============================================================
-
-# Save execution log
-log.summary()
-log_path = LOGS_DIR / f"{log.notebook}_execution.json"
-log.save(log_path)
-print(f"Execution log saved: {log_path}")
-
-print("\n" + "=" * 60)
-print("OUTPUT SUMMARY")
-print("=" * 60)
-
-print("\n--- JSON CONFIGURATIONS ---")
-json_files = list(METADATA_DIR.glob("*.json"))
-for f in sorted(json_files):
-    print(f"  {f.name}")
-
-print("\n--- PLOTS CREATED ---")
-plot_files = list(FIGURES_DIR.glob("*.png"))
-for f in sorted(plot_files):
-    print(f"  {f.name}")
-
-print(f"\nTotal plots: {len(plot_files)}")
-
-print("\n" + "=" * 60)
-print("⚠️  MANUAL SYNC REQUIRED")
-print("=" * 60)
-print("\nJSON configurations must be synced to Git repo:")
-print("1. Download from Google Drive:")
-for f in json_files:
-    print(f"   - {f.relative_to(DRIVE_DIR)}")
-
-print("\n2. Copy to local repo:")
-print("   - Destination: outputs/phase_2/metadata/")
-
-print("\n3. Commit and push to Git")
-print("   - git add outputs/phase_2/metadata/*.json")
-print("   - git commit -m 'Add correlation removal config'")
-print("   - git push")
-
-print("\n4. (Optional) Commit plots for documentation:")
-print(f"   - Source: {FIGURES_DIR}")
-print("   - Destination: outputs/phase_2/figures/exp_03_correlation/")
-
-print("\n" + "=" * 60)
-print("NOTEBOOK COMPLETE")
-print("=" * 60)
 

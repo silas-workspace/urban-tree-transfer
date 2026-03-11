@@ -65,8 +65,7 @@ print("Google Drive mounted")
 # %%
 # Package imports
 from urban_tree_transfer.config import PROJECT_CRS, RANDOM_SEED
-from urban_tree_transfer.utils import ExecutionLog, save_figure, setup_plotting
-from urban_tree_transfer.utils.plotting import PUBLICATION_STYLE
+from urban_tree_transfer.utils import ExecutionLog
 
 from pathlib import Path
 from datetime import datetime, timezone
@@ -75,8 +74,6 @@ import json
 import geopandas as gpd
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from scipy.stats import f_oneway, pearsonr, bootstrap
 
 # Genus classification (deciduous/coniferous)
@@ -91,7 +88,6 @@ CONIFEROUS_GENERA = [
     "ABIES", "LARIX", "PICEA", "PINUS", "TAXUS", "THUJA",
 ]
 
-setup_plotting()
 log = ExecutionLog("exp_02_chm_assessment")
 
 print("OK: Package imports complete")
@@ -106,18 +102,16 @@ INPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 OUTPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
-FIGURES_DIR = OUTPUT_DIR / "figures" / "exp_02_chm"
 
 CITIES = ["berlin", "leipzig"]
 MIN_SAMPLES_PER_GENUS = 500
 DETECTION_THRESHOLD_M = 2.0
 
-for d in [METADATA_DIR, LOGS_DIR, FIGURES_DIR]:
+for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 print(f"Input:  {INPUT_DIR}")
 print(f"Output: {METADATA_DIR}")
-print(f"Plots:  {FIGURES_DIR}")
 print(f"Cities: {CITIES}")
 print(f"Random seed: {RANDOM_SEED}")
 
@@ -451,233 +445,6 @@ except Exception as e:
 #
 
 # %%
-log.start_step("Visualizations")
-
-try:
-    dpi = PUBLICATION_STYLE.get("dpi_export", 300)
-
-    # Plot 1: CHM Distribution by Genus (faceted by city)
-    plot_data = pd.concat(city_data.values(), ignore_index=True)
-    plot_data = plot_data[plot_data["CHM_1m"].notna()].copy()
-    common_genera = sorted(
-        set(viable_genera_by_city.get("berlin", []))
-        & set(viable_genera_by_city.get("leipzig", []))
-    )
-    plot_data = plot_data[plot_data["genus_latin"].isin(common_genera)]
-
-    g = sns.catplot(
-        data=plot_data,
-        x="genus_latin",
-        y="CHM_1m",
-        col="city",
-        kind="violin",
-        height=6,
-        aspect=1.4,
-        order=common_genera,
-        cut=0,
-    )
-    g.set_titles("{col_name}")
-    g.set_axis_labels("Genus", "CHM_1m (m)")
-    for ax in g.axes.flat:
-        ax.tick_params(axis="x", rotation=45)
-    save_figure(g.fig, FIGURES_DIR / "chm_boxplot_per_genus.png", dpi=dpi)
-
-    # Plot 2: CHM vs Cadastre Correlation
-    fig, ax = plt.subplots(figsize=PUBLICATION_STYLE["figsize"])
-    city_colors = {"berlin": "#1f77b4", "leipzig": "#ff7f0e"}
-    for city in CITIES:
-        subset = city_data[city]
-        subset = subset[subset["CHM_1m"].notna() & subset["height_m"].notna()]
-        sns.regplot(
-            data=subset,
-            x="height_m",
-            y="CHM_1m",
-            scatter_kws={"alpha": 0.3},
-            line_kws={"linewidth": 2},
-            color=city_colors.get(city, None),
-            ax=ax,
-            label=city.title(),
-        )
-    ax.set_title("CHM vs Cadastre Height", fontsize=14)
-    ax.set_xlabel("Cadastre height (m)")
-    ax.set_ylabel("CHM_1m (m)")
-    ax.legend(loc="best")
-    ax.text(0.02, 0.95, f"r = {r_value:.2f}", transform=ax.transAxes)
-    save_figure(fig, FIGURES_DIR / "chm_cadastre_correlation.png", dpi=dpi)
-
-    # Plot 3: Discriminative Power (eta^2) Comparison
-    fig, ax = plt.subplots(figsize=PUBLICATION_STYLE["figsize"])
-    eta_values = [eta2_by_city[c]["eta_squared"] for c in CITIES]
-    ax.bar([c.title() for c in CITIES], eta_values, color=["#1f77b4", "#ff7f0e"])
-    ax.axhline(0.06, color="gray", linestyle="--", linewidth=1, label="Medium (0.06)")
-    ax.axhline(0.14, color="black", linestyle=":", linewidth=1, label="Large (0.14)")
-    ax.set_ylabel("Eta-squared (η²)")
-    ax.set_title("Discriminative Power by City")
-    ax.legend(loc="upper right")
-    save_figure(fig, FIGURES_DIR / "eta2_comparison.png", dpi=dpi)
-
-    # Plot 4: Cohen's d Forest Plot
-    fig, ax = plt.subplots(figsize=(10, max(6, 0.4 * len(cohens_df))))
-    if not cohens_df.empty:
-        y_pos = np.arange(len(cohens_df))
-        ax.errorbar(
-            cohens_df["cohens_d"],
-            y_pos,
-            xerr=[
-                cohens_df["cohens_d"] - cohens_df["ci_low"],
-                cohens_df["ci_high"] - cohens_df["cohens_d"],
-            ],
-            fmt="o",
-            color="#1f77b4",
-            ecolor="gray",
-            capsize=3,
-        )
-        ax.set_yticks(y_pos)
-        ax.set_yticklabels(cohens_df["genus"])
-        ax.axvline(0, color="black", linewidth=1)
-        ax.axvline(0.2, color="gray", linestyle="--", linewidth=1)
-        ax.axvline(0.5, color="gray", linestyle=":", linewidth=1)
-        ax.axvline(0.8, color="gray", linestyle="-.", linewidth=1)
-        ax.set_xlabel("Cohen's d (Berlin - Leipzig)")
-        ax.set_title("Cohen's d by Genus (with 95% CI)")
-    save_figure(fig, FIGURES_DIR / "cohens_d_forest_plot.png", dpi=dpi)
-
-    # Plot 5: CHM Distribution Comparison (Cities)
-    fig, ax = plt.subplots(figsize=PUBLICATION_STYLE["figsize"])
-    for city in CITIES:
-        subset = city_data[city]
-        subset = subset[subset["CHM_1m"].notna()]
-        sns.histplot(
-            subset["CHM_1m"],
-            bins=30,
-            kde=True,
-            stat="density",
-            alpha=0.35,
-            label=city.title(),
-            ax=ax,
-        )
-    ax.set_title("CHM Distribution: Berlin vs Leipzig")
-    ax.set_xlabel("CHM_1m (m)")
-    ax.set_ylabel("Density")
-    ax.legend(loc="best")
-    save_figure(fig, FIGURES_DIR / "chm_distribution_cities.png", dpi=dpi)
-
-    # Plot 6: CHM vs Plant Year (improved readability)
-    fig, ax = plt.subplots(figsize=(12, 6))
-    if not df_with_year.empty:
-        # Filter to years with sufficient data (>50 samples) and last 50 years
-        year_counts = df_with_year.groupby("plant_year").size()
-        valid_years = year_counts[year_counts >= 50].index
-        max_available_year = int(df_with_year["plant_year"].max())
-        cutoff_year = max(max_available_year - 50, valid_years.min() if len(valid_years) > 0 else max_available_year - 50)
-        
-        plot_years = sorted([y for y in valid_years if y >= cutoff_year])
-        
-        # Compute median and quartiles by year and city
-        city_colors_map = {"berlin": "#1f77b4", "leipzig": "#ff7f0e"}
-        
-        for city in CITIES:
-            city_df = df_with_year[df_with_year["city"] == city]
-            city_df = city_df[city_df["plant_year"].isin(plot_years)]
-            
-            if not city_df.empty:
-                stats_by_year = city_df.groupby("plant_year")["CHM_1m"].agg([
-                    ("median", "median"),
-                    ("q25", lambda x: x.quantile(0.25)),
-                    ("q75", lambda x: x.quantile(0.75)),
-                ]).reset_index()
-                
-                ax.plot(
-                    stats_by_year["plant_year"],
-                    stats_by_year["median"],
-                    marker="o",
-                    linewidth=2,
-                    label=f"{city.title()}",
-                    color=city_colors_map[city],
-                )
-                ax.fill_between(
-                    stats_by_year["plant_year"],
-                    stats_by_year["q25"],
-                    stats_by_year["q75"],
-                    alpha=0.2,
-                    color=city_colors_map[city],
-                )
-        
-        ax.axhline(
-            DETECTION_THRESHOLD_M,
-            color="red",
-            linestyle="--",
-            linewidth=2,
-            label=f"Detection threshold ({DETECTION_THRESHOLD_M}m)",
-        )
-        ax.axvline(
-            recommended_max_year,
-            color="darkred",
-            linestyle=":",
-            linewidth=2,
-            label=f"Recommended cutoff ({recommended_max_year})",
-        )
-        
-        ax.set_title("CHM Height by Plant Year (Median with IQR)")
-        ax.set_xlabel("Plant year")
-        ax.set_ylabel("CHM_1m (m)")
-        ax.legend(loc="best")
-        ax.grid(True, alpha=0.3)
-        
-        # Show every 5th year on x-axis for readability
-        if len(plot_years) > 15:
-            tick_years = [y for y in plot_years if y % 5 == 0]
-            ax.set_xticks(tick_years)
-            ax.set_xticklabels(tick_years, rotation=45)
-    
-    save_figure(fig, FIGURES_DIR / "chm_vs_plant_year.png", dpi=dpi)
-
-    # Plot 7: Genus Inventory (Top 20 genera for readability)
-    fig, ax = plt.subplots(figsize=(14, 7))
-    top_n = 20
-    top_genera = combined_counts.head(top_n)
-    
-    # Define colors for genus types (not cities)
-    genus_type_colors = {
-        "deciduous": "#2ecc71",  # Green for deciduous
-        "coniferous": "#3498db",  # Blue for coniferous
-        "unknown": "#95a5a6"      # Gray for unknown
-    }
-    colors_list = [genus_type_colors.get(genus_types[g], "#7f7f7f") for g in top_genera.index]
-
-    ax.bar(range(len(top_genera)), top_genera.values, color=colors_list)
-    ax.set_xticks(range(len(top_genera)))
-    ax.set_xticklabels(top_genera.index, rotation=45, ha="right")
-    ax.axhline(
-        MIN_SAMPLES_PER_GENUS,
-        color="black",
-        linestyle="--",
-        linewidth=1,
-        label=f"Min samples ({MIN_SAMPLES_PER_GENUS})",
-    )
-    ax.set_title(f"Genus Inventory (Top {top_n} by Sample Count)")
-    ax.set_xlabel("Genus")
-    ax.set_ylabel("Sample count")
-
-    from matplotlib.patches import Patch
-    legend_elements = [
-        Patch(facecolor=genus_type_colors["deciduous"], label="Deciduous"),
-        Patch(facecolor=genus_type_colors["coniferous"], label="Coniferous"),
-    ]
-    if any(t == "unknown" for t in genus_types.values()):
-        legend_elements.append(Patch(facecolor=genus_type_colors["unknown"], label="Unclassified"))
-    ax.legend(handles=legend_elements, loc="upper right")
-
-    save_figure(fig, FIGURES_DIR / "genus_inventory.png", dpi=dpi)
-
-
-    log.end_step(status="success", records=7)
-
-except Exception as e:
-    log.end_step(status="error", errors=[str(e)])
-    raise
-
-# %%
 log.start_step("Output Validation")
 
 try:
@@ -791,71 +558,7 @@ except Exception as e:
     raise
 
 
-# %%
-print("=" * 60)
-print("CHM ASSESSMENT SUMMARY")
-print("=" * 60)
-print(f"\n1. DISCRIMINATIVE POWER")
-for city in CITIES:
-    eta = eta2_by_city[city]["eta_squared"]
-    interp = "large" if eta >= 0.14 else "medium" if eta >= 0.06 else "small"
-    print(f"   {city.title():8s}: η² = {eta:.4f} ({interp} effect)")
-
-print(f"\n2. TRANSFER RISK")
-print(f"   Mean |Cohen's d| = {mean_abs_d:.3f}")
-print(f"   Interpretation: {transfer_interpretation}")
-print(f"   Common viable genera: {len(viable_common)}")
-
-print(f"\n3. VALIDATION")
-print(f"   CHM-Cadastre correlation: r = {r_value:.3f}")
-interp_corr = "moderate (good)" if 0.4 <= abs(r_value) <= 0.6 else "low/high (check)"
-print(f"   Interpretation: {interp_corr}")
-
-print(f"\n4. PLANT YEAR THRESHOLD")
-print(f"   Detection threshold: {DETECTION_THRESHOLD_M}m")
-print(f"   Recommended max plant year: {recommended_max_year}")
-print(f"   Years analyzed: {min_year} - {max_year}")
-
-print(f"\n5. GENUS CLASSIFICATION")
-print(f"   Analysis scope: {analysis_scope}")
-print(f"   Conifer genera (viable): {conifer_genera_count}")
-print(f"   Conifer samples (total): {conifer_sample_count}")
-print(f"   Include CHM features: {include_chm}")
-
-print(f"\n6. OUTPUT FILES")
-print(f"   JSON: chm_assessment.json")
-print(f"   Plots: {len(list(FIGURES_DIR.glob('*.png')))} PNG files")
-
-print("\nNote: Legacy pipeline had cross-tree contamination (r=0.638).")
-print("      Current pipeline: r={:.3f} (no contamination).".format(r_value))
-print("=" * 60)
-
-
 # %% [markdown]
 # ## Summary & Manual Sync Instructions
 #
 
-# %%
-# Save execution log
-log.summary()
-log_path = LOGS_DIR / f"{log.notebook}_execution.json"
-log.save(log_path)
-print(f"Execution log saved: {log_path}")
-
-print("\n--- JSON OUTPUT ---")
-print(f"  {output_path.name}")
-
-print("\n--- PLOTS CREATED ---")
-for f in sorted(FIGURES_DIR.glob("*.png")):
-    print(f"  {f.name}")
-
-print("\n" + "="*70)
-print("⚠️  MANUAL SYNC REQUIRED:")
-print("="*70)
-print(f"1. JSON: outputs/phase_2/metadata/chm_assessment.json")
-print(f"2. Plots: outputs/phase_2/figures/exp_02_chm/*.png")
-print(f"3. Copy from Drive to local repo")
-print(f"4. git add outputs/phase_2/metadata/chm_assessment.json")
-print(f"5. git add outputs/phase_2/figures/exp_02_chm/")
-print(f"6. git commit -m 'feat(exploratory): add CHM assessment analysis'")
-print("="*70)

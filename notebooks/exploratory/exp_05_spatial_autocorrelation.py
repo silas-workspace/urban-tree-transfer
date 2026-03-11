@@ -57,8 +57,7 @@ print("Google Drive mounted")
 # Package imports
 from urban_tree_transfer.config import PROJECT_CRS, RANDOM_SEED
 from urban_tree_transfer.config.loader import load_feature_config, get_all_feature_names
-from urban_tree_transfer.utils import ExecutionLog, save_figure, setup_plotting
-from urban_tree_transfer.utils.plotting import PUBLICATION_STYLE
+from urban_tree_transfer.utils import ExecutionLog
 
 from urban_tree_transfer.feature_engineering.splits import (
     create_spatial_blocks,
@@ -73,13 +72,10 @@ import warnings
 import geopandas as gpd
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 from shapely.geometry import box
 from scipy.interpolate import interp1d
 
-setup_plotting()
 log = ExecutionLog("exp_05_spatial_autocorrelation")
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -115,7 +111,6 @@ INPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 OUTPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
-FIGURES_DIR = OUTPUT_DIR / "figures" / "exp_05_spatial"
 
 CITIES = ["berlin", "leipzig"]
 DISTANCE_LAGS = [100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 1000, 1200]
@@ -123,7 +118,7 @@ BLOCK_SIZE_CANDIDATES = [200, 300, 400, 500, 600, 800, 1000]
 SAMPLE_SIZE = 50_000  # set to None to disable sampling
 FORCE_RECOMPUTE = False
 
-for d in [METADATA_DIR, LOGS_DIR, FIGURES_DIR]:
+for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 feature_config = load_feature_config()
@@ -148,7 +143,6 @@ representative_features = [
 
 print(f"Input (Phase 2):   {INPUT_DIR}")
 print(f"Output (JSONs):    {METADATA_DIR}")
-print(f"Figures:           {FIGURES_DIR}")
 print(f"Logs (Drive):      {LOGS_DIR}")
 print(f"Cities:            {CITIES}")
 print(f"Distance lags:     {DISTANCE_LAGS}")
@@ -732,220 +726,6 @@ print("=" * 70)
 
 # %%
 # ============================================================
-# Plot 6: Split Spatial Independence Map
-
-# ============================================================
-
-split_colors = {
-    "train": "#1f77b4",   # Blue
-    "val": "#ff7f0e",     # Orange
-    "test": "#2ca02c",    # Green
-}
-
-fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-
-for idx, (split_name, color) in enumerate(split_colors.items()):
-    ax = axes[idx]
-
-    # Plot all trees in light gray background
-    trees_with_blocks.plot(
-        ax=ax,
-        color="lightgray",
-        markersize=0.5,
-        alpha=0.3,
-        zorder=1,
-    )
-
-    # Highlight current split trees
-    split_trees = trees_with_blocks[trees_with_blocks["split"] == split_name]
-    split_trees.plot(
-        ax=ax,
-        color=color,
-        markersize=2,
-        alpha=0.7,
-        zorder=2,
-    )
-
-    # Get Moran's I statistics for this split
-    if split_name in within_split_results:
-        feature_results = within_split_results[split_name]
-        if feature_results:
-            first_feature = list(feature_results.keys())[0]
-            I_value = feature_results[first_feature]["I"]
-            p_value = feature_results[first_feature]["p_value"]
-            n_trees = feature_results[first_feature]["n"]
-
-            # Determine status icon
-            status_icon = "[OK]" if abs(I_value) < 0.1 else "[FAIL]"
-            status_text = "Independent" if abs(I_value) < 0.1 else "Autocorrelated"
-
-            title_text = (
-                f"{split_name.upper()} Split {status_icon}\n"
-                f"Moran's I = {I_value:.3f} (p={p_value:.3f})\n"
-                f"Status: {status_text}\n"
-                f"n = {n_trees:,} trees"
-            )
-        else:
-            title_text = f"{split_name.upper()} Split\nn = {len(split_trees):,} trees"
-    else:
-        title_text = f"{split_name.upper()} Split\nn = {len(split_trees):,} trees"
-
-    ax.set_title(title_text, fontsize=11, fontweight="bold")
-    ax.axis("off")
-
-# Overall figure title
-independence_status = "[OK] ACHIEVED" if validation_passed else "[FAIL] NOT ACHIEVED"
-fig.suptitle(
-    f"Spatial Independence Validation (Block Size: {recommended_block_size}m) - {independence_status}\n"
-    f"Max |I| within splits: {max_I_within:.3f} | Max |I| between splits: {max_I_between:.3f}",
-    fontsize=14,
-    fontweight="bold",
-    y=0.98,
-)
-
-# Add text box with validation thresholds
-textstr = (
-    f"Thresholds:\n"
-    f"  Within-split: |I| < 0.1 {'[OK]' if max_I_within and max_I_within < 0.1 else '[FAIL]'}\n"
-    f"  Between-split: |I| < 0.05 {'[OK]' if max_I_between and max_I_between < 0.05 else '[FAIL]'}"
-)
-fig.text(
-    0.5, 0.02, textstr,
-    ha="center",
-    fontsize=10,
-    bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.3),
-)
-
-plt.tight_layout(rect=[0, 0.05, 1, 0.96])
-save_figure(fig, FIGURES_DIR / "split_spatial_independence.png", dpi=300)
-print(f"Saved: {FIGURES_DIR / 'split_spatial_independence.png'}")
-
-# %%
-# ============================================================
-# SECTION: Visualizations
-# ============================================================
-
-log.start_step("Visualizations")
-
-# Plot 1: Moran's I Decay Curves (faceted by city)
-fig, axes = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
-for idx, (ax, city) in enumerate(zip(axes, CITIES)):
-    city_df = morans_df[morans_df["city"] == city]
-    for feature in sorted(city_df["feature"].unique()):
-        subset = city_df[city_df["feature"] == feature]
-        ax.plot(subset["distance_m"], subset["morans_i"], marker="o", label=feature)
-
-    decay_values = decay_df[decay_df["city"] == city]["decay_distance_m"]
-    ax.axhline(0.05, color="black", linestyle="--", linewidth=1, label="I=0.05")
-    ax.axvline(recommended_block_size, color="red", linestyle="--", linewidth=1.5, label="Recommended")
-    ax.axvspan(decay_values.min(), decay_values.max(), color="grey", alpha=0.2)
-
-    ax.set_title(f"Moran's I Decay - {city.title()}", fontsize=14, fontweight="bold")
-    ax.set_xlabel("Distance (m)", fontsize=12)
-    ax.set_ylabel("Moran's I", fontsize=12)
-
-handles, labels = axes[0].get_legend_handles_labels()
-fig.legend(handles, labels, loc="lower center", ncol=3, fontsize=10)
-fig.tight_layout(rect=[0, 0.08, 1, 1])
-save_figure(fig, FIGURES_DIR / "morans_i_decay_curves.png")
-
-# Plot 2: Spatial Autocorrelation Heatmap (faceted by city)
-fig, axes = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
-for idx, (ax, city) in enumerate(zip(axes, CITIES)):
-    city_df = morans_df[morans_df["city"] == city]
-    pivot = city_df.pivot(index="feature", columns="distance_m", values="morans_i")
-    sig = city_df.pivot(index="feature", columns="distance_m", values="significant")
-
-    annot = pivot.copy().astype(str)
-    for i in range(pivot.shape[0]):
-        for j in range(pivot.shape[1]):
-            val = pivot.iloc[i, j]
-            star = "*" if sig.iloc[i, j] else ""
-            annot.iloc[i, j] = f"{val:.2f}{star}"
-
-    sns.heatmap(
-        pivot,
-        cmap="RdBu_r",
-        center=0,
-        annot=annot,
-        fmt="",
-        ax=ax,
-        cbar=idx == 0,
-    )
-    ax.set_title(f"Spatial Autocorrelation - {city.title()}", fontsize=14, fontweight="bold")
-    ax.set_xlabel("Distance (m)", fontsize=12)
-    ax.set_ylabel("Feature", fontsize=12)
-
-fig.tight_layout()
-save_figure(fig, FIGURES_DIR / "spatial_autocorrelation_heatmap.png")
-
-# Plot 3: Decay Distance Summary
-fig, ax = plt.subplots(figsize=PUBLICATION_STYLE["figsize"])
-ax.bar(
-    summary_df["feature"],
-    summary_df["decay_mean"],
-    yerr=summary_df["decay_std"].fillna(0),
-    capsize=4,
-)
-ax.axhline(max_decay_distance, color="red", linestyle="--", label="Max decay")
-ax.axhline(mean_plus_std, color="blue", linestyle=":", label="Mean + 1σ")
-ax.axhline(recommended_block_size, color="black", linestyle="-.", label="Recommended block size")
-ax.set_title("Decay Distance Summary", fontsize=14, fontweight="bold")
-ax.set_xlabel("Feature", fontsize=12)
-ax.set_ylabel("Decay Distance (m)", fontsize=12)
-ax.legend(fontsize=10)
-plt.xticks(rotation=45, ha="right")
-fig.tight_layout()
-save_figure(fig, FIGURES_DIR / "decay_distance_summary.png")
-
-# Plot 4: Block Overlay Maps (per city)
-for city in CITIES:
-    grid = block_stats[city]["grid"]
-    city_gdf = gpd.read_file(INPUT_DIR / f"trees_clean_{city}.gpkg")
-    boundary = city_gdf.unary_union.convex_hull
-
-    fig, ax = plt.subplots(figsize=PUBLICATION_STYLE["figsize"])
-    gpd.GeoSeries(boundary, crs=city_gdf.crs).boundary.plot(ax=ax, color="black", linewidth=1)
-    grid.plot(
-        ax=ax,
-        column="tree_count",
-        cmap="viridis",
-        legend=True,
-        legend_kwds={"label": "Trees per block"},
-        alpha=0.6,
-    )
-    city_gdf.plot(ax=ax, markersize=2, color="white", alpha=0.6)
-
-    ax.set_title(
-        f"Spatial Block Structure ({recommended_block_size}m × {recommended_block_size}m) - {city.title()}",
-        fontsize=14,
-        fontweight="bold",
-    )
-    ax.set_axis_off()
-
-    save_figure(fig, FIGURES_DIR / f"block_overlay_map_{city}.png")
-
-# Plot 5: Block Size Sensitivity Analysis
-fig, axes = plt.subplots(1, 2, figsize=(14, 6), sharey=False)
-
-for idx, (ax, city) in enumerate(zip(axes, CITIES)):
-    ax.plot(BLOCK_SIZE_CANDIDATES, block_counts[city], marker="o", label="Block count")
-    ax2 = ax.twinx()
-    ax2.plot(BLOCK_SIZE_CANDIDATES, residual_autocorr[city], color="tab:red", marker="s", label="Residual Moran's I")
-
-    ax.axvline(recommended_block_size, color="black", linestyle="--", linewidth=1.5)
-    ax.set_title(f"Block Size Sensitivity - {city.title()}", fontsize=14, fontweight="bold")
-    ax.set_xlabel("Block size (m)", fontsize=12)
-    ax.set_ylabel("Number of blocks", fontsize=12)
-    ax2.set_ylabel("Residual Moran's I", fontsize=12, color="tab:red")
-
-fig.tight_layout()
-save_figure(fig, FIGURES_DIR / "block_size_sensitivity.png")
-
-log.end_step(status="success")
-
-# %%
-# ============================================================
 # SECTION G: Save Configuration JSON
 # ============================================================
 
@@ -1039,30 +819,3 @@ print(f"Saved JSON: {output_path}")
 
 log.end_step(status="success")
 
-# %%
-# ============================================================
-# SUMMARY & MANUAL SYNC REQUIRED
-# ============================================================
-
-print("\n" + "=" * 70)
-print("[WARN]  MANUAL SYNC REQUIRED:")
-print("=" * 70)
-print(f"RECOMMENDED BLOCK SIZE: {recommended_block_size}m")
-print()
-print(f"1. JSON config: {METADATA_DIR / 'spatial_autocorrelation.json'}")
-print(f"2. Plots: {FIGURES_DIR}")
-print()
-print("NEXT STEPS:")
-print("1. Copy JSON from Drive to local repo:")
-print("   cp ~/Google\\ Drive/.../spatial_autocorrelation.json outputs/phase_2/metadata/")
-print("2. Copy plots from Drive to local repo:")
-print("   cp ~/Google\\ Drive/.../exp_05_spatial/*.png outputs/phase_2/figures/exp_05_spatial/")
-print("3. Review outputs")
-print("4. Commit to Git:")
-print("   git add outputs/phase_2/metadata/spatial_autocorrelation.json")
-print("   git add outputs/phase_2/figures/exp_05_spatial/")
-print("   git commit -m 'feat(phase-2): determine optimal spatial block size via Moran I analysis'")
-print("5. Push to GitHub")
-print("6. Next notebook (02c) will load the JSON automatically")
-print("7. Proceed to Task 11 or 12")
-print("=" * 70)

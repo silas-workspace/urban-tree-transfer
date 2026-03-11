@@ -71,12 +71,9 @@ from urban_tree_transfer.experiments import (
     preprocessing,
     training,
     models,
-    visualization,
 )
 from urban_tree_transfer.utils import (
     ExecutionLog,
-    save_figure,
-    setup_plotting,
     validate_setup_decisions,
 )
 
@@ -88,9 +85,7 @@ import gc
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
-setup_plotting()
 log = ExecutionLog("exp_09_feature_reduction")
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -108,9 +103,8 @@ OUTPUT_DIR = DRIVE_DIR / "data" / "phase_3_experiments"
 
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
-FIGURES_DIR = OUTPUT_DIR / "figures" / "exp_09_feature_reduction"
 
-for d in [METADATA_DIR, LOGS_DIR, FIGURES_DIR]:
+for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # Load experiment configuration
@@ -120,7 +114,6 @@ candidate_k = config["setup_ablation"]["feature_reduction"]["candidate_k"]
 print(f"Input (Phase 2 Splits): {INPUT_DIR}")
 print(f"Output (Phase 3):       {OUTPUT_DIR}")
 print(f"Metadata:               {METADATA_DIR}")
-print(f"Figures:                {FIGURES_DIR}")
 print(f"Logs:                   {LOGS_DIR}")
 print(f"Random seed:            {RANDOM_SEED}")
 print(f"CV folds:               {config['global']['cv_folds']}")
@@ -248,11 +241,6 @@ print(f"\nTop 10 most important features:")
 print(importance_df.head(10).to_string(index=False))
 
 # Visualize top 30 features
-visualization.plot_feature_importance(
-    importance_df.head(30),
-    output_path=FIGURES_DIR / "feature_importance_top30.png",
-)
-print(f"\nSaved: {FIGURES_DIR / 'feature_importance_top30.png'}")
 
 # Cleanup
 del model
@@ -358,13 +346,6 @@ print(f"  Pareto threshold (best - {max_drop}): {pareto_threshold:.4f}")
 print(f"\nReasoning: {reasoning}")
 print("=" * 70)
 
-# Generate Pareto curve visualization
-visualization.plot_pareto_curve(
-    results_df,
-    selected_k=selected_k,
-    output_path=FIGURES_DIR / "pareto_curve.png",
-)
-print(f"\nSaved: {FIGURES_DIR / 'pareto_curve.png'}")
 
 log.end_step(status="success")
 
@@ -442,7 +423,6 @@ print(f"  Feature Set: {selected_k} features selected")
 print(f"  Val F1: {selected_f1:.4f} ± {optimal_row['val_f1_std']:.4f}")
 print(f"\nOutputs:")
 print(f"  - JSON: {setup_path} (✅ validated)")
-print(f"  - Figures: {FIGURES_DIR}")
 print(f"  - Logs: {log_path}")
 print(f"\nNext Steps:")
 print(f"  1. Review Pareto curve and feature importance plots")

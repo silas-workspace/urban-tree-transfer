@@ -74,7 +74,7 @@ print("Google Drive mounted")
 # Package imports
 from urban_tree_transfer.config import MIN_SAMPLES_PER_GENUS, RANDOM_SEED
 from urban_tree_transfer.experiments import ablation, data_loading
-from urban_tree_transfer.utils import ExecutionLog, save_figure, setup_plotting
+from urban_tree_transfer.utils import ExecutionLog
 
 from pathlib import Path
 from datetime import datetime, timezone
@@ -83,13 +83,10 @@ import warnings
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from scipy.spatial.distance import squareform
 from scipy.stats import entropy
 
-setup_plotting()
 log = ExecutionLog("exp_10_genus_selection_validation")
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -108,9 +105,8 @@ OUTPUT_DIR = DRIVE_DIR / "data" / "phase_3_experiments"
 
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
-FIGURES_DIR = OUTPUT_DIR / "figures" / "exp_10_genus_selection"
 
-for d in [METADATA_DIR, LOGS_DIR, FIGURES_DIR]:
+for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # Analysis parameters
@@ -122,7 +118,6 @@ KL_THRESHOLD = 0.15  # Maximum KL-divergence after filtering
 print(f"Input (Phase 2 Splits): {INPUT_DIR}")
 print(f"Output (Phase 3):       {OUTPUT_DIR}")
 print(f"Metadata:               {METADATA_DIR}")
-print(f"Figures:                {FIGURES_DIR}")
 print(f"Logs:                   {LOGS_DIR}")
 print(f"Random seed:            {RANDOM_SEED}")
 print(f"Min samples per genus:  {MIN_SAMPLES}")
@@ -274,46 +269,6 @@ if excluded_genera:
 log.end_step(status="success")
 
 
-# %% colab={"base_uri": "https://localhost:8080/"} id="cdxDSbCAsIl2" outputId="99bb5bae-d71d-4058-fe01-ffd946bf48a7"
-# Visualization: Sample count bar chart
-fig, ax = plt.subplots(figsize=(14, 6))
-
-x = np.arange(len(all_genera))
-width = 0.35
-
-berlin_vals = count_df["Berlin_Total"].values
-leipzig_vals = count_df["Leipzig_Total"].values
-
-ax.bar(x - width / 2, berlin_vals, width, label="Berlin (All Splits)", alpha=0.8, color="#1f77b4")
-ax.bar(x + width / 2, leipzig_vals, width, label="Leipzig (All Splits)", alpha=0.8, color="#ff7f0e")
-ax.axhline(
-    y=MIN_SAMPLES,
-    color="red",
-    linestyle="--",
-    linewidth=2,
-    label=f"Min Threshold ({MIN_SAMPLES})",
-    zorder=3,
-)
-
-ax.set_xlabel("Genus", fontsize=12)
-ax.set_ylabel("Sample Count", fontsize=12)
-ax.set_title(
-    "Genus Sample Counts after Setup Decisions (Final Feature Set)",
-    fontsize=14,
-    fontweight="bold",
-)
-ax.set_xticks(x)
-ax.set_xticklabels(all_genera, rotation=45, ha="right")
-ax.legend(loc="upper right")
-ax.grid(axis="y", alpha=0.3)
-
-plt.tight_layout()
-save_figure(fig, FIGURES_DIR / "genus_sample_counts.png")
-plt.show()
-
-print("✅ Figure saved: genus_sample_counts.png")
-
-
 # %% [markdown] id="_0jkAfhnsIl2"
 # # ============================================================
 # # SECTION 4: Genus Separability Analysis (Berlin Train Only)
@@ -429,41 +384,6 @@ print("\nJM Statistics:")
 for k, v in jm_stats.items():
     print(f"  {k:>6}: {v:.3f}")
 
-# %% colab={"base_uri": "https://localhost:8080/"} id="Er-e35RSsIl4" outputId="4735540f-9120-4766-8265-f0588a176629"
-# Visualization: JM heatmap
-fig, ax = plt.subplots(figsize=(14, 12))
-
-sns.heatmap(
-    jm_matrix,
-    cmap="RdYlGn",
-    vmin=0.0,
-    vmax=2.0,
-    cbar_kws={"label": "Jeffries-Matusita Distance"},
-    square=True,
-    ax=ax,
-)
-
-ax.set_title("Genus Separability (JM Distance)", fontsize=14, fontweight="bold")
-ax.set_xlabel("Genus", fontsize=12)
-ax.set_ylabel("Genus", fontsize=12)
-
-ax.text(
-    0.02,
-    0.98,
-    f"Threshold: {threshold:.2f} ({threshold_strategy})",
-    transform=ax.transAxes,
-    va="top",
-    fontsize=10,
-    bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
-)
-
-plt.tight_layout()
-save_figure(fig, FIGURES_DIR / "jm_separability_heatmap.png")
-plt.show()
-
-print("✅ Figure saved: jm_separability_heatmap.png")
-
-
 # %% [markdown] id="zj-rgv3ssIl4"
 # # ============================================================
 # # SECTION 5: Hierarchical Clustering & Grouping
@@ -477,44 +397,7 @@ np.fill_diagonal(clustering_distances, 0) # Ensure diagonal is strictly zero
 condensed = squareform(clustering_distances)
 
 linkage_matrix = linkage(condensed, method=CLUSTERING_METHOD)
-
-# Dendrogram
-fig, ax = plt.subplots(figsize=(16, 8))
-
 max_dist = linkage_matrix[:, 2].max()
-normalized_linkage = linkage_matrix.copy()
-normalized_linkage[:, 2] = normalized_linkage[:, 2] / max_dist
-
-dendrogram(
-    normalized_linkage,
-    labels=jm_matrix.index.tolist(),
-    ax=ax,
-    leaf_font_size=9,
-    leaf_rotation=90,
-)
-
-if threshold > 0:
-    # Threshold is directly on JM distance
-    normalized_threshold = threshold / max_dist
-    ax.axhline(
-        y=normalized_threshold,
-        color="red",
-        linestyle="--",
-        linewidth=2,
-        label=f"Cut Threshold (JM={threshold:.2f})",
-    )
-
-ax.set_xlabel("Genus", fontsize=12)
-ax.set_ylabel("Normalized Distance", fontsize=12)
-ax.set_title("Hierarchical Clustering of Genera (JM-based)", fontsize=14, fontweight="bold")
-ax.legend()
-ax.grid(axis="y", alpha=0.3)
-
-plt.tight_layout()
-save_figure(fig, FIGURES_DIR / "jm_dendrogram.png")
-plt.show()
-
-print("✅ Figure saved: jm_dendrogram.png")
 
 # Cluster assignment
 if threshold <= 0:
@@ -552,34 +435,6 @@ if genus_groups:
         print(f"   {group_name}: {', '.join(genera_list)} ({len(genera_list)} genera)")
 else:
     print("\nNo genus groups identified - all genera sufficiently separable")
-
-
-# %% colab={"base_uri": "https://localhost:8080/"} id="SBJFs6_GsIl6" outputId="ba4fa889-79be-4106-ad17-5ab72aead412"
-# Visualization: Grouping overview
-if genus_groups:
-    fig, ax = plt.subplots(figsize=(12, len(genus_groups) * 0.8 + 2))
-
-    y_pos = np.arange(len(genus_groups))
-    group_names = list(genus_groups.keys())
-    group_sizes = [len(genus_groups[g]) for g in group_names]
-
-    ax.barh(y_pos, group_sizes, color="steelblue", alpha=0.7)
-    ax.set_yticks(y_pos)
-    ax.set_yticklabels(group_names)
-    ax.set_xlabel("Number of Genera in Group", fontsize=12)
-    ax.set_title("Genus Groups Formed by JM-based Clustering", fontsize=14, fontweight="bold")
-    ax.grid(axis="x", alpha=0.3)
-
-    for i, (group_name, genera_list) in enumerate(genus_groups.items()):
-        ax.text(group_sizes[i] + 0.1, i, ", ".join(genera_list), va="center", fontsize=8)
-
-    plt.tight_layout()
-    save_figure(fig, FIGURES_DIR / "genus_groups_overview.png")
-    plt.show()
-
-    print("✅ Figure saved: genus_groups_overview.png")
-else:
-    print("ℹ️ No genus groups formed - all genera sufficiently separable")
 
 
 # %% [markdown] id="QrqIAcRasIl6"

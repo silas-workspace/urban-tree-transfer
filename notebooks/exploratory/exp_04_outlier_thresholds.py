@@ -70,8 +70,7 @@ from urban_tree_transfer.config.loader import (
     get_temporal_feature_names,
     load_feature_config,
 )
-from urban_tree_transfer.utils import ExecutionLog, save_figure, setup_plotting
-from urban_tree_transfer.utils.plotting import PUBLICATION_STYLE
+from urban_tree_transfer.utils import ExecutionLog
 
 from pathlib import Path
 import json
@@ -80,16 +79,12 @@ import warnings
 import geopandas as gpd
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from scipy.stats import chi2, zscore, mannwhitneyu
-from matplotlib_venn import venn3
 from pointpats import k as ripley_k
 
 # Suppress font glyph warnings for unicode characters in Colab
 warnings.filterwarnings("ignore", message=".*Glyph.*missing from font.*")
 
-setup_plotting()
 log = ExecutionLog("exp_04_outlier_thresholds")
 
 print("OK: Package imports complete")
@@ -104,7 +99,6 @@ INPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 OUTPUT_DIR = DRIVE_DIR / "data" / "phase_2_features"
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
-FIGURES_DIR = OUTPUT_DIR / "figures" / "exp_04_outlier_thresholds"
 
 CITIES = ["berlin", "leipzig"]
 Z_THRESHOLDS = [2.5, 3.0, 3.5]
@@ -112,14 +106,13 @@ Z_MIN_FEATURE_COUNTS = [5, 10, 15]
 MAHAL_ALPHA_LEVELS = [0.0001, 0.001, 0.01]
 IQR_MULTIPLIERS = [1.5, 2.0, 3.0]
 
-for d in [METADATA_DIR, LOGS_DIR, FIGURES_DIR]:
+for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 feature_config = load_feature_config()
 
 print(f"Input:  {INPUT_DIR}")
 print(f"Output: {METADATA_DIR}")
-print(f"Plots:  {FIGURES_DIR}")
 print(f"Cities: {CITIES}")
 print(f"Random seed: {RANDOM_SEED}")
 
@@ -212,32 +205,6 @@ try:
         zscore_flags[city] = standard_flag
 
     zscore_df = pd.DataFrame(zscore_results)
-
-    # Plot sensitivity
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5), sharey=True)
-    for ax, city in zip(axes[:2], CITIES):
-        subset = zscore_df[zscore_df["city"] == city]
-        for min_count in Z_MIN_FEATURE_COUNTS:
-            line = subset[subset["min_feature_count"] == min_count]
-            ax.plot(line["threshold"], line["flag_rate"], marker="o", label=f"min={min_count}")
-        ax.set_title(f"Z-Score Sensitivity ({city})")
-        ax.set_xlabel("Z-score threshold")
-        ax.set_ylabel("Flagging rate")
-        ax.legend()
-
-    overall = zscore_df.groupby(["threshold", "min_feature_count"], as_index=False)["flag_rate"].mean()
-    ax = axes[2]
-    for min_count in Z_MIN_FEATURE_COUNTS:
-        line = overall[overall["min_feature_count"] == min_count]
-        ax.plot(line["threshold"], line["flag_rate"], marker="o", label=f"min={min_count}")
-    ax.set_title("Z-Score Sensitivity (overall)")
-    ax.set_xlabel("Z-score threshold")
-    ax.set_ylabel("Flagging rate")
-    ax.legend()
-
-    plt.tight_layout()
-    save_figure(fig, FIGURES_DIR / "zscore_sensitivity.png")
-    plt.close(fig)
 
     log.end_step(status="success", records=len(zscore_df))
 
@@ -393,43 +360,6 @@ try:
     
     alpha_rates = pd.DataFrame(alpha_rates_list)
 
-    # Plot D^2 distributions (top 8 genera by sample size)
-    top_genera = (
-        mahal_dist_df["genus_latin"].value_counts().head(8).index.tolist()
-    )
-    plot_df = mahal_dist_df[mahal_dist_df["genus_latin"].isin(top_genera)]
-
-    g = sns.FacetGrid(plot_df, col="genus_latin", col_wrap=4, height=2.5, sharex=True, sharey=True)
-    g.map_dataframe(sns.histplot, x="mahalanobis_d2", bins=40, color="#4c72b0")
-
-    for ax in g.axes.flatten():
-        for alpha in MAHAL_ALPHA_LEVELS:
-            threshold = chi2.ppf(1 - alpha, df=len(feature_cols))
-            ax.axvline(threshold, linestyle="--", linewidth=1, label=f"alpha={alpha}")
-        ax.set_xlabel("D^2")
-        ax.set_ylabel("Count")
-
-    # Add inset with overall flagging rates
-    inset_ax = g.fig.add_axes([0.72, 0.05, 0.26, 0.30])
-    overall_subset = alpha_rates[alpha_rates["city"] == "overall"]
-    if not overall_subset.empty:
-        inset_ax.bar(
-            overall_subset["alpha"].astype(str), 
-            overall_subset["flag_rate"], 
-            color="#55a868"
-        )
-        inset_ax.set_title("Overall flagging rate")
-        inset_ax.set_xlabel("alpha")
-        inset_ax.set_ylabel("Rate")
-        inset_ax.tick_params(axis="x", labelrotation=45)
-
-    g.fig.suptitle("Mahalanobis D^2 Distributions by Genus with alpha Thresholds", y=1.02)
-    handles, labels = g.axes.flatten()[0].get_legend_handles_labels()
-    g.fig.legend(handles, labels, title="Chi^2 thresholds", loc="upper center", ncol=3)
-    # FacetGrid handles layout automatically - no tight_layout() needed
-    save_figure(g.fig, FIGURES_DIR / "mahalanobis_distribution.png")
-    plt.close(g.fig)
-
     log.end_step(status="success", records=len(mahal_df))
 
 except Exception as e:
@@ -473,24 +403,6 @@ try:
                     iqr_flags[city][genus] = pd.Series(flagged, index=grp.index)
 
     iqr_df = pd.DataFrame(iqr_results)
-
-    plot_df = pd.concat(city_data.values(), ignore_index=True)
-    fig, ax = plt.subplots(figsize=PUBLICATION_STYLE["figsize"])
-    sns.boxplot(
-        data=plot_df,
-        x="genus_latin",
-        y="CHM_1m",
-        hue="city",
-        showfliers=False,
-        ax=ax,
-    )
-    ax.set_title("CHM_1m Distribution by Genus and City (Tukey Fences)")
-    ax.set_xlabel("Genus")
-    ax.set_ylabel("CHM_1m")
-    ax.tick_params(axis="x", rotation=45)
-    plt.tight_layout()
-    save_figure(fig, FIGURES_DIR / "iqr_boxplots_per_genus.png")
-    plt.close(fig)
 
     log.end_step(status="success", records=len(iqr_df))
 
@@ -570,191 +482,6 @@ try:
         on="tree_id", 
         how="left"
     )
-    
-    severity_colors = {
-        "none": "#2ca02c",
-        "low": "#ffbb78",
-        "medium": "#ff7f0e",
-        "high": "#d62728"
-    }
-    
-    # ========================================
-    # 1. PCA Feature Space Visualization
-    # ========================================
-    print("Creating PCA visualization...")
-    
-    from sklearn.decomposition import PCA
-    from sklearn.preprocessing import StandardScaler
-    
-    pca_features = feature_cols[:50] + ["CHM_1m"]
-    pca_data = viz_data[pca_features].fillna(viz_data[pca_features].median())
-    
-    scaler = StandardScaler()
-    pca_scaled = scaler.fit_transform(pca_data)
-    pca = PCA(n_components=2)
-    pca_result = pca.fit_transform(pca_scaled)
-    
-    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
-    
-    # Plot 1: All severities
-    ax = axes[0]
-    for severity in ["none", "low", "medium", "high"]:
-        mask = viz_data["outlier_severity"] == severity
-        ax.scatter(
-            pca_result[mask, 0], 
-            pca_result[mask, 1],
-            c=severity_colors[severity],
-            label=f"{severity} (n={mask.sum():,})",
-            alpha=0.6 if severity == "none" else 0.9,
-            s=10 if severity == "none" else 30,
-            edgecolors='black' if severity == "high" else 'none',
-            linewidths=0.5
-        )
-    ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]*100:.1f}%)")
-    ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]*100:.1f}%)")
-    ax.set_title("PCA: Feature Space Distribution by Outlier Severity")
-    ax.legend()
-    ax.grid(alpha=0.3)
-    
-    # Plot 2: High-severity vs. none
-    ax = axes[1]
-    for severity in ["none", "high"]:
-        mask = viz_data["outlier_severity"] == severity
-        ax.scatter(
-            pca_result[mask, 0], 
-            pca_result[mask, 1],
-            c=severity_colors[severity],
-            label=f"{severity} (n={mask.sum():,})",
-            alpha=0.4 if severity == "none" else 1.0,
-            s=5 if severity == "none" else 50,
-            edgecolors='black' if severity == "high" else 'none',
-            linewidths=0.8,
-            marker='*' if severity == "high" else 'o'
-        )
-    ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]*100:.1f}%)")
-    ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]*100:.1f}%)")
-    ax.set_title("PCA: High-Severity Outliers vs. Normal Trees")
-    ax.legend()
-    ax.grid(alpha=0.3)
-    
-    plt.tight_layout()
-    save_figure(fig, FIGURES_DIR / "outlier_pca_verification.png", dpi=300)
-    plt.close(fig)
-    
-    # ========================================
-    # 2. Feature Distribution Comparisons
-    # ========================================
-    print("Creating feature distribution comparisons...")
-    
-    key_features = ["CHM_1m", "NDVI_06", "B8_06", "EVI_06", "NDWI_06"]
-    key_features = [f for f in key_features if f in viz_data.columns]
-    
-    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    axes = axes.flatten()
-    
-    for idx, feature in enumerate(key_features):
-        ax = axes[idx]
-        
-        data_by_severity = [
-            viz_data[viz_data["outlier_severity"] == sev][feature].dropna()
-            for sev in ["none", "low", "medium", "high"]
-        ]
-        
-        bp = ax.boxplot(
-            data_by_severity,
-            tick_labels=["none", "low", "medium", "high"],
-            patch_artist=True,
-            showfliers=False
-        )
-        
-        for patch, severity in zip(bp['boxes'], ["none", "low", "medium", "high"]):
-            patch.set_facecolor(severity_colors[severity])
-            patch.set_alpha(0.7)
-        
-        high_data = viz_data[viz_data["outlier_severity"] == "high"][feature].dropna()
-        if len(high_data) > 0:
-            ax.scatter(
-                [4] * len(high_data),
-                high_data,
-                color=severity_colors["high"],
-                alpha=0.6,
-                s=20,
-                zorder=3
-            )
-        
-        ax.set_title(f"{feature}")
-        ax.set_xlabel("Outlier Severity")
-        ax.set_ylabel("Value")
-        ax.grid(axis='y', alpha=0.3)
-    
-    if len(key_features) < 6:
-        fig.delaxes(axes[-1])
-    
-    plt.suptitle("Feature Distributions by Outlier Severity\n(High-severity points shown individually)", 
-                 fontsize=14, fontweight='bold')
-    plt.tight_layout()
-    save_figure(fig, FIGURES_DIR / "outlier_feature_distributions.png", dpi=300)
-    plt.close(fig)
-    
-    # ========================================
-    # 3. Representative Examples Table
-    # ========================================
-    print("Extracting representative examples...")
-    
-    high_severity = viz_data[viz_data["outlier_severity"] == "high"].copy()
-    
-    if len(high_severity) > 0:
-        examples = []
-        for genus in high_severity["genus_latin"].unique()[:5]:
-            genus_subset = high_severity[high_severity["genus_latin"] == genus]
-            if len(genus_subset) > 0:
-                example = genus_subset.nlargest(1, "CHM_1m").iloc[0]
-                examples.append({
-                    "tree_id": example["tree_id"],
-                    "city": example["city"],
-                    "genus": example["genus_latin"],
-                    "CHM_1m": f"{example['CHM_1m']:.1f}m",
-                    "NDVI_06": f"{example.get('NDVI_06', np.nan):.3f}",
-                    "plant_year": int(example["plant_year"]) if pd.notna(example["plant_year"]) else "N/A",
-                    "z_flag": "✓" if example["outlier_zscore"] else "✗",
-                    "m_flag": "✓" if example["outlier_mahalanobis"] else "✗",
-                    "iqr_flag": "✓" if example["outlier_iqr"] else "✗",
-                })
-        
-        examples_df = pd.DataFrame(examples)
-        
-        fig, ax = plt.subplots(figsize=(14, 4))
-        ax.axis('tight')
-        ax.axis('off')
-        
-        table = ax.table(
-            cellText=examples_df.values,
-            colLabels=examples_df.columns,
-            cellLoc='center',
-            loc='center',
-            colWidths=[0.12, 0.08, 0.15, 0.10, 0.10, 0.12, 0.08, 0.08, 0.08]
-        )
-        
-        table.auto_set_font_size(False)
-        table.set_fontsize(9)
-        table.scale(1, 2)
-        
-        for i in range(len(examples_df.columns)):
-            table[(0, i)].set_facecolor('#4472C4')
-            table[(0, i)].set_text_props(weight='bold', color='white')
-        
-        for i in range(1, len(examples_df) + 1):
-            for j in range(len(examples_df.columns)):
-                table[(i, j)].set_facecolor('#f0f0f0' if i % 2 == 0 else 'white')
-        
-        plt.title("Representative High-Severity Outliers\n(Most extreme examples per genus)", 
-                  fontsize=12, fontweight='bold', pad=20)
-        plt.tight_layout()
-        save_figure(fig, FIGURES_DIR / "outlier_examples_table.png", dpi=300)
-        plt.close(fig)
-        
-        print("\nHigh-Severity Outlier Examples:")
-        print(examples_df.to_string(index=False))
     
     # ========================================
     # 4. Summary Statistics
@@ -839,54 +566,6 @@ try:
         age_stats = {"interpretation": "Insufficient plant_year data"}
         log.end_step(status="skipped")
     else:
-        fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-
-        severities = ["high", "medium", "low", "none"]
-        colors = {"high": "#d62728", "medium": "#ff7f0e", "low": "#ffbb78", "none": "#2ca02c"}
-
-        for idx, severity in enumerate(severities):
-            ax = axes[idx]
-            subset = trees_with_age[trees_with_age["outlier_severity"] == severity]
-            none_subset = trees_with_age[trees_with_age["outlier_severity"] == "none"]
-
-            if len(subset) > 0:
-                ax.hist(
-                    subset["plant_year"].dropna(),
-                    bins=30,
-                    alpha=0.7,
-                    color=colors[severity],
-                    label=f"{severity} (n={len(subset)})",
-                )
-                ax.hist(
-                    none_subset["plant_year"].dropna(),
-                    bins=30,
-                    alpha=0.4,
-                    color="gray",
-                    label=f"none (n={len(none_subset)})",
-                )
-
-                median_val = subset["plant_year"].median()
-                ax.axvline(median_val, color=colors[severity], linestyle="--", linewidth=2)
-                ax.text(
-                    median_val,
-                    ax.get_ylim()[1] * 0.9,
-                    f"Median: {int(median_val)}",
-                    rotation=90,
-                    va="top",
-                )
-
-            ax.set_title(f"Severity: {severity.upper()}", fontsize=12)
-            ax.set_xlabel("Plant Year", fontsize=10)
-            ax.set_ylabel("Count", fontsize=10)
-            ax.legend(fontsize=9)
-            ax.grid(True, alpha=0.3)
-
-        plt.suptitle("Plant Year Distribution by Outlier Severity", fontsize=14, fontweight="bold")
-        plt.tight_layout()
-        save_figure(fig, FIGURES_DIR / "outlier_age_distribution.png", dpi=300)
-        plt.close(fig)
-        print(f"Saved: {FIGURES_DIR / 'outlier_age_distribution.png'}")
-
         high_severity = trees_with_age[trees_with_age["outlier_severity"] == "high"]
         no_outlier = trees_with_age[trees_with_age["outlier_severity"] == "none"]
 
@@ -946,21 +625,6 @@ try:
 
         print("\nTree Type Distribution by Outlier Severity:")
         print(contingency.round(3))
-
-        fig, ax = plt.subplots(figsize=(10, 6))
-        contingency.plot(kind="bar", stacked=True, ax=ax, color=["#8dd3c7", "#fb8072"])
-
-        ax.set_title("Tree Type Distribution by Outlier Severity", fontsize=14)
-        ax.set_xlabel("Outlier Severity", fontsize=12)
-        ax.set_ylabel("Proportion", fontsize=12)
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
-        ax.legend(title="Tree Type", fontsize=10)
-        ax.grid(True, axis="y", alpha=0.3)
-
-        plt.tight_layout()
-        save_figure(fig, FIGURES_DIR / "outlier_tree_type.png", dpi=300)
-        plt.close(fig)
-        print(f"Saved: {FIGURES_DIR / 'outlier_tree_type.png'}")
 
         if "anlagenbaeume" in contingency.columns and "high" in contingency.index:
             high_anlagen_pct = contingency.loc["high", "anlagenbaeume"]
@@ -1034,41 +698,6 @@ try:
             "interpretation": interpretation,
         }
 
-        # Visualization: Spatial clustering map
-        fig, ax = plt.subplots(figsize=(12, 10))
-        
-        # Plot all trees in background
-        trees_berlin.plot(ax=ax, color="lightgray", markersize=1, alpha=0.3, label="Non-outliers")
-        
-        # Overlay high-severity outliers
-        high_severity_trees.plot(ax=ax, color="red", markersize=20, alpha=0.7, 
-                                 marker="*", label="High-severity outliers")
-        
-        # Add Ripley's K results as text annotation
-        k_text = "Ripley's K (spatial clustering):\n"
-        for d, stats in k_results.items():
-            ratio = stats["ratio"]
-            k_text += f"  {d}: K_ratio = {ratio:.2f}"
-            if ratio > 1.2:
-                k_text += " (clustered) ✓\n"
-            else:
-                k_text += "\n"
-        
-        ax.text(0.02, 0.98, k_text, transform=ax.transAxes, 
-                fontsize=10, verticalalignment="top",
-                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
-        
-        ax.set_title("Spatial Distribution: High-Severity Outliers vs. All Trees\n" + 
-                     "(Clustering indicates biological contexts like parks)", 
-                     fontsize=12, fontweight="bold")
-        ax.set_xlabel("X (m)", fontsize=11)
-        ax.set_ylabel("Y (m)", fontsize=11)
-        ax.legend(loc="upper right", fontsize=10)
-        ax.grid(alpha=0.3)
-        
-        save_figure(fig, FIGURES_DIR / "outlier_spatial_clustering.png", dpi=300)
-        plt.close(fig)
-        
         log.end_step(status="success")
 
 except Exception as e:
@@ -1091,20 +720,6 @@ try:
 
     print("\nHigh-Severity Outlier Rates by Genus (top 10):")
     print(genus_outlier_rates.head(10).round(3))
-
-    fig, ax = plt.subplots(figsize=(12, 6))
-    genus_outlier_rates.head(10).plot(kind="bar", ax=ax, color="steelblue")
-
-    ax.set_title("High-Severity Outlier Rate by Genus", fontsize=14)
-    ax.set_xlabel("Genus", fontsize=12)
-    ax.set_ylabel("High-Severity Rate", fontsize=12)
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
-    ax.grid(True, axis="y", alpha=0.3)
-
-    plt.tight_layout()
-    save_figure(fig, FIGURES_DIR / "outlier_genus_rates.png", dpi=300)
-    plt.close(fig)
-    print(f"Saved: {FIGURES_DIR / 'outlier_genus_rates.png'}")
 
     genus_stats = {
         "top_outlier_genera": genus_outlier_rates.head(5).to_dict(),
@@ -1146,24 +761,6 @@ try:
         "all_three": int((z & m & i).sum()),
     }
 
-    fig, ax = plt.subplots(figsize=PUBLICATION_STYLE["figsize"])
-    venn3(
-        subsets=(
-            overlap_counts["zscore_only"],
-            overlap_counts["mahalanobis_only"],
-            overlap_counts["zscore_and_mahalanobis"],
-            overlap_counts["iqr_only"],
-            overlap_counts["zscore_and_iqr"],
-            overlap_counts["mahalanobis_and_iqr"],
-            overlap_counts["all_three"],
-        ),
-        set_labels=("Z-score", "Mahalanobis", "IQR"),
-        ax=ax,
-    )
-    ax.set_title("Outlier Method Overlap (All Cities)")
-    save_figure(fig, FIGURES_DIR / "outlier_venn_diagram.png")
-    plt.close(fig)
-
     log.end_step(status="success", records=len(flagged_df))
 
 except Exception as e:
@@ -1196,161 +793,6 @@ try:
 
     def pct(x):
         return 100 * x / total if total else 0
-
-    import matplotlib.patches as patches
-
-    fig, ax = plt.subplots(figsize=PUBLICATION_STYLE["figsize"])
-    ax.axis("off")
-
-    # Node positions (x, y)
-    nodes = {
-        "all": (0.05, 0.5, f"All trees\n{total:,} (100%)"),
-        "f0": (0.35, 0.8, f"0 methods\n{count_0:,} ({pct(count_0):.1f}%)"),
-        "f1": (0.35, 0.55, f"1 method\n{count_1:,} ({pct(count_1):.1f}%)"),
-        "f2": (0.35, 0.30, f"2 methods\n{count_2:,} ({pct(count_2):.1f}%)"),
-        "f3": (0.35, 0.05, f"3 methods\n{count_3:,} ({pct(count_3):.1f}%)"),
-        "none": (0.75, 0.8, f"None\n{sev_none:,} ({pct(sev_none):.1f}%)"),
-        "low": (0.75, 0.55, f"Low\n{sev_low:,} ({pct(sev_low):.1f}%)"),
-        "medium": (0.75, 0.30, f"Medium\n{sev_medium:,} ({pct(sev_medium):.1f}%)"),
-        "high": (0.75, 0.05, f"High\n{sev_high:,} ({pct(sev_high):.1f}%)"),
-    }
-
-    def draw_node(x, y, text, color):
-        box = patches.FancyBboxPatch(
-            (x, y), 0.18, 0.12,
-            boxstyle="round,pad=0.02",
-            linewidth=1, edgecolor="#333333", facecolor=color
-        )
-        ax.add_patch(box)
-        ax.text(x + 0.09, y + 0.06, text, ha="center", va="center", fontsize=10)
-
-    draw_node(*nodes["all"][:2], nodes["all"][2], "#d9edf7")
-    draw_node(*nodes["f0"][:2], nodes["f0"][2], "#f0f0f0")
-    draw_node(*nodes["f1"][:2], nodes["f1"][2], "#fff2cc")
-    draw_node(*nodes["f2"][:2], nodes["f2"][2], "#ffe599")
-    draw_node(*nodes["f3"][:2], nodes["f3"][2], "#f4cccc")
-    draw_node(*nodes["none"][:2], nodes["none"][2], "#f0f0f0")
-    draw_node(*nodes["low"][:2], nodes["low"][2], "#fff2cc")
-    draw_node(*nodes["medium"][:2], nodes["medium"][2], "#ffe599")
-    draw_node(*nodes["high"][:2], nodes["high"][2], "#f4cccc")
-
-    def arrow(x1, y1, x2, y2):
-        ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                    arrowprops=dict(arrowstyle="->", lw=1, color="#555555"))
-
-    # Left -> middle
-    for key in ["f0", "f1", "f2", "f3"]:
-        arrow(0.23, 0.56, nodes[key][0], nodes[key][1] + 0.06)
-
-    # Middle -> right (map to severity)
-    arrow(0.53, 0.86, nodes["none"][0], nodes["none"][1] + 0.06)
-    arrow(0.53, 0.61, nodes["low"][0], nodes["low"][1] + 0.06)
-    arrow(0.53, 0.36, nodes["medium"][0], nodes["medium"][1] + 0.06)
-    arrow(0.53, 0.11, nodes["high"][0], nodes["high"][1] + 0.06)
-
-    ax.set_title("Consensus Decision Flow")
-    save_figure(fig, FIGURES_DIR / "consensus_decision_flow.png")
-    plt.close(fig)
-
-    log.end_step(status="success", records=total)
-
-except Exception as e:
-    log.end_step(status="error", errors=[str(e)])
-    raise
-
-
-# %% [markdown]
-# ## Outlier Rates, Severity Distribution, and Genus Impact
-#
-
-# %%
-log.start_step("Outlier Rates and Genus Impact")
-
-try:
-    rate_rows = []
-    for city in CITIES:
-        subset = flagged_df[flagged_df["city"] == city]
-        rate_rows.append({
-            "city": city,
-            "method": "zscore",
-            "rate": subset["outlier_zscore"].mean(),
-        })
-        rate_rows.append({
-            "city": city,
-            "method": "mahalanobis",
-            "rate": subset["outlier_mahalanobis"].mean(),
-        })
-        rate_rows.append({
-            "city": city,
-            "method": "iqr",
-            "rate": subset["outlier_iqr"].mean(),
-        })
-
-    overall = {
-        "zscore": flagged_df["outlier_zscore"].mean(),
-        "mahalanobis": flagged_df["outlier_mahalanobis"].mean(),
-        "iqr": flagged_df["outlier_iqr"].mean(),
-    }
-    for method, rate in overall.items():
-        rate_rows.append({
-            "city": "overall",
-            "method": method,
-            "rate": rate,
-        })
-
-    rates_df = pd.DataFrame(rate_rows)
-
-    fig, ax = plt.subplots(figsize=PUBLICATION_STYLE["figsize"])
-    sns.barplot(data=rates_df, x="method", y="rate", hue="city", ax=ax)
-    ax.set_title("Outlier Rates per Method")
-    ax.set_xlabel("Method")
-    ax.set_ylabel("Flagging rate")
-    plt.tight_layout()
-    save_figure(fig, FIGURES_DIR / "outlier_rates_per_method.png")
-    plt.close(fig)
-
-    severity_counts = (
-        flagged_df.groupby(["city", "outlier_severity"])
-        .size()
-        .reset_index(name="count")
-    )
-    overall_counts = (
-        flagged_df.groupby("outlier_severity")
-        .size()
-        .reset_index(name="count")
-    )
-    overall_counts["city"] = "overall"
-    severity_counts = pd.concat([severity_counts, overall_counts], ignore_index=True)
-
-    fig, ax = plt.subplots(figsize=PUBLICATION_STYLE["figsize"])
-    sns.barplot(data=severity_counts, x="outlier_severity", y="count", hue="city", ax=ax)
-    ax.set_title("Outlier Severity Distribution")
-    ax.set_xlabel("Severity")
-    ax.set_ylabel("Count")
-    plt.tight_layout()
-    save_figure(fig, FIGURES_DIR / "severity_distribution.png")
-    plt.close(fig)
-
-    genus_sev = (
-        flagged_df.groupby(["genus_latin", "outlier_severity"])
-        .size()
-        .unstack(fill_value=0)
-        .sort_index()
-    )
-    fig, ax = plt.subplots(figsize=PUBLICATION_STYLE["figsize"])
-    bottom = np.zeros(len(genus_sev))
-    for severity in ["none", "low", "medium", "high"]:
-        counts = genus_sev.get(severity, pd.Series(0, index=genus_sev.index))
-        ax.bar(genus_sev.index, counts, bottom=bottom, label=severity)
-        bottom += counts.values
-    ax.set_title("Outlier Severity by Genus")
-    ax.set_xlabel("Genus")
-    ax.set_ylabel("Count")
-    ax.tick_params(axis="x", rotation=45)
-    ax.legend(title="Severity")
-    plt.tight_layout()
-    save_figure(fig, FIGURES_DIR / "outlier_by_genus.png")
-    plt.close(fig)
 
     log.end_step(status="success", records=len(flagged_df))
 
@@ -1509,12 +951,6 @@ json_files = list(METADATA_DIR.glob("*.json"))
 for f in sorted(json_files):
     print(f"  {f.name}")
 
-print("\n--- PLOTS CREATED ---")
-plot_files = list(FIGURES_DIR.glob("*.png"))
-for f in sorted(plot_files):
-    print(f"  {f.name}")
-
-print(f"\nTotal plots: {len(plot_files)}")
 
 print("\n" + "=" * 60)
 print("IMPORTANT NOTE")
@@ -1533,9 +969,6 @@ print("\n3. Commit and push:")
 print("   - git add outputs/phase_2/metadata/*.json")
 print("   - git commit -m 'Add outlier thresholds config'")
 print("   - git push")
-print("\n4. (Optional) Commit plots for documentation:")
-print(f"   - Source: {FIGURES_DIR}")
-print("   - Destination: outputs/phase_2/figures/exp_04_outlier_thresholds/")
 
 print("\n" + "=" * 60)
 print("NOTEBOOK COMPLETE")
