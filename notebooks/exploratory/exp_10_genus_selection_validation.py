@@ -72,7 +72,7 @@ print("Google Drive mounted")
 
 # %% colab={"base_uri": "https://localhost:8080/"} id="zEWDUVpFsIly" outputId="79e950ff-e651-447e-83e6-f83f86246b66"
 # Package imports
-from urban_tree_transfer.config import MIN_SAMPLES_PER_GENUS, RANDOM_SEED
+from urban_tree_transfer.config import MIN_SAMPLES_PER_GENUS, RANDOM_SEED, load_experiment_config
 from urban_tree_transfer.experiments import ablation, data_loading
 from urban_tree_transfer.utils import ExecutionLog
 
@@ -108,6 +108,8 @@ LOGS_DIR = OUTPUT_DIR / "logs"
 
 for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
+
+experiment_config = load_experiment_config()
 
 # Analysis parameters
 MIN_SAMPLES = MIN_SAMPLES_PER_GENUS  # 500
@@ -437,6 +439,77 @@ if genus_groups:
 else:
     print("\nNo genus groups identified - all genera sufficiently separable")
 
+
+# %% [markdown]
+# ## Residual Group Analysis
+#
+# Inspect the grouped genera directly in the JM matrix to confirm which pairs are
+# driving the merges and whether the resulting groups remain interpretable.
+
+# %%
+print("\nResidual Group Analysis")
+print("=" * 70)
+
+if not genus_groups:
+    print("No multi-genus groups to inspect.")
+else:
+    for group_name, genera_list in genus_groups.items():
+        print(f"\n{group_name}: {', '.join(genera_list)}")
+        group_matrix = jm_matrix.loc[genera_list, genera_list]
+        pairwise_rows = []
+        for i, genus_a in enumerate(genera_list):
+            for genus_b in genera_list[i + 1 :]:
+                pairwise_rows.append(
+                    {
+                        "pair": f"{genus_a} vs {genus_b}",
+                        "jm_distance": float(group_matrix.loc[genus_a, genus_b]),
+                    }
+                )
+
+        if pairwise_rows:
+            pairwise_df = pd.DataFrame(pairwise_rows).sort_values("jm_distance")
+            print(pairwise_df.to_string(index=False))
+        else:
+            print("Single-genus group only.")
+
+
+# %% [markdown]
+# ## Conifer / Deciduous Consistency Check
+#
+# This is diagnostic only. It checks whether any grouped class mixes the broad
+# ecological categories used later in transfer hypotheses.
+
+# %%
+conifer_set = set(experiment_config["genus_groups"]["conifer"])
+deciduous_set = set(experiment_config["genus_groups"]["deciduous"])
+
+print("\nConifer / Deciduous Consistency")
+print("=" * 70)
+
+if not genus_groups:
+    print("No multi-genus groups to inspect.")
+else:
+    for group_name, genera_list in genus_groups.items():
+        member_types = []
+        for genus in genera_list:
+            if genus in conifer_set:
+                member_types.append("conifer")
+            elif genus in deciduous_set:
+                member_types.append("deciduous")
+            else:
+                member_types.append("unknown")
+
+        unique_types = sorted(set(member_types))
+        status = "mixed" if len(unique_types) > 1 else unique_types[0]
+        print(f"{group_name}: {', '.join(genera_list)} -> {status}")
+
+
+# %% [markdown]
+# ## Interpretation
+#
+# Low within-group JM distances indicate that the merged genera are genuinely hard
+# to separate spectrally. If a group is marked as mixed here, that is a warning
+# for later conifer/deciduous analysis rather than a reason to change grouping.
 
 # %% [markdown] id="QrqIAcRasIl6"
 # # ============================================================
