@@ -758,14 +758,11 @@ if RUN_NOTEBOOK:
             distribution[city] = {genus: int(count) for genus, count in counts.items()}
         return distribution
 
-    setup_candidates = [
-        DRIVE_DIR / "outputs" / "phase_3_experiments" / "metadata" / "setup_decisions.json",
-        DRIVE_DIR / "data" / "phase_3_experiments" / "metadata" / "setup_decisions.json",
-    ]
+    setup_path = (
+        DRIVE_DIR / "data" / "phase_3_experiments" / "metadata" / "setup_decisions.json"
+    )
     is_conifer_map = {}
-    for setup_path in setup_candidates:
-        if not setup_path.exists():
-            continue
+    if setup_path.exists():
         setup_data = json.loads(setup_path.read_text(encoding="utf-8"))
         final_mapping = (
             setup_data.get("genus_selection", {})
@@ -780,7 +777,6 @@ if RUN_NOTEBOOK:
                 is_conifer_map[final_genus] = bool(
                     any(genus in coniferous_genera for genus in source_genera)
                 )
-        break
 
     if not is_conifer_map:
         observed_genera = sorted(

@@ -832,24 +832,27 @@ except Exception as e:
 
 
 # %%
-report_path = REPORT_DIR / "transfer_metrics.json"
-report_records = []
-for row in genus_summary.itertuples(index=False):
-    relative_drop = None
-    if row.berlin_f1 > 0:
-        relative_drop = row.transfer_gap / row.berlin_f1
-    report_records.append(
-        {
-            "genus": row.genus,
-            "berlin_f1": row.berlin_f1,
-            "leipzig_f1": row.leipzig_f1,
-            "is_conifer": bool(row.is_conifer),
-            "absolute_drop": row.transfer_gap,
-            "relative_drop": relative_drop,
-        }
-    )
-report_path.write_text(json.dumps(report_records, indent=2), encoding="utf-8")
-print(f"Saved report JSON: {report_path}")
+try:
+    report_path = REPORT_DIR / "transfer_metrics.json"
+    report_records = []
+    for row in genus_summary.itertuples(index=False):
+        relative_drop = None
+        if row.berlin_f1 > 0:
+            relative_drop = row.transfer_gap / row.berlin_f1
+        report_records.append(
+            {
+                "genus": row.genus,
+                "berlin_f1": row.berlin_f1,
+                "leipzig_f1": row.leipzig_f1,
+                "is_conifer": bool(row.is_conifer),
+                "absolute_drop": row.transfer_gap,
+                "relative_drop": relative_drop,
+            }
+        )
+    report_path.write_text(json.dumps(report_records, indent=2), encoding="utf-8")
+    print(f"Saved report JSON: {report_path}")
+except Exception as e:
+    print(f"WARNING: Failed to export report JSONs: {e}")
 
 
 # %%

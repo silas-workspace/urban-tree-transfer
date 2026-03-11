@@ -1016,21 +1016,27 @@ def build_curve_report(
         )
     return curve_records
 
-curve_report = build_curve_report(ml_results, "ml") + build_curve_report(nn_results, "nn")
-curve_report_path = REPORT_DIR / "finetuning_curves.json"
-curve_report_path.write_text(json.dumps(curve_report, indent=2), encoding="utf-8")
-print(f"Saved report JSON: {curve_report_path}")
+try:
+    curve_report = build_curve_report(ml_results, "ml") + build_curve_report(nn_results, "nn")
+    curve_report_path = REPORT_DIR / "finetuning_curves.json"
+    curve_report_path.write_text(json.dumps(curve_report, indent=2), encoding="utf-8")
+    print(f"Saved report JSON: {curve_report_path}")
 
-per_genus_report_path = REPORT_DIR / "finetuning_per_genus.json"
-per_genus_report = per_genus_df[["fraction", "genus", "f1_score", "support"]].to_dict(
-    orient="records"
-)
-per_genus_report_path.write_text(json.dumps(per_genus_report, indent=2), encoding="utf-8")
-print(f"Saved report JSON: {per_genus_report_path}")
+    per_genus_report_path = REPORT_DIR / "finetuning_per_genus.json"
+    per_genus_report = per_genus_df[["fraction", "genus", "f1_score", "support"]].to_dict(
+        orient="records"
+    )
+    per_genus_report_path.write_text(json.dumps(per_genus_report, indent=2), encoding="utf-8")
+    print(f"Saved report JSON: {per_genus_report_path}")
 
-report_hypothesis_path = REPORT_DIR / "hypothesis_tests.json"
-report_hypothesis_path.write_text(hypothesis_path.read_text(encoding="utf-8"), encoding="utf-8")
-print(f"Saved report JSON: {report_hypothesis_path}")
+    report_hypothesis_path = REPORT_DIR / "hypothesis_tests.json"
+    report_hypothesis_path.write_text(
+        hypothesis_path.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    print(f"Saved report JSON: {report_hypothesis_path}")
+except Exception as e:
+    print(f"WARNING: Failed to export report JSONs: {e}")
 
 
 # %%
