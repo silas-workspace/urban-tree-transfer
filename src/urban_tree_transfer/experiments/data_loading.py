@@ -177,24 +177,21 @@ def load_berlin_splits(
 
     Args:
         data_dir: Directory containing parquet files.
-        variant: Deprecated parameter, kept for backward compatibility. Always loads baseline files.
+        variant: "baseline" (no filtering) or "filtered" (proximity-filtered).
 
     Returns:
         (train_df, val_df, test_df).
+
+    Raises:
+        ValueError: If variant is not "baseline" or "filtered".
     """
-    # ✅ FIXED: No more _filtered suffix, always load baseline files
-    if variant != "baseline":
-        import warnings
+    if variant not in _ALLOWED_VARIANTS:
+        raise ValueError(f"variant must be one of {sorted(_ALLOWED_VARIANTS)}")
 
-        warnings.warn(
-            f"variant='{variant}' is deprecated. Always loading baseline files.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-    train_path = data_dir / "berlin_train.parquet"
-    val_path = data_dir / "berlin_val.parquet"
-    test_path = data_dir / "berlin_test.parquet"
+    suffix = "" if variant == "baseline" else "_filtered"
+    train_path = data_dir / f"berlin_train{suffix}.parquet"
+    val_path = data_dir / f"berlin_val{suffix}.parquet"
+    test_path = data_dir / f"berlin_test{suffix}.parquet"
 
     train_df = fix_missing_genus_german(load_parquet_dataset(train_path))
     val_df = fix_missing_genus_german(load_parquet_dataset(val_path))
@@ -211,23 +208,20 @@ def load_leipzig_splits(
 
     Args:
         data_dir: Directory containing parquet files.
-        variant: Deprecated parameter, kept for backward compatibility. Always loads baseline files.
+        variant: "baseline" (no filtering) or "filtered" (proximity-filtered).
 
     Returns:
         (finetune_df, test_df).
+
+    Raises:
+        ValueError: If variant is not "baseline" or "filtered".
     """
-    # ✅ FIXED: No more _filtered suffix, always load baseline files
-    if variant != "baseline":
-        import warnings
+    if variant not in _ALLOWED_VARIANTS:
+        raise ValueError(f"variant must be one of {sorted(_ALLOWED_VARIANTS)}")
 
-        warnings.warn(
-            f"variant='{variant}' is deprecated. Always loading baseline files.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-    finetune_path = data_dir / "leipzig_finetune.parquet"
-    test_path = data_dir / "leipzig_test.parquet"
+    suffix = "" if variant == "baseline" else "_filtered"
+    finetune_path = data_dir / f"leipzig_finetune{suffix}.parquet"
+    test_path = data_dir / f"leipzig_test{suffix}.parquet"
 
     finetune_df = fix_missing_genus_german(load_parquet_dataset(finetune_path))
     test_df = fix_missing_genus_german(load_parquet_dataset(test_path))
@@ -246,24 +240,21 @@ def load_berlin_splits_cnn(
 
     Args:
         data_dir: Directory containing parquet files.
-        variant: Deprecated parameter, kept for backward compatibility. Always loads CNN files.
+        variant: "baseline" (no filtering) or "filtered" (proximity-filtered).
 
     Returns:
         (train_df, val_df, test_df).
+
+    Raises:
+        ValueError: If variant is not "baseline" or "filtered".
     """
-    # ✅ FIXED: Always load _cnn suffix (no _filtered_cnn anymore)
-    if variant != "baseline":
-        import warnings
+    if variant not in _ALLOWED_VARIANTS:
+        raise ValueError(f"variant must be one of {sorted(_ALLOWED_VARIANTS)}")
 
-        warnings.warn(
-            f"variant='{variant}' is deprecated. Always loading _cnn files.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-    train_path = data_dir / "berlin_train_cnn.parquet"
-    val_path = data_dir / "berlin_val_cnn.parquet"
-    test_path = data_dir / "berlin_test_cnn.parquet"
+    suffix = "" if variant == "baseline" else "_filtered"
+    train_path = data_dir / f"berlin_train{suffix}_cnn.parquet"
+    val_path = data_dir / f"berlin_val{suffix}_cnn.parquet"
+    test_path = data_dir / f"berlin_test{suffix}_cnn.parquet"
 
     train_df = fix_missing_genus_german(load_parquet_dataset(train_path))
     val_df = fix_missing_genus_german(load_parquet_dataset(val_path))
@@ -283,23 +274,20 @@ def load_leipzig_splits_cnn(
 
     Args:
         data_dir: Directory containing parquet files.
-        variant: Deprecated parameter, kept for backward compatibility. Always loads CNN files.
+        variant: "baseline" (no filtering) or "filtered" (proximity-filtered).
 
     Returns:
         (finetune_df, test_df).
+
+    Raises:
+        ValueError: If variant is not "baseline" or "filtered".
     """
-    # ✅ FIXED: Always load _cnn suffix (no _filtered_cnn anymore)
-    if variant != "baseline":
-        import warnings
+    if variant not in _ALLOWED_VARIANTS:
+        raise ValueError(f"variant must be one of {sorted(_ALLOWED_VARIANTS)}")
 
-        warnings.warn(
-            f"variant='{variant}' is deprecated. Always loading _cnn files.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-    finetune_path = data_dir / "leipzig_finetune_cnn.parquet"
-    test_path = data_dir / "leipzig_test_cnn.parquet"
+    suffix = "" if variant == "baseline" else "_filtered"
+    finetune_path = data_dir / f"leipzig_finetune{suffix}_cnn.parquet"
+    test_path = data_dir / f"leipzig_test{suffix}_cnn.parquet"
 
     finetune_df = fix_missing_genus_german(load_parquet_dataset(finetune_path))
     test_df = fix_missing_genus_german(load_parquet_dataset(test_path))
