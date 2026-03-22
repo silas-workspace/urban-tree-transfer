@@ -37,7 +37,7 @@
 #
 # **Created:** 2025-01-15
 #
-# **Updated:** 2026-03-11
+# **Updated:** 2026-03-21
 
 # %%
 # ============================================================================
@@ -84,7 +84,12 @@ print("OK: Google Drive mounted")
 # ============================================================================
 # 3. IMPORTS
 # ============================================================================
-from urban_tree_transfer.config import MIN_SAMPLES_PER_GENUS, RANDOM_SEED, load_experiment_config
+from urban_tree_transfer.config import (
+    MIN_SAMPLES_PER_GENUS,
+    RANDOM_SEED,
+    load_experiment_config,
+    load_feature_config,
+)
 from urban_tree_transfer.experiments import ablation, data_loading
 from urban_tree_transfer.utils import ExecutionLog
 
@@ -122,6 +127,7 @@ for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 experiment_config = load_experiment_config()
+feature_config = load_feature_config()
 
 # Analysis parameters
 MIN_SAMPLES = MIN_SAMPLES_PER_GENUS  # 500
@@ -492,8 +498,9 @@ else:
 # ecological categories used later in transfer hypotheses.
 
 # %%
-conifer_set = set(experiment_config["genus_groups"]["conifer"])
-deciduous_set = set(experiment_config["genus_groups"]["deciduous"])
+genus_classification = feature_config["genus_classification"]
+conifer_set = set(genus_classification["coniferous"])
+deciduous_set = set(genus_classification["deciduous"])
 
 print("\nConifer / Deciduous Consistency")
 print("=" * 70)
@@ -817,4 +824,3 @@ print("   1. Review genus groups for biological plausibility")
 print("   2. Run 03a_setup_fixation to apply genus mapping")
 print("   3. Run exp_11_algorithm_comparison.ipynb")
 print("=" * 80)
-

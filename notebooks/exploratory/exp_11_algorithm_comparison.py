@@ -225,64 +225,77 @@ except Exception as e:
 
 # %%
 # ============================================================================
-# 6. APPLY GENUS SELECTION
+# 6. APPLY GENUS SELECTION (OPTIONAL)
 # ============================================================================
 
 log.start_step("Apply Genus Selection")
 
-genus_config_path = METADATA_DIR / "genus_selection_final.json"
+# Genus selection is stored in setup_decisions.json (expanded by exp_10)
+# If not present, skip genus filtering (backwards compatibility)
+has_genus_selection = "genus_selection" in setup
 
-if not genus_config_path.exists():
-    raise FileNotFoundError(
-        f"genus_selection_final.json not found at {genus_config_path}\n"
-        "Run exp_10_genus_selection_validation.ipynb first to determine final genus list!"
-    )
+if has_genus_selection:
+    genus_config = setup["genus_selection"]
+    print("Loaded genus selection from setup_decisions.json")
+else:
+    genus_config = None
+    print("No genus selection found in setup_decisions.json (skipping genus filtering)")
+    # Create empty config to avoid errors downstream
+    genus_config = {
+        "decision": {"final_genera_list": []},
+        "grouping_analysis": {"genus_to_final_mapping": {}, "genus_groups": {}},
+        "validation_results": {"excluded_genera": []},
+    }
 
-genus_config = json.loads(genus_config_path.read_text())
+# Extract genus mapping (only if genus selection exists)
+if has_genus_selection:
+    FINAL_GENERA = genus_config["decision"]["final_genera_list"]
+    genus_to_final = genus_config["grouping_analysis"]["genus_to_final_mapping"]
+    genus_groups = genus_config["grouping_analysis"]["genus_groups"]
 
-# Extract genus mapping
-FINAL_GENERA = genus_config["decision"]["final_genera_list"]
-genus_to_final = genus_config["grouping_analysis"]["genus_to_final_mapping"]
-genus_groups = genus_config["grouping_analysis"]["genus_groups"]
+    print(f"\nLoaded genus selection:")
+    print(f"  Final classes: {len(FINAL_GENERA)}")
+    print(f"  Excluded genera: {len(genus_config['validation_results']['excluded_genera'])}")
+    print(f"  Genus groups: {len(genus_groups)}")
 
-print(f"\nLoaded genus selection:")
-print(f"  Final classes: {len(FINAL_GENERA)}")
-print(f"  Excluded genera: {len(genus_config['validation_results']['excluded_genera'])}")
-print(f"  Genus groups: {len(genus_groups)}")
+    if genus_groups:
+        print(f"  Groups:")
+        for group_name, genera_list in genus_groups.items():
+            print(f"    {group_name}: {', '.join(genera_list)}")
 
-if genus_groups:
-    print(f"  Groups:")
-    for group_name, genera_list in genus_groups.items():
-        print(f"    {group_name}: {', '.join(genera_list)}")
+    # Apply genus filtering to all splits
+    print(f"\nMapping genera to final classes...")
 
-# Apply genus filtering to all splits
-print(f"\nMapping genera to final classes...")
+    for split_name, split_df in [("train", train_df), ("val", val_df), ("test", test_df)]:
+        original_count = len(split_df)
+        
+        # Map original genus to final class (handles grouped genera)
+        split_df["final_class"] = split_df["genus_latin"].map(genus_to_final)
+        
+        # Filter to viable genera (removes excluded genera)
+        split_df = split_df[split_df["final_class"].notna()].copy()
+        
+        # Replace genus_latin with final_class for training
+        split_df["genus_latin"] = split_df["final_class"]
+        split_df.drop(columns=["final_class"], inplace=True)
+        
+        # Update global variables
+        if split_name == "train":
+            train_df = split_df
+        elif split_name == "val":
+            val_df = split_df
+        else:
+            test_df = split_df
+        
+        print(f"  {split_name}: {original_count:,} → {len(split_df):,} samples")
 
-for split_name, split_df in [("train", train_df), ("val", val_df), ("test", test_df)]:
-    original_count = len(split_df)
-    
-    # Map original genus to final class (handles grouped genera)
-    split_df['final_class'] = split_df['genus_latin'].map(genus_to_final)
-    
-    # Filter to viable genera (removes excluded genera)
-    split_df = split_df[split_df['final_class'].notna()].copy()
-    
-    # Replace genus_latin with final_class for training
-    split_df['genus_latin'] = split_df['final_class']
-    split_df.drop(columns=['final_class'], inplace=True)
-    
-    # Update global variables
-    if split_name == "train":
-        train_df = split_df
-    elif split_name == "val":
-        val_df = split_df
-    else:
-        test_df = split_df
-    
-    print(f"  {split_name}: {original_count:,} → {len(split_df):,} samples")
-
-print(f"\n✅ Genus filtering applied: {len(FINAL_GENERA)} final classes")
-print(f"   Total samples: {len(train_df) + len(val_df) + len(test_df):,}")
+    print(f"\n✅ Genus filtering applied: {len(FINAL_GENERA)} final classes")
+    print(f"   Total samples: {len(train_df) + len(val_df) + len(test_df):,}")
+else:
+    # No genus selection - use all genera as-is
+    FINAL_GENERA = sorted(train_df["genus_latin"].unique())
+    print(f"\nNo genus selection applied - using all {len(FINAL_GENERA)} genera")
+    print(f"   Total samples: {len(train_df) + len(val_df) + len(test_df):,}")
 
 # Update feature extraction (re-extract after genus filtering)
 x_train = train_df[selected_features]
