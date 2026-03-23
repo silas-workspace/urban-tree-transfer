@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -38,6 +39,47 @@ _OUTLIER_COLUMNS = {
 _CHM_FEATURES = ["CHM_1m", "CHM_1m_zscore", "CHM_1m_percentile"]
 
 _ALLOWED_VARIANTS = {"baseline", "filtered"}
+_TRANSIENT_PARQUET_ERRNOS = {5, 107}
+
+
+def _is_transient_parquet_error(error: OSError) -> bool:
+    """Return True when parquet read failed due to transient filesystem issues."""
+    error_message = str(error).lower()
+    return (
+        error.errno in _TRANSIENT_PARQUET_ERRNOS
+        or "transport endpoint is not connected" in error_message
+        or "input/output error" in error_message
+    )
+
+
+def _read_parquet_with_retry(
+    file_path: Path,
+    max_attempts: int = 3,
+    retry_delay_seconds: float = 2.0,
+) -> pd.DataFrame:
+    """Read parquet with retries for transient Google Drive mount failures."""
+    last_error: OSError | None = None
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return pd.read_parquet(file_path)
+        except OSError as error:
+            if not _is_transient_parquet_error(error) or attempt == max_attempts:
+                raise OSError(
+                    f"Failed to read parquet after {attempt} attempt(s): {file_path}"
+                ) from error
+
+            last_error = error
+            print(
+                "Transient parquet read error "
+                f"({attempt}/{max_attempts}) for {file_path}: {error}. Retrying..."
+            )
+            time.sleep(retry_delay_seconds)
+
+    if last_error is not None:  # Defensive: loop should have returned or raised
+        raise OSError(f"Failed to read parquet: {file_path}") from last_error
+
+    raise RuntimeError(f"Unreachable parquet read state for {file_path}")
 
 
 def load_parquet_dataset(file_path: Path) -> pd.DataFrame:
@@ -57,7 +99,7 @@ def load_parquet_dataset(file_path: Path) -> pd.DataFrame:
     if not file_path.exists():
         raise FileNotFoundError(f"Parquet file not found: {file_path}")
 
-    df = pd.read_parquet(file_path)
+    df = _read_parquet_with_retry(file_path)
 
     required_columns = _ID_COLUMNS | {_TARGET_COLUMN} | _METADATA_COLUMNS | _OUTLIER_COLUMNS
     missing = sorted(col for col in required_columns if col not in df.columns)

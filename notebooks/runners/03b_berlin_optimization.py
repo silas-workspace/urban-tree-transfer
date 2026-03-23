@@ -176,6 +176,12 @@ try:
     
     ml_name = algorithm_comparison["ml_champion"]["algorithm"]
     nn_name = algorithm_comparison.get("nn_champion", {}).get("algorithm")
+
+    if nn_name == "tabnet" and models.TabNetClassifier is None:
+        raise ImportError(
+            "NN champion is tabnet, but pytorch-tabnet is not installed in this runtime. "
+            "Install pytorch-tabnet before running 03b or re-run exp_11 to select a supported NN."
+        )
     
     print("\n" + "=" * 70)
     print("Champions Identified")
@@ -234,6 +240,26 @@ try:
     if nn_name:
         print(f"\n[NN Champion Datasets - Full Temporal Features]")
         train_df_nn, val_df_nn, test_df_nn = data_loading.load_berlin_splits_cnn(INPUT_DIR)
+
+        split_pairs = [
+            ("train", train_df_ml, train_df_nn),
+            ("val", val_df_ml, val_df_nn),
+            ("test", test_df_ml, test_df_nn),
+        ]
+        for split_name, ml_split, nn_split in split_pairs:
+            if len(ml_split) != len(nn_split):
+                raise ValueError(
+                    f"{split_name} split row count mismatch between ML and NN datasets: "
+                    f"{len(ml_split)} vs {len(nn_split)}"
+                )
+            if not ml_split["tree_id"].reset_index(drop=True).equals(
+                nn_split["tree_id"].reset_index(drop=True)
+            ):
+                raise ValueError(
+                    f"{split_name} split tree_id order mismatch between ML and NN datasets. "
+                    "Cannot safely reuse ML labels/subset indices for NN training."
+                )
+
         feature_cols_nn = data_loading.get_feature_columns(train_df_nn)
         
         print(f"  Train: {len(train_df_nn):,} samples, {len(feature_cols_nn)} features")
@@ -608,12 +634,27 @@ try:
             # IMPORTANT: Detect temporal features from FULL feature set (CNN datasets)
             # NOT from reduced feature set - CNN needs complete temporal sequences
             temporal_features = [f for f in feature_cols_nn if f.split("_")[-1].isdigit()]
+            if not temporal_features:
+                raise ValueError(
+                    "No temporal features detected for CNN1D in full feature set. "
+                    "Expected columns with month suffixes like NDVI_06."
+                )
+
             temporal_bases = set("_".join(f.split("_")[:-1]) for f in temporal_features)
             months = sorted(set(int(f.split("_")[-1]) for f in temporal_features))
+            if not months:
+                raise ValueError("No month indices detected for CNN1D temporal features.")
 
             n_temporal_bases = len(temporal_bases)
             n_months = len(months)
             n_static = len(feature_cols_nn) - len(temporal_features)
+            if n_temporal_bases * n_months != len(temporal_features):
+                raise ValueError(
+                    "Temporal feature grid is incomplete for CNN1D. "
+                    f"Detected {len(temporal_features)} features, expected "
+                    f"{n_temporal_bases * n_months} from {n_temporal_bases} bases "
+                    f"and {n_months} months."
+                )
 
             structural_params = {
                 "n_temporal_bases": n_temporal_bases,
@@ -728,6 +769,21 @@ try:
                 )
             nn_meta = json.loads(metadata_path.read_text())
             nn_best_params = nn_meta.get("best_params", {})
+
+            # Filter to CNN constructor params only (exclude fit-time params).
+            if nn_name == "cnn_1d":
+                cnn_init_keys = {
+                    "n_temporal_bases",
+                    "n_months",
+                    "n_static_features",
+                    "n_classes",
+                    "conv_filters",
+                    "kernel_size",
+                    "dropout",
+                    "dense_units",
+                }
+                nn_best_params = {k: v for k, v in nn_best_params.items() if k in cnn_init_keys}
+
             model_class = models.CNN1D if nn_name == "cnn_1d" else None
             nn_model = training.load_model(
                 nn_model_path,
@@ -1162,4 +1218,3 @@ print(f"  1. Review hyperparameter tuning results")
 print(f"  2. Inspect error analysis figures")
 print(f"  3. Run 03c_transfer_evaluation.ipynb (Leipzig zero-shot)")
 print("=" * 70)
-

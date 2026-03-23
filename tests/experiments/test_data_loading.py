@@ -51,6 +51,7 @@ def _make_base_df() -> pd.DataFrame:
         "genus_german": [pd.NA, pd.NA],
         "species_german": ["Vogelkirsche", "Japanischer Schnurbaum"],
         "tree_type": ["strassenbaeume", "anlagenbaeume"],
+        "is_conifer": [False, False],
         "position_corrected": [False, True],
         "correction_distance": [0.0, 2.5],
         "outlier_zscore": [False, False],
@@ -142,4 +143,40 @@ def test_load_parquet_dataset_missing_required(tmp_path: Path) -> None:
     df.to_parquet(path, index=False)
 
     with pytest.raises(ValueError, match="Missing required columns"):
+        load_parquet_dataset(path)
+
+
+def test_load_parquet_dataset_retries_transient_errors(tmp_path: Path, monkeypatch) -> None:
+    path = tmp_path / "sample.parquet"
+    _make_base_df().to_parquet(path, index=False)
+
+    call_count = {"n": 0}
+    expected_df = _make_base_df()
+
+    def fake_read_parquet(_file_path: Path) -> pd.DataFrame:
+        call_count["n"] += 1
+        if call_count["n"] == 1:
+            raise OSError(107, "Transport endpoint is not connected")
+        return expected_df
+
+    monkeypatch.setattr("urban_tree_transfer.experiments.data_loading.pd.read_parquet", fake_read_parquet)
+    monkeypatch.setattr("urban_tree_transfer.experiments.data_loading.time.sleep", lambda _: None)
+
+    result = load_parquet_dataset(path)
+
+    assert len(result) == len(expected_df)
+    assert call_count["n"] == 2
+
+
+def test_load_parquet_dataset_raises_after_retry_limit(tmp_path: Path, monkeypatch) -> None:
+    path = tmp_path / "sample.parquet"
+    _make_base_df().to_parquet(path, index=False)
+
+    def always_fail(_file_path: Path) -> pd.DataFrame:
+        raise OSError(107, "Transport endpoint is not connected")
+
+    monkeypatch.setattr("urban_tree_transfer.experiments.data_loading.pd.read_parquet", always_fail)
+    monkeypatch.setattr("urban_tree_transfer.experiments.data_loading.time.sleep", lambda _: None)
+
+    with pytest.raises(OSError, match="Failed to read parquet after 3 attempt"):
         load_parquet_dataset(path)
