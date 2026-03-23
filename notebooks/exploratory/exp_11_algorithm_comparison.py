@@ -199,24 +199,40 @@ try:
     print(f"  Outlier: {outlier_strategy}")
     print(f"  Features: {len(selected_features)} selected")
 
-    # Load reduced-feature datasets (ML) and full-feature CNN datasets (NN)
-    train_df_ml, val_df_ml, test_df_ml = data_loading.load_berlin_splits(INPUT_DIR)
-    try:
-        train_df_nn, val_df_nn, test_df_nn = data_loading.load_berlin_splits_cnn(INPUT_DIR)
-        cnn_dataset_source = "*_cnn.parquet"
-    except FileNotFoundError:
-        # Fallback for runs that still use phase_2_splits directly.
-        # In that case, baseline parquet files already contain full feature sets.
-        train_df_nn, val_df_nn, test_df_nn = (
-            train_df_ml.copy(),
-            val_df_ml.copy(),
-            test_df_ml.copy(),
+    # Prepare Berlin datasets from setup decisions (same logic as 03a setup fixation)
+    # ML: reduced selected features | NN: full temporal features
+    def _prepare_split(
+        split: str,
+        skip_feature_selection: bool,
+    ) -> tuple[pd.DataFrame, dict]:
+        df, meta = ablation.prepare_ablation_dataset(
+            base_path=INPUT_DIR,
+            city="berlin",
+            split=split,
+            setup_decisions=setup,
+            return_metadata=True,
+            optimize_memory=True,
+            skip_feature_selection=skip_feature_selection,
         )
-        cnn_dataset_source = "baseline parquet fallback"
+        df = data_loading.fix_missing_genus_german(df)
+        return df, meta
+
+    train_df_ml, meta_train_ml = _prepare_split("train", skip_feature_selection=False)
+    val_df_ml, meta_val_ml = _prepare_split("val", skip_feature_selection=False)
+    test_df_ml, meta_test_ml = _prepare_split("test", skip_feature_selection=False)
+
+    train_df_nn, meta_train_nn = _prepare_split("train", skip_feature_selection=True)
+    val_df_nn, meta_val_nn = _prepare_split("val", skip_feature_selection=True)
+    test_df_nn, meta_test_nn = _prepare_split("test", skip_feature_selection=True)
 
     print(f"\nLoaded ML dataset:  {len(train_df_ml):,} train samples")
     print(f"Loaded CNN dataset: {len(train_df_nn):,} train samples")
-    print(f"CNN dataset source: {cnn_dataset_source}")
+    print(
+        "Setup applied (ML/NN): "
+        f"proximity={meta_train_ml['proximity_strategy_used']}/{meta_train_nn['proximity_strategy_used']}, "
+        f"outliers_removed={meta_train_ml['outliers_removed']}/{meta_train_nn['outliers_removed']}, "
+        f"chm={chm_strategy}"
+    )
 
     # Memory optimization
     def _optimize_float64(
@@ -240,37 +256,7 @@ try:
         train_df_nn, val_df_nn, test_df_nn, "CNN"
     )
 
-    # Apply outlier removal strategy consistently to ML and CNN datasets
-    def _apply_outlier_strategy(
-        train_df_local: pd.DataFrame,
-        val_df_local: pd.DataFrame,
-        test_df_local: pd.DataFrame,
-        strategy: str,
-    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        if strategy == "high":
-            train_df_local = train_df_local[train_df_local["outlier_severity"] != "high"].copy()
-            val_df_local = val_df_local[val_df_local["outlier_severity"] != "high"].copy()
-            test_df_local = test_df_local[test_df_local["outlier_severity"] != "high"].copy()
-        elif strategy == "high_medium":
-            train_df_local = train_df_local[
-                ~train_df_local["outlier_severity"].isin(["high", "medium"])
-            ].copy()
-            val_df_local = val_df_local[
-                ~val_df_local["outlier_severity"].isin(["high", "medium"])
-            ].copy()
-            test_df_local = test_df_local[
-                ~test_df_local["outlier_severity"].isin(["high", "medium"])
-            ].copy()
-        return train_df_local, val_df_local, test_df_local
-
-    train_df_ml, val_df_ml, test_df_ml = _apply_outlier_strategy(
-        train_df_ml, val_df_ml, test_df_ml, outlier_strategy
-    )
-    train_df_nn, val_df_nn, test_df_nn = _apply_outlier_strategy(
-        train_df_nn, val_df_nn, test_df_nn, outlier_strategy
-    )
-
-    print(f"\nOutlier strategy applied: {outlier_strategy}")
+    print(f"\nOutlier strategy applied via setup: {outlier_strategy}")
     print(f"  ML train samples:  {len(train_df_ml):,}")
     print(f"  CNN train samples: {len(train_df_nn):,}")
 
