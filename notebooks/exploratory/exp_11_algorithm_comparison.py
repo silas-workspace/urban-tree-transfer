@@ -52,6 +52,7 @@
 # ============================================================================
 
 import subprocess
+import importlib
 from google.colab import userdata
 
 # Get GitHub token from Colab Secrets (for private repo access)
@@ -127,6 +128,15 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 print("OK: Package imports complete")
 
+# Ensure TabNet is visible to already-imported models module.
+if tabnet_install_error is None:
+    try:
+        models = importlib.reload(models)
+        print("OK: models module reloaded after pytorch-tabnet install")
+    except Exception as exc:
+        tabnet_install_error = str(exc)
+        print(f"WARN: models reload failed (TabNet may be skipped): {exc}")
+
 # %%
 # ============================================================================
 # 4. CONFIGURATION
@@ -159,8 +169,11 @@ nn_skip_reasons = {}
 if ALGO_PATH.exists() and not FULL_RERUN:
     existing_payload = json.loads(ALGO_PATH.read_text())
     for item in existing_payload.get("algorithms", []):
-        if "algorithm" in item:
-            existing_results_by_algorithm[item["algorithm"]] = item
+        algorithm_name = item.get("algorithm") or item.get("name")
+        if algorithm_name:
+            item.setdefault("algorithm", algorithm_name)
+            item.setdefault("name", algorithm_name)
+            existing_results_by_algorithm[algorithm_name] = item
     print(f"Resume mode: loaded {len(existing_results_by_algorithm)} existing algorithm results")
 else:
     print("Fresh mode: no existing results loaded")
@@ -446,7 +459,12 @@ results_by_algorithm = dict(existing_results_by_algorithm)
 
 
 def _upsert_result(result: dict) -> None:
-    results_by_algorithm[result["algorithm"]] = result
+    algorithm_name = result.get("algorithm") or result.get("name")
+    if not algorithm_name:
+        raise ValueError("Result must include 'algorithm' or 'name'.")
+    result.setdefault("algorithm", algorithm_name)
+    result.setdefault("name", algorithm_name)
+    results_by_algorithm[algorithm_name] = result
 
 print("\n" + "=" * 70)
 print("Testing Baseline Models")
