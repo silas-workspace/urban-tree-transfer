@@ -129,6 +129,13 @@ OUTPUT_DIR = DRIVE_DIR / "data" / "phase_3_experiments"
 
 METADATA_DIR = OUTPUT_DIR / "metadata"
 LOGS_DIR = OUTPUT_DIR / "logs"
+ALGO_PATH = METADATA_DIR / "algorithm_comparison.json"
+
+# Re-run controls
+FULL_RERUN = False
+RERUN_BASELINES = False
+RERUN_ML = False
+RERUN_NN = False
 
 for d in [METADATA_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
@@ -136,12 +143,29 @@ for d in [METADATA_DIR, LOGS_DIR]:
 # Load experiment configuration
 config = load_experiment_config()
 
+existing_results_by_algorithm = {}
+model_status = {}
+nn_skip_reasons = {}
+
+if ALGO_PATH.exists() and not FULL_RERUN:
+    existing_payload = json.loads(ALGO_PATH.read_text())
+    for item in existing_payload.get("algorithms", []):
+        if "algorithm" in item:
+            existing_results_by_algorithm[item["algorithm"]] = item
+    print(f"Resume mode: loaded {len(existing_results_by_algorithm)} existing algorithm results")
+else:
+    print("Fresh mode: no existing results loaded")
+
 print(f"Input (Phase 2 Splits): {INPUT_DIR}")
 print(f"Output (Phase 3):       {OUTPUT_DIR}")
 print(f"Metadata:               {METADATA_DIR}")
 print(f"Logs:                   {LOGS_DIR}")
 print(f"Random seed:            {RANDOM_SEED}")
 print(f"CV folds:               {config['global']['cv_folds']}")
+print(
+    "Rerun flags: "
+    f"full={FULL_RERUN}, baselines={RERUN_BASELINES}, ml={RERUN_ML}, nn={RERUN_NN}"
+)
 
 # %%
 # ============================================================================
@@ -175,48 +199,103 @@ try:
     print(f"  Outlier: {outlier_strategy}")
     print(f"  Features: {len(selected_features)} selected")
 
-    # ✅ FIXED: No variant parameter needed - always loads baseline files
-    # NOTE: proximity_strategy is stored in setup_decisions but all datasets
-    #       are now baseline (no _filtered suffix exists anymore)
-    train_df, val_df, test_df = data_loading.load_berlin_splits(INPUT_DIR)
+    # Load reduced-feature datasets (ML) and full-feature CNN datasets (NN)
+    train_df_ml, val_df_ml, test_df_ml = data_loading.load_berlin_splits(INPUT_DIR)
+    try:
+        train_df_nn, val_df_nn, test_df_nn = data_loading.load_berlin_splits_cnn(INPUT_DIR)
+        cnn_dataset_source = "*_cnn.parquet"
+    except FileNotFoundError:
+        # Fallback for runs that still use phase_2_splits directly.
+        # In that case, baseline parquet files already contain full feature sets.
+        train_df_nn, val_df_nn, test_df_nn = (
+            train_df_ml.copy(),
+            val_df_ml.copy(),
+            test_df_ml.copy(),
+        )
+        cnn_dataset_source = "baseline parquet fallback"
 
-    print(f"\nLoaded dataset: {len(train_df):,} samples")
+    print(f"\nLoaded ML dataset:  {len(train_df_ml):,} train samples")
+    print(f"Loaded CNN dataset: {len(train_df_nn):,} train samples")
+    print(f"CNN dataset source: {cnn_dataset_source}")
 
     # Memory optimization
-    float_cols = train_df.select_dtypes(include=["float64"]).columns
-    if len(float_cols) > 0:
-        train_df[float_cols] = train_df[float_cols].astype("float32")
-        val_df[float_cols] = val_df[float_cols].astype("float32")
-        test_df[float_cols] = test_df[float_cols].astype("float32")
-        print(f"Optimized: {len(float_cols)} float64→float32")
+    def _optimize_float64(
+        train_df_local: pd.DataFrame,
+        val_df_local: pd.DataFrame,
+        test_df_local: pd.DataFrame,
+        label: str,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        float_cols = train_df_local.select_dtypes(include=["float64"]).columns
+        if len(float_cols) > 0:
+            train_df_local[float_cols] = train_df_local[float_cols].astype("float32")
+            val_df_local[float_cols] = val_df_local[float_cols].astype("float32")
+            test_df_local[float_cols] = test_df_local[float_cols].astype("float32")
+            print(f"Optimized {label}: {len(float_cols)} float64→float32")
+        return train_df_local, val_df_local, test_df_local
 
-    # Apply outlier removal strategy
-    if outlier_strategy == "high":
-        train_df = train_df[train_df["outlier_severity"] != "high"].copy()
-        val_df = val_df[val_df["outlier_severity"] != "high"].copy()
-        test_df = test_df[test_df["outlier_severity"] != "high"].copy()
-        print(f"Outliers removed (high): {len(train_df):,} remaining")
-    elif outlier_strategy == "high_medium":
-        train_df = train_df[
-            ~train_df["outlier_severity"].isin(["high", "medium"])
-        ].copy()
-        val_df = val_df[~val_df["outlier_severity"].isin(["high", "medium"])].copy()
-        test_df = test_df[~test_df["outlier_severity"].isin(["high", "medium"])].copy()
-        print(f"Outliers removed (high+medium): {len(train_df):,} remaining")
-    else:
-        print("No outlier removal applied")
-
-    # Filter to selected features
-    feature_cols = data_loading.get_feature_columns(
-        train_df, expected_features=selected_features
+    train_df_ml, val_df_ml, test_df_ml = _optimize_float64(
+        train_df_ml, val_df_ml, test_df_ml, "ML"
+    )
+    train_df_nn, val_df_nn, test_df_nn = _optimize_float64(
+        train_df_nn, val_df_nn, test_df_nn, "CNN"
     )
 
-    print(f"\nFeature filtering: {len(feature_cols)} features")
-    print(f"  Train: {len(train_df):,} samples")
-    print(f"  Val:   {len(val_df):,} samples")
-    print(f"  Test:  {len(test_df):,} samples")
+    # Apply outlier removal strategy consistently to ML and CNN datasets
+    def _apply_outlier_strategy(
+        train_df_local: pd.DataFrame,
+        val_df_local: pd.DataFrame,
+        test_df_local: pd.DataFrame,
+        strategy: str,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        if strategy == "high":
+            train_df_local = train_df_local[train_df_local["outlier_severity"] != "high"].copy()
+            val_df_local = val_df_local[val_df_local["outlier_severity"] != "high"].copy()
+            test_df_local = test_df_local[test_df_local["outlier_severity"] != "high"].copy()
+        elif strategy == "high_medium":
+            train_df_local = train_df_local[
+                ~train_df_local["outlier_severity"].isin(["high", "medium"])
+            ].copy()
+            val_df_local = val_df_local[
+                ~val_df_local["outlier_severity"].isin(["high", "medium"])
+            ].copy()
+            test_df_local = test_df_local[
+                ~test_df_local["outlier_severity"].isin(["high", "medium"])
+            ].copy()
+        return train_df_local, val_df_local, test_df_local
 
-    log.end_step(status="success", records=len(train_df) + len(val_df) + len(test_df))
+    train_df_ml, val_df_ml, test_df_ml = _apply_outlier_strategy(
+        train_df_ml, val_df_ml, test_df_ml, outlier_strategy
+    )
+    train_df_nn, val_df_nn, test_df_nn = _apply_outlier_strategy(
+        train_df_nn, val_df_nn, test_df_nn, outlier_strategy
+    )
+
+    print(f"\nOutlier strategy applied: {outlier_strategy}")
+    print(f"  ML train samples:  {len(train_df_ml):,}")
+    print(f"  CNN train samples: {len(train_df_nn):,}")
+
+    # ML feature filtering (reduced selected feature set)
+    feature_cols_ml = data_loading.get_feature_columns(
+        train_df_ml, expected_features=selected_features
+    )
+    # NN feature filtering (full temporal features)
+    feature_cols_nn = data_loading.get_feature_columns(train_df_nn)
+
+    print(f"\nFeatures:")
+    print(f"  ML reduced: {len(feature_cols_ml)}")
+    print(f"  CNN full:   {len(feature_cols_nn)}")
+
+    log.end_step(
+        status="success",
+        records=(
+            len(train_df_ml)
+            + len(val_df_ml)
+            + len(test_df_ml)
+            + len(train_df_nn)
+            + len(val_df_nn)
+            + len(test_df_nn)
+        ),
+    )
 
 except Exception as e:
     log.end_step(status="error", errors=[str(e)])
@@ -266,64 +345,99 @@ if has_genus_selection:
     # Apply genus filtering to all splits
     print(f"\nMapping genera to final classes...")
 
-    for split_name, split_df in [("train", train_df), ("val", val_df), ("test", test_df)]:
-        original_count = len(split_df)
-        
-        # Map original genus to final class (handles grouped genera)
+    def _apply_genus_mapping(split_df: pd.DataFrame) -> pd.DataFrame:
+        split_df = split_df.copy()
         split_df["final_class"] = split_df["genus_latin"].map(genus_to_final)
-        
-        # Filter to viable genera (removes excluded genera)
         split_df = split_df[split_df["final_class"].notna()].copy()
-        
-        # Replace genus_latin with final_class for training
         split_df["genus_latin"] = split_df["final_class"]
         split_df.drop(columns=["final_class"], inplace=True)
-        
+        return split_df
+
+    for split_name, split_df in [
+        ("train_ml", train_df_ml),
+        ("val_ml", val_df_ml),
+        ("test_ml", test_df_ml),
+        ("train_nn", train_df_nn),
+        ("val_nn", val_df_nn),
+        ("test_nn", test_df_nn),
+    ]:
+        original_count = len(split_df)
+        split_df = _apply_genus_mapping(split_df)
+
         # Update global variables
-        if split_name == "train":
-            train_df = split_df
-        elif split_name == "val":
-            val_df = split_df
+        if split_name == "train_ml":
+            train_df_ml = split_df
+        elif split_name == "val_ml":
+            val_df_ml = split_df
+        elif split_name == "test_ml":
+            test_df_ml = split_df
+        elif split_name == "train_nn":
+            train_df_nn = split_df
+        elif split_name == "val_nn":
+            val_df_nn = split_df
         else:
-            test_df = split_df
-        
+            test_df_nn = split_df
+
         print(f"  {split_name}: {original_count:,} → {len(split_df):,} samples")
 
     print(f"\n✅ Genus filtering applied: {len(FINAL_GENERA)} final classes")
-    print(f"   Total samples: {len(train_df) + len(val_df) + len(test_df):,}")
+    print(
+        f"   Total ML samples: {len(train_df_ml) + len(val_df_ml) + len(test_df_ml):,}"
+    )
+    print(
+        f"   Total CNN samples: {len(train_df_nn) + len(val_df_nn) + len(test_df_nn):,}"
+    )
 else:
     # No genus selection - use all genera as-is
-    FINAL_GENERA = sorted(train_df["genus_latin"].unique())
+    FINAL_GENERA = sorted(train_df_ml["genus_latin"].unique())
     print(f"\nNo genus selection applied - using all {len(FINAL_GENERA)} genera")
-    print(f"   Total samples: {len(train_df) + len(val_df) + len(test_df):,}")
+    print(f"   Total ML samples: {len(train_df_ml) + len(val_df_ml) + len(test_df_ml):,}")
+    print(f"   Total CNN samples: {len(train_df_nn) + len(val_df_nn) + len(test_df_nn):,}")
 
-# Update feature extraction (re-extract after genus filtering)
-x_train = train_df[selected_features]
-x_val = val_df[selected_features]
+# Re-extract features after filtering (ML reduced + NN full)
+feature_cols_ml = data_loading.get_feature_columns(
+    train_df_ml, expected_features=selected_features
+)
+feature_cols_nn = data_loading.get_feature_columns(train_df_nn)
 
-y_train = train_df["genus_latin"]
-y_val = val_df["genus_latin"]
+x_train_ml = train_df_ml[feature_cols_ml]
+x_val_ml = val_df_ml[feature_cols_ml]
+
+x_train_nn = train_df_nn[feature_cols_nn]
+x_val_nn = val_df_nn[feature_cols_nn]
+
+y_train = train_df_ml["genus_latin"]
+y_val = val_df_ml["genus_latin"]
 
 y_train_enc, label_to_idx, idx_to_label = preprocessing.encode_genus_labels(y_train)
 y_val_enc = y_val.map(label_to_idx).to_numpy()
 
-# Re-scale features
-x_train_scaled, x_val_scaled, _, scaler = preprocessing.scale_features(
-    x_train, x_val=x_val
+# Scale ML and NN separately
+x_train_scaled_ml, x_val_scaled_ml, _, scaler_ml = preprocessing.scale_features(
+    x_train_ml, x_val=x_val_ml
+)
+x_train_scaled_nn, x_val_scaled_nn, _, scaler_nn = preprocessing.scale_features(
+    x_train_nn, x_val=x_val_nn
 )
 
-# Re-create CV (groups may have changed)
-cv = training.create_spatial_block_cv(
-    train_df, n_splits=config["global"]["cv_folds"]
+# Separate CV/groups for ML and NN (same strategy, split-specific groups)
+cv_ml = training.create_spatial_block_cv(
+    train_df_ml, n_splits=config["global"]["cv_folds"]
 )
-groups = train_df["block_id"].values
+groups_ml = train_df_ml["block_id"].values
+
+cv_nn = training.create_spatial_block_cv(
+    train_df_nn, n_splits=config["global"]["cv_folds"]
+)
+groups_nn = train_df_nn["block_id"].values
 
 print(f"\nData prepared with final genus list:")
-print(f"  Features: {x_train.shape[1]}")
+print(f"  ML features: {x_train_ml.shape[1]}")
+print(f"  NN features: {x_train_nn.shape[1]}")
 print(f"  Classes: {len(label_to_idx)} (final)")
 print(f"  CV folds: {config['global']['cv_folds']}")
 
-log.end_step(status="success", records=len(train_df))
+log.end_step(status="success", records=len(train_df_ml) + len(train_df_nn))
 
 
 # %%
@@ -333,50 +447,72 @@ log.end_step(status="success", records=len(train_df))
 
 log.start_step("Baseline Models")
 
-results = []
+results_by_algorithm = dict(existing_results_by_algorithm)
+
+
+def _upsert_result(result: dict) -> None:
+    results_by_algorithm[result["algorithm"]] = result
 
 print("\n" + "=" * 70)
 print("Testing Baseline Models")
 print("=" * 70)
 
 # 1. Majority Class Baseline
-print("\n1. Majority Class Baseline")
-majority = models.create_majority_classifier(y_train_enc)
-majority_preds = majority(x_val_scaled)
-majority_metrics = evaluation.compute_metrics(y_val_enc, majority_preds)
-print(f"   Val F1: {majority_metrics['f1_score']:.4f}")
+if (not FULL_RERUN) and (not RERUN_BASELINES) and ("majority" in results_by_algorithm):
+    print("\n1. Majority Class Baseline")
+    print("   ⏭️  Skipping (already computed)")
+    model_status["majority"] = "skipped_existing"
+else:
+    print("\n1. Majority Class Baseline")
+    majority = models.create_majority_classifier(y_train_enc)
+    majority_preds = majority(x_val_scaled_ml)
+    majority_metrics = evaluation.compute_metrics(y_val_enc, majority_preds)
+    print(f"   Val F1: {majority_metrics['f1_score']:.4f}")
 
-results.append({
-    "algorithm": "majority",
-    "type": "baseline",
-    "val_f1_mean": majority_metrics["f1_score"],
-    "val_f1_std": 0.0,
-    "train_f1_mean": majority_metrics["f1_score"],
-    "train_val_gap": 0.0,
-})
+    _upsert_result(
+        {
+            "algorithm": "majority",
+            "type": "baseline",
+            "val_f1_mean": majority_metrics["f1_score"],
+            "val_f1_std": 0.0,
+            "train_f1_mean": majority_metrics["f1_score"],
+            "train_val_gap": 0.0,
+        }
+    )
+    model_status["majority"] = "completed"
+
+    del majority, majority_preds, majority_metrics
+    gc.collect()
 
 # 2. Stratified Random Baseline
-print("\n2. Stratified Random Baseline")
-stratified = models.create_stratified_random_classifier(y_train_enc)
-strat_preds = stratified(x_val_scaled)
-strat_metrics = evaluation.compute_metrics(y_val_enc, strat_preds)
-print(f"   Val F1: {strat_metrics['f1_score']:.4f}")
+if (not FULL_RERUN) and (not RERUN_BASELINES) and ("stratified_random" in results_by_algorithm):
+    print("\n2. Stratified Random Baseline")
+    print("   ⏭️  Skipping (already computed)")
+    model_status["stratified_random"] = "skipped_existing"
+else:
+    print("\n2. Stratified Random Baseline")
+    stratified = models.create_stratified_random_classifier(y_train_enc)
+    strat_preds = stratified(x_val_scaled_ml)
+    strat_metrics = evaluation.compute_metrics(y_val_enc, strat_preds)
+    print(f"   Val F1: {strat_metrics['f1_score']:.4f}")
 
-results.append({
-    "algorithm": "stratified_random",
-    "type": "baseline",
-    "val_f1_mean": strat_metrics["f1_score"],
-    "val_f1_std": 0.0,
-    "train_f1_mean": strat_metrics["f1_score"],
-    "train_val_gap": 0.0,
-})
+    _upsert_result(
+        {
+            "algorithm": "stratified_random",
+            "type": "baseline",
+            "val_f1_mean": strat_metrics["f1_score"],
+            "val_f1_std": 0.0,
+            "train_f1_mean": strat_metrics["f1_score"],
+            "train_val_gap": 0.0,
+        }
+    )
+    model_status["stratified_random"] = "completed"
 
-# Cleanup
-del majority, stratified, majority_preds, strat_preds
-del majority_metrics, strat_metrics
-gc.collect()
+    del stratified, strat_preds, strat_metrics
+    gc.collect()
 
-log.end_step(status="success", records=len(results))
+baseline_count = sum(1 for item in results_by_algorithm.values() if item.get("type") == "baseline")
+log.end_step(status="success", records=baseline_count)
 
 # %%
 # ============================================================================
@@ -390,6 +526,14 @@ print("ML Models: Coarse Grid Search")
 print("=" * 70)
 
 for model_name in ["random_forest", "xgboost"]:
+    if (not FULL_RERUN) and (not RERUN_ML) and (model_name in results_by_algorithm):
+        print(f"\n{'='*70}")
+        print(f"Grid Search: {model_name}")
+        print("="*70)
+        print("⏭️  Skipping (already computed)")
+        model_status[model_name] = "skipped_existing"
+        continue
+
     print(f"\n{'='*70}")
     print(f"Grid Search: {model_name}")
     print("="*70)
@@ -416,7 +560,7 @@ for model_name in ["random_forest", "xgboost"]:
         
         # Train with CV
         model = models.create_model(model_name, model_params=params)
-        metrics = training.train_with_cv(model, x_train_scaled, y_train_enc, groups, cv)
+        metrics = training.train_with_cv(model, x_train_scaled_ml, y_train_enc, groups_ml, cv_ml)
         
         # Track best
         if metrics["val_f1_mean"] > best_val_f1:
@@ -437,17 +581,21 @@ for model_name in ["random_forest", "xgboost"]:
     print(f"   Train-Val Gap: {best_metrics['train_val_gap']:.4f}")
     print(f"   Params: {best_params}")
     
-    results.append({
-        "algorithm": model_name,
-        "type": "ml",
-        "val_f1_mean": best_metrics["val_f1_mean"],
-        "val_f1_std": best_metrics["val_f1_std"],
-        "train_f1_mean": best_metrics["train_f1_mean"],
-        "train_val_gap": best_metrics["train_val_gap"],
-        "best_params": best_params,
-    })
+    _upsert_result(
+        {
+            "algorithm": model_name,
+            "type": "ml",
+            "val_f1_mean": best_metrics["val_f1_mean"],
+            "val_f1_std": best_metrics["val_f1_std"],
+            "train_f1_mean": best_metrics["train_f1_mean"],
+            "train_val_gap": best_metrics["train_val_gap"],
+            "best_params": best_params,
+        }
+    )
+    model_status[model_name] = "completed"
 
-log.end_step(status="success", records=len(results) - 2)  # Subtract baselines
+ml_count = sum(1 for item in results_by_algorithm.values() if item.get("type") == "ml")
+log.end_step(status="success", records=ml_count)
 
 # %%
 # ============================================================================
@@ -471,75 +619,108 @@ except ImportError:
         f'  pip install "{repo_url}[gpu]"'
     )
 
+# Attempt notebook-local TabNet installation (no project dependency changes)
+tabnet_install_error = None
+try:
+    subprocess.run(["pip", "install", "pytorch-tabnet", "-q"], check=True)
+    print("✅ pytorch-tabnet installed")
+except Exception as exc:
+    tabnet_install_error = str(exc)
+    print(f"⚠️  pytorch-tabnet install failed: {exc}")
+
 # 1. CNN-1D (requires PyTorch)
 print("\n1. CNN-1D (1D Convolutional Neural Network)")
-try:
-    # Detect temporal features
-    temporal_features = [c for c in selected_features if c.split("_")[-1].isdigit()]
-    if len(temporal_features) > 0:
-        months = sorted(set(int(c.split("_")[-1]) for c in temporal_features))
-        bases = sorted(set("_".join(c.split("_")[:-1]) for c in temporal_features))
-        n_temporal_bases = len(bases)
+if (not FULL_RERUN) and (not RERUN_NN) and ("cnn_1d" in results_by_algorithm):
+    print("   ⏭️  Skipping (already computed)")
+    model_status["cnn_1d"] = "skipped_existing"
+else:
+    try:
+        temporal_features = [f for f in feature_cols_nn if f.split("_")[-1].isdigit()]
+        if len(temporal_features) == 0:
+            raise ValueError("No temporal features detected in CNN feature dataset.")
+
+        temporal_bases = set("_".join(f.split("_")[:-1]) for f in temporal_features)
+        months = sorted(set(int(f.split("_")[-1]) for f in temporal_features))
+
+        n_temporal_bases = len(temporal_bases)
         n_months = len(months)
-        n_static = len(selected_features) - n_temporal_bases * n_months
-        
+        n_static = len(feature_cols_nn) - len(temporal_features)
+
         cnn_params = {
             "n_temporal_bases": n_temporal_bases,
             "n_months": n_months,
-            "n_static_features": max(n_static, 0),
+            "n_static_features": n_static,
             "n_classes": len(label_to_idx),
         }
-        
-        print(f"   Temporal bases: {n_temporal_bases}")
-        print(f"   Months: {n_months}")
-        print(f"   Static features: {n_static}")
-        
+
+        print(f"   Total features:    {len(feature_cols_nn)}")
+        print(f"   Temporal features: {len(temporal_features)}")
+        print(f"   Temporal bases:    {n_temporal_bases}")
+        print(f"   Months:            {n_months}")
+        print(f"   Static features:   {n_static}")
+
         cnn = models.create_model("cnn_1d", cnn_params)
-        metrics = training.train_with_cv(cnn, x_train_scaled, y_train_enc, groups, cv)
-        
+        metrics = training.train_with_cv(cnn, x_train_scaled_nn, y_train_enc, groups_nn, cv_nn)
+
         print(f"   Val F1: {metrics['val_f1_mean']:.4f} ± {metrics['val_f1_std']:.4f}")
         print(f"   Train-Val Gap: {metrics['train_val_gap']:.4f}")
-        
-        results.append({
-            "algorithm": "cnn_1d",
-            "type": "nn",
-            "val_f1_mean": metrics["val_f1_mean"],
-            "val_f1_std": metrics["val_f1_std"],
-            "train_f1_mean": metrics["train_f1_mean"],
-            "train_val_gap": metrics["train_val_gap"],
-        })
-        
+
+        _upsert_result(
+            {
+                "algorithm": "cnn_1d",
+                "type": "nn",
+                "val_f1_mean": metrics["val_f1_mean"],
+                "val_f1_std": metrics["val_f1_std"],
+                "train_f1_mean": metrics["train_f1_mean"],
+                "train_val_gap": metrics["train_val_gap"],
+            }
+        )
+        model_status["cnn_1d"] = "completed"
+
         del cnn, metrics
         gc.collect()
-    else:
-        print("   ⚠️  No temporal features detected, skipping CNN-1D")
-except Exception as exc:
-    print(f"   ⚠️  Skipping CNN-1D: {exc}")
+    except Exception as exc:
+        nn_skip_reasons["cnn_1d"] = str(exc)
+        model_status["cnn_1d"] = "skipped_error"
+        print(f"   ⚠️  Skipping CNN-1D: {exc}")
 
 # 2. TabNet (requires pytorch-tabnet)
 print("\n2. TabNet (Attention-based Tabular DNN)")
-try:
-    tabnet = models.create_model("tabnet")
-    metrics = training.train_with_cv(tabnet, x_train_scaled, y_train_enc, groups, cv)
-    
-    print(f"   Val F1: {metrics['val_f1_mean']:.4f} ± {metrics['val_f1_std']:.4f}")
-    print(f"   Train-Val Gap: {metrics['train_val_gap']:.4f}")
-    
-    results.append({
-        "algorithm": "tabnet",
-        "type": "nn",
-        "val_f1_mean": metrics["val_f1_mean"],
-        "val_f1_std": metrics["val_f1_std"],
-        "train_f1_mean": metrics["train_f1_mean"],
-        "train_val_gap": metrics["train_val_gap"],
-    })
-    
-    del tabnet, metrics
-    gc.collect()
-except Exception as exc:
-    print(f"   ⚠️  Skipping TabNet: {exc}")
+if (not FULL_RERUN) and (not RERUN_NN) and ("tabnet" in results_by_algorithm):
+    print("   ⏭️  Skipping (already computed)")
+    model_status["tabnet"] = "skipped_existing"
+else:
+    try:
+        if tabnet_install_error is not None:
+            raise ImportError(f"pytorch-tabnet install failed: {tabnet_install_error}")
 
-log.end_step(status="success")
+        tabnet = models.create_model("tabnet")
+        metrics = training.train_with_cv(tabnet, x_train_scaled_nn, y_train_enc, groups_nn, cv_nn)
+
+        print(f"   Val F1: {metrics['val_f1_mean']:.4f} ± {metrics['val_f1_std']:.4f}")
+        print(f"   Train-Val Gap: {metrics['train_val_gap']:.4f}")
+
+        _upsert_result(
+            {
+                "algorithm": "tabnet",
+                "type": "nn",
+                "val_f1_mean": metrics["val_f1_mean"],
+                "val_f1_std": metrics["val_f1_std"],
+                "train_f1_mean": metrics["train_f1_mean"],
+                "train_val_gap": metrics["train_val_gap"],
+            }
+        )
+        model_status["tabnet"] = "completed"
+
+        del tabnet, metrics
+        gc.collect()
+    except Exception as exc:
+        nn_skip_reasons["tabnet"] = str(exc)
+        model_status["tabnet"] = "skipped_error"
+        print(f"   ⚠️  Skipping TabNet: {exc}")
+
+nn_count = sum(1 for item in results_by_algorithm.values() if item.get("type") == "nn")
+log.end_step(status="success", records=nn_count)
 
 
 # %%
@@ -548,6 +729,20 @@ log.end_step(status="success")
 # ============================================================================
 
 log.start_step("Results Analysis")
+
+result_order = ["majority", "stratified_random", "random_forest", "xgboost", "cnn_1d", "tabnet"]
+results = [
+    results_by_algorithm[name]
+    for name in result_order
+    if name in results_by_algorithm
+]
+results.extend(
+    [
+        value
+        for name, value in results_by_algorithm.items()
+        if name not in result_order
+    ]
+)
 
 results_df = pd.DataFrame(results)
 
@@ -603,7 +798,7 @@ log.end_step(status="success")
 log.start_step("Save Results")
 
 # Save algorithm comparison results
-algo_path = METADATA_DIR / "algorithm_comparison.json"
+algo_path = ALGO_PATH
 
 algo_results = {
     "algorithms": results,
@@ -614,6 +809,15 @@ algo_results = {
         "n_algorithms_tested": len(results),
         "n_viable": len(viable),
         "selection_criteria": config["algorithm_comparison"]["selection_criteria"],
+        "resume_mode": not FULL_RERUN,
+        "full_rerun": FULL_RERUN,
+        "rerun_flags": {
+            "baselines": RERUN_BASELINES,
+            "ml": RERUN_ML,
+            "nn": RERUN_NN,
+        },
+        "model_status": model_status,
+        "nn_skip_reasons": nn_skip_reasons,
     },
 }
 

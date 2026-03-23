@@ -20,3 +20,7 @@ Format: `- [YYYY-MM-DD] <what was tricky / what went wrong> → <what worked / c
 - [2026-03-11] Phase 3 visualization logic was removed from the workflow, but `tests/experiments/test_visualization.py` remained and broke test collection → remove stale tests when deleting whole modules, or the suite will fail on missing imports.
 
 ## Notebooks & Colab
+
+## Communication
+
+- [2026-03-23] Suggested shortcut-only path (proceed with XGBoost only) despite user needing root-cause fixes in exp_11 → prioritize implementing requested code-level fixes first; avoid repeating workaround recommendations when user has already asked for full correction.
