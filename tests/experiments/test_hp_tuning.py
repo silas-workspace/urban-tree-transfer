@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
 from urban_tree_transfer.experiments.hp_tuning import (
@@ -66,6 +69,34 @@ def test_optuna_helpers(sample_dataset) -> None:
     summary = run_optuna_search(study, objective, n_trials=2)
     assert "best_score" in summary
     assert summary["trials"]
+
+
+def test_run_optuna_search_writes_checkpoint(sample_dataset, tmp_path: Path) -> None:
+    _ = pytest.importorskip("optuna")
+
+    x = sample_dataset[["NDVI_06", "NDVI_07", "EVI_06"]].values
+    y = sample_dataset["genus_latin"].astype("category").cat.codes.values
+    groups = sample_dataset["block_id"].values
+    cv = create_spatial_block_cv(sample_dataset, n_splits=3)
+
+    objective = build_objective(
+        model_name="random_forest",
+        x=x,
+        y=y,
+        groups=groups,
+        cv=cv,
+        search_space={"n_estimators": [10, 20], "max_depth": [2, 4]},
+        base_params={"n_jobs": 1},
+    )
+    study = create_study()
+    checkpoint_path = tmp_path / "hp_checkpoint.json"
+
+    summary = run_optuna_search(study, objective, n_trials=2, checkpoint_path=checkpoint_path)
+
+    assert checkpoint_path.exists()
+    checkpoint = json.loads(checkpoint_path.read_text())
+    assert checkpoint["n_trials"] == summary["n_trials"]
+    assert checkpoint["best_params"] == summary["best_params"]
 
 
 def test_build_objective_routes_xgboost_learning_rate_to_model_params(sample_dataset, monkeypatch) -> None:

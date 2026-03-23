@@ -180,11 +180,14 @@ hp_tuning:
   optuna:
     sampler: tpe
     pruner: median
-    n_trials: 10
-    timeout_seconds: 3600
+    n_trials: 40
+    timeout_seconds: 14400
+    model_trials:
+      xgboost: 40
+      cnn_1d: 20
 
   tuning_subset_n: 100000
-  tuning_cv_folds: 1
+  tuning_cv_folds: 3
   tuning_holdout: 0.2
 
   search_spaces:
@@ -195,12 +198,12 @@ hp_tuning:
       min_samples_leaf: [1, 5]
       max_features: ["sqrt", "log2", null]
     xgboost:
-      n_estimators: [200, 400]
-      max_depth: [4, 8]
-      learning_rate: [0.05, 0.2]
+      n_estimators: [100, 400]
+      max_depth: [4, 12]
+      learning_rate: [0.05, 0.3]
       subsample: [0.8, 1.0]
       colsample_bytree: [0.8, 1.0]
-      reg_lambda: [1.0, 2.0]
+      reg_lambda: [0.0, 2.0]
       reg_alpha: [0.0, 0.5]
       min_child_weight: [1, 5]
     cnn_1d:
@@ -212,7 +215,7 @@ hp_tuning:
       dense_units:
         - [128, 64]
         - [256, 128]
-      learning_rate: [0.0005, 0.003]
+      learning_rate: [0.0002, 0.003]
       batch_size: [32, 64, 128]
       epochs: [50, 80]
       early_stopping_patience: [8, 15]

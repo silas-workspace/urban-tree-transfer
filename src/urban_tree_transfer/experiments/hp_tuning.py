@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -118,35 +120,50 @@ def run_optuna_search(
     n_trials: int = 50,
     timeout_seconds: int | None = None,
     model_name: str | None = None,
+    checkpoint_path: Path | None = None,
 ) -> dict[str, Any]:
     """Run Optuna study and return summary dict."""
     if optuna is None:
         raise ImportError("optuna is required for hyperparameter tuning.")
 
-    study.optimize(objective, n_trials=n_trials, timeout=timeout_seconds)
+    def _build_summary() -> dict[str, Any]:
+        trials = []
+        for trial in study.trials:
+            if trial.value is None:
+                continue
+            trials.append(
+                {
+                    "value": float(trial.value),
+                    "params": trial.params,
+                    "train_val_gap": trial.user_attrs.get("train_val_gap"),
+                }
+            )
 
-    trials = []
-    for trial in study.trials:
-        if trial.value is None:
-            continue
-        trials.append(
-            {
-                "value": float(trial.value),
-                "params": trial.params,
-                "train_val_gap": trial.user_attrs.get("train_val_gap"),
-            }
-        )
+        best_value = float(study.best_value)
 
-    best_value = float(study.best_value)
+        return {
+            "model_name": model_name,
+            "best_score": best_value,
+            "best_value": best_value,
+            "best_params": study.best_params,
+            "n_trials": len(trials),
+            "trials": trials,
+        }
 
-    return {
-        "model_name": model_name,
-        "best_score": best_value,
-        "best_value": best_value,
-        "best_params": study.best_params,
-        "n_trials": len(trials),
-        "trials": trials,
-    }
+    callbacks: list[Any] = []
+    if checkpoint_path is not None:
+        checkpoint_path = Path(checkpoint_path)
+        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+
+        def _checkpoint_callback(_study: Any, _trial: Any) -> None:
+            _ = _study, _trial
+            checkpoint_path.write_text(json.dumps(_build_summary(), indent=2))
+
+        callbacks.append(_checkpoint_callback)
+
+    study.optimize(objective, n_trials=n_trials, timeout=timeout_seconds, callbacks=callbacks)
+
+    return _build_summary()
 
 
 def suggest_params_from_space(trial: Any, space: dict[str, Any]) -> dict[str, Any]:

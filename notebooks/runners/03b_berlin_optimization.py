@@ -145,6 +145,27 @@ for d in [METADATA_DIR, MODELS_DIR, LOGS_DIR, REPORT_DIR]:
 # Load experiment configuration
 config = load_experiment_config()
 
+# Re-run controls
+FULL_RERUN = False
+RERUN_ML_HP = False
+RERUN_ML_MODEL = False
+RERUN_NN_HP = False
+RERUN_NN_MODEL = False
+
+
+def resolve_optuna_budget(model_name: str) -> tuple[int, int]:
+    """Resolve model-specific Optuna trial and timeout settings."""
+    optuna_cfg = config["hp_tuning"]["optuna"]
+    default_trials = int(optuna_cfg["n_trials"])
+    default_timeout = int(optuna_cfg["timeout_seconds"])
+
+    model_trials = optuna_cfg.get("model_trials", {})
+    model_timeouts = optuna_cfg.get("model_timeouts", {})
+
+    trials = int(model_trials.get(model_name, default_trials))
+    timeout = int(model_timeouts.get(model_name, default_timeout))
+    return trials, timeout
+
 print(f"Input (Phase 3 Datasets): {INPUT_DIR}")
 print(f"Output (Phase 3):         {OUTPUT_DIR}")
 print(f"Metadata:                 {METADATA_DIR}")
@@ -152,7 +173,13 @@ print(f"Models:                   {MODELS_DIR}")
 print(f"Logs:                     {LOGS_DIR}")
 print(f"Random seed:              {RANDOM_SEED}")
 print(f"CV folds:                 {config['global']['cv_folds']}")
-print(f"Optuna trials:            {config['hp_tuning']['optuna']['n_trials']}")
+print(f"Optuna trials (default):  {config['hp_tuning']['optuna']['n_trials']}")
+print(f"Optuna timeout (default): {config['hp_tuning']['optuna']['timeout_seconds']}s")
+print(
+    "Rerun flags: "
+    f"full={FULL_RERUN}, ml_hp={RERUN_ML_HP}, ml_model={RERUN_ML_MODEL}, "
+    f"nn_hp={RERUN_NN_HP}, nn_model={RERUN_NN_MODEL}"
+)
 print(f"\n✅ Configuration complete")
 
 # %%
@@ -461,7 +488,7 @@ try:
     print("=" * 70)
     
     ml_hp_path = METADATA_DIR / "hp_tuning_ml.json"
-    if ml_hp_path.exists():
+    if ml_hp_path.exists() and not (FULL_RERUN or RERUN_ML_HP):
         ml_hp_results = json.loads(ml_hp_path.read_text())
         print(f"\n✅ Found existing {ml_hp_path.name} - skipping Optuna")
         log.end_step(status="skipped", records=ml_hp_results.get("n_trials", 0))
@@ -503,8 +530,7 @@ try:
         )
     
         # Run Optuna optimization
-        n_trials = config["hp_tuning"]["optuna"]["n_trials"]
-        timeout = config["hp_tuning"]["optuna"]["timeout_seconds"]
+        n_trials, timeout = resolve_optuna_budget(ml_name)
     
         print(f"\nRunning Optuna optimization...")
         print(f"  Trials: {n_trials}")
@@ -512,8 +538,8 @@ try:
         print(f"  Sampler: {config['hp_tuning']['optuna']['sampler']}")
         print(f"  Pruner: {config['hp_tuning']['optuna']['pruner']}")
         print(
-            f"NOTE: Optuna evaluated {n_trials} of {total_grid_size} possible combinations. "
-            "Champion selection is based on partial search results."
+            f"NOTE: Optuna evaluated {n_trials} trials. "
+            f"Approximate discrete search-space size (2-point ranges): {total_grid_size}."
         )
     
         ml_hp_results = hp_tuning.run_optuna_search(
@@ -522,6 +548,7 @@ try:
             n_trials=n_trials,
             timeout_seconds=timeout,
             model_name=ml_name,
+            checkpoint_path=ml_hp_path,
         )
     
         # Save HP tuning results
@@ -563,7 +590,7 @@ try:
     print("=" * 70)
 
     ml_model_path = MODELS_DIR / "berlin_ml_champion.pkl"
-    if ml_model_path.exists():
+    if ml_model_path.exists() and not (FULL_RERUN or RERUN_ML_MODEL):
         ml_model = training.load_model(ml_model_path)
         print(f"\n✅ Found existing {ml_model_path.name} - skipping training")
         log.end_step(status="skipped")
@@ -672,7 +699,7 @@ try:
             print(f"  Classes:           {n_classes}")
 
         nn_hp_path = METADATA_DIR / "hp_tuning_nn.json"
-        if nn_hp_path.exists():
+        if nn_hp_path.exists() and not (FULL_RERUN or RERUN_NN_HP):
             nn_hp_results = json.loads(nn_hp_path.read_text())
             print(f"\n✅ Found existing {nn_hp_path.name} - skipping Optuna")
             log.end_step(status="skipped", records=nn_hp_results.get("n_trials", 0))
@@ -703,8 +730,7 @@ try:
                 base_params=structural_params,  # Pass structural params as base_params
             )
 
-            n_trials = config["hp_tuning"]["optuna"]["n_trials"]
-            timeout = config["hp_tuning"]["optuna"]["timeout_seconds"]
+            n_trials, timeout = resolve_optuna_budget(nn_name)
 
             print(f"\nRunning Optuna optimization...")
             print(f"  Trials: {n_trials}")
@@ -716,6 +742,7 @@ try:
                 n_trials=n_trials,
                 timeout_seconds=timeout,
                 model_name=nn_name,
+                checkpoint_path=nn_hp_path,
             )
 
             # Save NN HP results
@@ -761,7 +788,7 @@ try:
         print("=" * 70)
 
         nn_model_path = MODELS_DIR / "berlin_nn_champion.pt"
-        if nn_model_path.exists():
+        if nn_model_path.exists() and not (FULL_RERUN or RERUN_NN_MODEL):
             metadata_path = nn_model_path.with_suffix(nn_model_path.suffix + ".metadata.json")
             if not metadata_path.exists():
                 raise FileNotFoundError(
