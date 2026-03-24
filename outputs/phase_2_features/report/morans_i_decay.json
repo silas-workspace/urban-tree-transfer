@@ -1,0 +1,142 @@
+[
+  {
+    "city": "berlin",
+    "distance_m": 100,
+    "morans_i": 0.5645636101457469
+  },
+  {
+    "city": "berlin",
+    "distance_m": 150,
+    "morans_i": 0.5041931515976785
+  },
+  {
+    "city": "berlin",
+    "distance_m": 200,
+    "morans_i": 0.4602426858231684
+  },
+  {
+    "city": "berlin",
+    "distance_m": 250,
+    "morans_i": 0.42447401799028095
+  },
+  {
+    "city": "berlin",
+    "distance_m": 300,
+    "morans_i": 0.39617907143833964
+  },
+  {
+    "city": "berlin",
+    "distance_m": 350,
+    "morans_i": 0.3724751533252822
+  },
+  {
+    "city": "berlin",
+    "distance_m": 400,
+    "morans_i": 0.3509055169377645
+  },
+  {
+    "city": "berlin",
+    "distance_m": 450,
+    "morans_i": 0.33261564711292185
+  },
+  {
+    "city": "berlin",
+    "distance_m": 500,
+    "morans_i": 0.31640998662524966
+  },
+  {
+    "city": "berlin",
+    "distance_m": 600,
+    "morans_i": 0.28856360139253945
+  },
+  {
+    "city": "berlin",
+    "distance_m": 700,
+    "morans_i": 0.26506543887374734
+  },
+  {
+    "city": "berlin",
+    "distance_m": 800,
+    "morans_i": 0.24426274747608087
+  },
+  {
+    "city": "berlin",
+    "distance_m": 1000,
+    "morans_i": 0.2104573007184916
+  },
+  {
+    "city": "berlin",
+    "distance_m": 1200,
+    "morans_i": 0.18524057343479267
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 100,
+    "morans_i": 0.5574908324661128
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 150,
+    "morans_i": 0.4922164338002221
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 200,
+    "morans_i": 0.44399628718041245
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 250,
+    "morans_i": 0.40610201347599145
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 300,
+    "morans_i": 0.3772369281170423
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 350,
+    "morans_i": 0.35196873423684016
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 400,
+    "morans_i": 0.3296785611982392
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 450,
+    "morans_i": 0.31068404454714776
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 500,
+    "morans_i": 0.29313253625165414
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 600,
+    "morans_i": 0.2627940410327737
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 700,
+    "morans_i": 0.23715413533299903
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 800,
+    "morans_i": 0.2159163404576084
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 1000,
+    "morans_i": 0.1816113947329235
+  },
+  {
+    "city": "leipzig",
+    "distance_m": 1200,
+    "morans_i": 0.15386456226209827
+  }
+]

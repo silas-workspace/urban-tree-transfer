@@ -1,0 +1,70 @@
+{
+  "notebook": "exp_06_mixed_genus_proximity",
+  "execution_start": "2026-03-17T15:44:02.175444",
+  "execution_end": "2026-03-17T15:45:32.298210",
+  "steps": [
+    {
+      "name": "Data Loading",
+      "status": "success",
+      "start_time": "2026-03-17T15:44:02.194705",
+      "end_time": "2026-03-17T15:45:28.475639",
+      "records": 983782,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Nearest Neighbor Analysis",
+      "status": "success",
+      "start_time": "2026-03-17T15:45:28.483984",
+      "end_time": "2026-03-17T15:45:30.649225",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Distance Distribution",
+      "status": "success",
+      "start_time": "2026-03-17T15:45:30.656707",
+      "end_time": "2026-03-17T15:45:30.693132",
+      "records": 2,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Threshold Sensitivity",
+      "status": "success",
+      "start_time": "2026-03-17T15:45:30.699329",
+      "end_time": "2026-03-17T15:45:30.706747",
+      "records": 10,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Genus-Specific Impact",
+      "status": "success",
+      "start_time": "2026-03-17T15:45:30.738415",
+      "end_time": "2026-03-17T15:45:32.002253",
+      "records": 5,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Threshold Recommendation",
+      "status": "success",
+      "start_time": "2026-03-17T15:45:32.007981",
+      "end_time": "2026-03-17T15:45:32.008506",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Export Configuration",
+      "status": "success",
+      "start_time": "2026-03-17T15:45:32.017057",
+      "end_time": "2026-03-17T15:45:32.292259",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "H1",
+    "description": "Transfer loss varies significantly across genera",
+    "test_type": "kruskal",
+    "statistic": 4953.408891112229,
+    "p_value": 0.0,
+    "effect_size": 0.16251874704262703,
+    "conclusion": "Significant difference across groups (H=4953.409, p=0.0000)"
+  },
+  {
+    "id": "H2",
+    "description": "Conifers transfer better than deciduous",
+    "test_type": "mann_whitney",
+    "conclusion": "Insufficient data for Mann-Whitney U test",
+    "statistic": null,
+    "p_value": null,
+    "effect_size": null
+  },
+  {
+    "id": "H3",
+    "description": "Spectrally distinct genera transfer better",
+    "test_type": "spearman",
+    "statistic": -0.13235294117647062,
+    "p_value": 0.6125925983674196,
+    "effect_size": -0.13235294117647062,
+    "conclusion": "No significant rank correlation (rho=-0.132, p=0.6126)"
+  },
+  {
+    "id": "H4",
+    "description": "Genera with larger zero-shot transfer gaps require more fine-tuning data",
+    "test_type": "spearman",
+    "statistic": 0.5,
+    "p_value": 0.11730680301423815,
+    "effect_size": 0.5,
+    "conclusion": "No significant rank correlation (rho=0.500, p=0.1173)"
+  }
+]

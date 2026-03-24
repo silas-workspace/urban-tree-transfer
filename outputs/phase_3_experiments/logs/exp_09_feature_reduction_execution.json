@@ -1,0 +1,61 @@
+{
+  "notebook": "exp_09_feature_reduction",
+  "execution_start": "2026-03-21T11:16:06.238019",
+  "execution_end": "2026-03-21T12:36:55.692324",
+  "steps": [
+    {
+      "name": "Load Prior Decisions",
+      "status": "success",
+      "start_time": "2026-03-21T11:16:06.930881",
+      "end_time": "2026-03-21T11:16:07.323929",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Prepare Final Dataset",
+      "status": "success",
+      "start_time": "2026-03-21T11:16:07.332194",
+      "end_time": "2026-03-21T11:16:24.638116",
+      "records": 471815,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Feature Importance Analysis",
+      "status": "success",
+      "start_time": "2026-03-21T11:16:24.645869",
+      "end_time": "2026-03-21T11:29:14.998086",
+      "records": 144,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Feature Subset Evaluation",
+      "status": "success",
+      "start_time": "2026-03-21T11:29:15.008506",
+      "end_time": "2026-03-21T12:36:55.643169",
+      "records": 4,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Pareto Optimization",
+      "status": "success",
+      "start_time": "2026-03-21T12:36:55.652074",
+      "end_time": "2026-03-21T12:36:55.655630",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Complete Setup Decisions",
+      "status": "success",
+      "start_time": "2026-03-21T12:36:55.664147",
+      "end_time": "2026-03-21T12:36:55.684964",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

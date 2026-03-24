@@ -1,0 +1,410 @@
+[
+  {
+    "fraction": 0.1,
+    "genus": "AESCULUS",
+    "f1_score": 0.45775862068965517,
+    "support": 1392.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "AILANTHUS",
+    "f1_score": 0.12781954887218044,
+    "support": 198.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "ALNUS",
+    "f1_score": 0.11182795698924732,
+    "support": 355.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "CARPINUS",
+    "f1_score": 0.30614203454894434,
+    "support": 1399.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "CORYLUS",
+    "f1_score": 0.10152284263959391,
+    "support": 130.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "FAGUS",
+    "f1_score": 0.3155216284987277,
+    "support": 275.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "Group 1",
+    "f1_score": 0.3649851632047478,
+    "support": 382.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "Group 11",
+    "f1_score": 0.32895139101192294,
+    "support": 1920.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "Group 14",
+    "f1_score": 0.6158547811038698,
+    "support": 11882.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "Group 9",
+    "f1_score": 0.13566289825282632,
+    "support": 857.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "MALUS",
+    "f1_score": 0.2401500938086304,
+    "support": 390.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "PLATANUS",
+    "f1_score": 0.5537516454585344,
+    "support": 1161.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "PYRUS",
+    "f1_score": 0.13537675606641125,
+    "support": 567.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "QUERCUS",
+    "f1_score": 0.38464298528884105,
+    "support": 2702.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "SALIX",
+    "f1_score": 0.23754789272030652,
+    "support": 514.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "TILIA",
+    "f1_score": 0.6237654804828343,
+    "support": 5966.0
+  },
+  {
+    "fraction": 0.1,
+    "genus": "ULMUS",
+    "f1_score": 0.16964285714285715,
+    "support": 390.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "AESCULUS",
+    "f1_score": 0.5583368689011455,
+    "support": 1392.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "AILANTHUS",
+    "f1_score": 0.32452830188679244,
+    "support": 198.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "ALNUS",
+    "f1_score": 0.3779527559055118,
+    "support": 355.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "CARPINUS",
+    "f1_score": 0.4020192748967416,
+    "support": 1399.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "CORYLUS",
+    "f1_score": 0.24731182795698925,
+    "support": 130.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "FAGUS",
+    "f1_score": 0.4413793103448276,
+    "support": 275.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "Group 1",
+    "f1_score": 0.4405705229793978,
+    "support": 382.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "Group 11",
+    "f1_score": 0.41515151515151516,
+    "support": 1920.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "Group 14",
+    "f1_score": 0.6703529149812595,
+    "support": 11882.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "Group 9",
+    "f1_score": 0.25800548947849955,
+    "support": 857.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "MALUS",
+    "f1_score": 0.326007326007326,
+    "support": 390.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "PLATANUS",
+    "f1_score": 0.6425772747061385,
+    "support": 1161.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "PYRUS",
+    "f1_score": 0.22355769230769232,
+    "support": 567.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "QUERCUS",
+    "f1_score": 0.4829098885030159,
+    "support": 2702.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "SALIX",
+    "f1_score": 0.3448275862068966,
+    "support": 514.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "TILIA",
+    "f1_score": 0.6826025011872724,
+    "support": 5966.0
+  },
+  {
+    "fraction": 0.25,
+    "genus": "ULMUS",
+    "f1_score": 0.28225806451612906,
+    "support": 390.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "AESCULUS",
+    "f1_score": 0.678714859437751,
+    "support": 1392.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "AILANTHUS",
+    "f1_score": 0.4726027397260274,
+    "support": 198.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "ALNUS",
+    "f1_score": 0.5,
+    "support": 355.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "CARPINUS",
+    "f1_score": 0.532671629445823,
+    "support": 1399.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "CORYLUS",
+    "f1_score": 0.4326923076923077,
+    "support": 130.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "FAGUS",
+    "f1_score": 0.6032388663967612,
+    "support": 275.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "Group 1",
+    "f1_score": 0.5643994211287988,
+    "support": 382.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "Group 11",
+    "f1_score": 0.5501138952164009,
+    "support": 1920.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "Group 14",
+    "f1_score": 0.7250356770933776,
+    "support": 11882.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "Group 9",
+    "f1_score": 0.44841592201462227,
+    "support": 857.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "MALUS",
+    "f1_score": 0.4187725631768953,
+    "support": 390.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "PLATANUS",
+    "f1_score": 0.7293914544669832,
+    "support": 1161.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "PYRUS",
+    "f1_score": 0.4118316268486917,
+    "support": 567.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "QUERCUS",
+    "f1_score": 0.5888361911711054,
+    "support": 2702.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "SALIX",
+    "f1_score": 0.49029126213592233,
+    "support": 514.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "TILIA",
+    "f1_score": 0.74896331738437,
+    "support": 5966.0
+  },
+  {
+    "fraction": 0.5,
+    "genus": "ULMUS",
+    "f1_score": 0.40933572710951527,
+    "support": 390.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "AESCULUS",
+    "f1_score": 0.8005886681383371,
+    "support": 1392.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "AILANTHUS",
+    "f1_score": 0.6744868035190615,
+    "support": 198.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "ALNUS",
+    "f1_score": 0.637478108581436,
+    "support": 355.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "CARPINUS",
+    "f1_score": 0.7158301158301158,
+    "support": 1399.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "CORYLUS",
+    "f1_score": 0.575107296137339,
+    "support": 130.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "FAGUS",
+    "f1_score": 0.8072727272727273,
+    "support": 275.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "Group 1",
+    "f1_score": 0.6858710562414266,
+    "support": 382.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "Group 11",
+    "f1_score": 0.6860998650472334,
+    "support": 1920.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "Group 14",
+    "f1_score": 0.8035080562920661,
+    "support": 11882.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "Group 9",
+    "f1_score": 0.6231783483691881,
+    "support": 857.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "MALUS",
+    "f1_score": 0.5771144278606966,
+    "support": 390.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "PLATANUS",
+    "f1_score": 0.8559568285595683,
+    "support": 1161.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "PYRUS",
+    "f1_score": 0.5746652935118435,
+    "support": 567.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "QUERCUS",
+    "f1_score": 0.7279017471025774,
+    "support": 2702.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "SALIX",
+    "f1_score": 0.6967741935483871,
+    "support": 514.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "TILIA",
+    "f1_score": 0.8352333305995243,
+    "support": 5966.0
+  },
+  {
+    "fraction": 1.0,
+    "genus": "ULMUS",
+    "f1_score": 0.5735294117647058,
+    "support": 390.0
+  }
+]

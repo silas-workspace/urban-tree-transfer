@@ -1,0 +1,52 @@
+{
+  "notebook": "exp_08_chm_ablation",
+  "execution_start": "2026-03-21T01:52:42.838368",
+  "execution_end": "2026-03-21T03:43:18.088294",
+  "steps": [
+    {
+      "name": "Data Loading",
+      "status": "success",
+      "start_time": "2026-03-21T01:52:42.873910",
+      "end_time": "2026-03-21T01:52:46.761567",
+      "records": 830153,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "CHM Ablation Experiment",
+      "status": "success",
+      "start_time": "2026-03-21T01:52:46.770008",
+      "end_time": "2026-03-21T03:32:11.615779",
+      "records": 5,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Feature Importance Analysis",
+      "status": "success",
+      "start_time": "2026-03-21T03:32:11.627666",
+      "end_time": "2026-03-21T03:43:18.039430",
+      "records": 147,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Per-Feature Decision Logic",
+      "status": "success",
+      "start_time": "2026-03-21T03:43:18.053984",
+      "end_time": "2026-03-21T03:43:18.057194",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Save CHM Decision",
+      "status": "success",
+      "start_time": "2026-03-21T03:43:18.066342",
+      "end_time": "2026-03-21T03:43:18.080893",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "notebook": "03d_finetuning",
+  "completed_at": "2026-03-24T10:48:21.475849+00:00",
+  "ml_champion": "xgboost",
+  "nn_champion": "cnn_1d",
+  "fractions": [
+    0.1,
+    0.25,
+    0.5,
+    1.0
+  ],
+  "ml_final_f1": 0.7713067775383907,
+  "nn_final_f1": 0.45770122883567416,
+  "baseline_final_f1": 0.7859035336730628,
+  "power_law": {
+    "a": 0.08540679953392506,
+    "b": 0.1940413821776951,
+    "r_squared": 0.9932854083506688,
+    "extrapolated_x": 56506.832474157374
+  },
+  "mcnemar_significant": {
+    "vs_zeroshot": true,
+    "vs_fromscratch": true
+  }
+}

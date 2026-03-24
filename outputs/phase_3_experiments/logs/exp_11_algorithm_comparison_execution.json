@@ -1,0 +1,70 @@
+{
+  "notebook": "exp_11_algorithm_comparison",
+  "execution_start": "2026-03-23T16:12:11.669404",
+  "execution_end": "2026-03-23T17:40:25.892513",
+  "steps": [
+    {
+      "name": "Load Datasets",
+      "status": "success",
+      "start_time": "2026-03-23T16:12:11.738701",
+      "end_time": "2026-03-23T16:12:20.399919",
+      "records": 1360796,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Apply Genus Selection",
+      "status": "success",
+      "start_time": "2026-03-23T16:12:20.413390",
+      "end_time": "2026-03-23T16:12:23.901925",
+      "records": 927308,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Baseline Models",
+      "status": "success",
+      "start_time": "2026-03-23T16:12:23.911871",
+      "end_time": "2026-03-23T16:12:23.912661",
+      "records": 2,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "ML Models Grid Search",
+      "status": "success",
+      "start_time": "2026-03-23T16:12:23.923408",
+      "end_time": "2026-03-23T16:12:23.924107",
+      "records": 2,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Neural Network Models",
+      "status": "success",
+      "start_time": "2026-03-23T16:12:23.937425",
+      "end_time": "2026-03-23T17:40:25.846208",
+      "records": 2,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Results Analysis",
+      "status": "success",
+      "start_time": "2026-03-23T17:40:25.859049",
+      "end_time": "2026-03-23T17:40:25.870838",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Save Results",
+      "status": "success",
+      "start_time": "2026-03-23T17:40:25.877822",
+      "end_time": "2026-03-23T17:40:25.886939",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

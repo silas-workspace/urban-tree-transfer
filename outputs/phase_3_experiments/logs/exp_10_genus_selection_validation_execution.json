@@ -1,0 +1,52 @@
+{
+  "notebook": "exp_10_genus_selection_validation",
+  "execution_start": "2026-03-22T08:06:35.383528",
+  "execution_end": "2026-03-22T08:07:12.951709",
+  "steps": [
+    {
+      "name": "Load Setup & Data",
+      "status": "success",
+      "start_time": "2026-03-22T08:06:36.033482",
+      "end_time": "2026-03-22T08:06:36.471410",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Apply Setup Decisions",
+      "status": "success",
+      "start_time": "2026-03-22T08:06:36.479494",
+      "end_time": "2026-03-22T08:06:59.805395",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Sample Count Validation",
+      "status": "success",
+      "start_time": "2026-03-22T08:06:59.813486",
+      "end_time": "2026-03-22T08:06:59.859460",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Separability Analysis",
+      "status": "success",
+      "start_time": "2026-03-22T08:06:59.865256",
+      "end_time": "2026-03-22T08:07:00.002777",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "KL-Divergence Validation",
+      "status": "success",
+      "start_time": "2026-03-22T08:07:12.438732",
+      "end_time": "2026-03-22T08:07:12.787001",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

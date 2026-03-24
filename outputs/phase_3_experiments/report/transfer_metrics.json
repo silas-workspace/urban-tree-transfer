@@ -1,0 +1,138 @@
+[
+  {
+    "genus": "AESCULUS",
+    "berlin_f1": 0.7702099151406878,
+    "leipzig_f1": 0.2905355832721937,
+    "is_conifer": false,
+    "absolute_drop": 0.4796743318684941,
+    "relative_drop": 0.6227838962328549
+  },
+  {
+    "genus": "AILANTHUS",
+    "berlin_f1": 0.631768953068592,
+    "leipzig_f1": 0.051094890510948905,
+    "is_conifer": false,
+    "absolute_drop": 0.5806740625576431,
+    "relative_drop": 0.9191240875912408
+  },
+  {
+    "genus": "ALNUS",
+    "berlin_f1": 0.7229357798165138,
+    "leipzig_f1": 0.015789473684210527,
+    "is_conifer": false,
+    "absolute_drop": 0.7071463061323032,
+    "relative_drop": 0.9781592305637189
+  },
+  {
+    "genus": "CARPINUS",
+    "berlin_f1": 0.6991572004397215,
+    "leipzig_f1": 0.13541666666666666,
+    "is_conifer": false,
+    "absolute_drop": 0.5637405337730549,
+    "relative_drop": 0.8063144217330539
+  },
+  {
+    "genus": "CORYLUS",
+    "berlin_f1": 0.7308533916849015,
+    "leipzig_f1": 0.0091324200913242,
+    "is_conifer": false,
+    "absolute_drop": 0.7217209715935773,
+    "relative_drop": 0.9875044431684576
+  },
+  {
+    "genus": "FAGUS",
+    "berlin_f1": 0.6730388925510876,
+    "leipzig_f1": 0.1545253863134658,
+    "is_conifer": false,
+    "absolute_drop": 0.5185135062376218,
+    "relative_drop": 0.7704064534402276
+  },
+  {
+    "genus": "Group 1",
+    "berlin_f1": 0.7643054459352802,
+    "leipzig_f1": 0.23567393058918482,
+    "is_conifer": true,
+    "absolute_drop": 0.5286315153460953,
+    "relative_drop": 0.6916495468630467
+  },
+  {
+    "genus": "Group 11",
+    "berlin_f1": 0.6896728672225786,
+    "leipzig_f1": 0.16817687567959405,
+    "is_conifer": false,
+    "absolute_drop": 0.5214959915429845,
+    "relative_drop": 0.7561497868447851
+  },
+  {
+    "genus": "Group 14",
+    "berlin_f1": 0.7351589549889833,
+    "leipzig_f1": 0.5022620712346796,
+    "is_conifer": false,
+    "absolute_drop": 0.23289688375430373,
+    "relative_drop": 0.3167979960984
+  },
+  {
+    "genus": "Group 9",
+    "berlin_f1": 0.6167179200447303,
+    "leipzig_f1": 0.032448377581120944,
+    "is_conifer": false,
+    "absolute_drop": 0.5842695424636093,
+    "relative_drop": 0.9473853823174662
+  },
+  {
+    "genus": "MALUS",
+    "berlin_f1": 0.6648501362397821,
+    "leipzig_f1": 0.07863501483679525,
+    "is_conifer": false,
+    "absolute_drop": 0.5862151214029868,
+    "relative_drop": 0.8817252030938366
+  },
+  {
+    "genus": "PLATANUS",
+    "berlin_f1": 0.8521739130434782,
+    "leipzig_f1": 0.4029968454258675,
+    "is_conifer": false,
+    "absolute_drop": 0.4491770676176107,
+    "relative_drop": 0.5270955385308698
+  },
+  {
+    "genus": "PYRUS",
+    "berlin_f1": 0.7200956937799043,
+    "leipzig_f1": 0.00676818950930626,
+    "is_conifer": false,
+    "absolute_drop": 0.7133275042705981,
+    "relative_drop": 0.9906009859970432
+  },
+  {
+    "genus": "QUERCUS",
+    "berlin_f1": 0.7323453036924441,
+    "leipzig_f1": 0.23885586924219912,
+    "is_conifer": false,
+    "absolute_drop": 0.49348943445024496,
+    "relative_drop": 0.6738480221858443
+  },
+  {
+    "genus": "SALIX",
+    "berlin_f1": 0.6885625965996909,
+    "leipzig_f1": 0.11528822055137844,
+    "is_conifer": false,
+    "absolute_drop": 0.5732743760483124,
+    "relative_drop": 0.8325668267188735
+  },
+  {
+    "genus": "TILIA",
+    "berlin_f1": 0.8392122917117507,
+    "leipzig_f1": 0.5411620420052123,
+    "is_conifer": false,
+    "absolute_drop": 0.2980502497065384,
+    "relative_drop": 0.3551547715043615
+  },
+  {
+    "genus": "ULMUS",
+    "berlin_f1": 0.7108708025042686,
+    "leipzig_f1": 0.008528784648187633,
+    "is_conifer": false,
+    "absolute_drop": 0.702342017856081,
+    "relative_drop": 0.9880023421722453
+  }
+]

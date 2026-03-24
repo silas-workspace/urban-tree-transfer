@@ -1,0 +1,63 @@
+{
+  "notebook": "03b_berlin_optimization",
+  "completed_at": "2026-03-24T04:50:28.066152+00:00",
+  "runtime_seconds": 30904.230266332626,
+  "runtime_minutes": 515.0705044388772,
+  "champions": {
+    "ml": "xgboost",
+    "nn": "cnn_1d"
+  },
+  "ml_hp_tuning": {
+    "n_trials": 40,
+    "best_cv_f1": 0.5397263066108735,
+    "best_params": {
+      "n_estimators": 358,
+      "max_depth": 12,
+      "learning_rate": 0.054156346129620905,
+      "subsample": 0.8510772137268577,
+      "colsample_bytree": 0.9048725837010129,
+      "reg_lambda": 1.3582427935044394,
+      "reg_alpha": 0.07650898848382334,
+      "min_child_weight": 2
+    }
+  },
+  "nn_hp_tuning": {
+    "n_trials": 18,
+    "best_cv_f1": 0.5537812585815836,
+    "best_params": {
+      "conv_filters": [
+        64,
+        128,
+        128
+      ],
+      "kernel_size": 5,
+      "dropout": 0.4187021504122962,
+      "dense_units": [
+        128,
+        64
+      ],
+      "learning_rate": 0.0012037040399239633,
+      "batch_size": 64,
+      "epochs": 60,
+      "early_stopping_patience": 8
+    }
+  },
+  "test_metrics": {
+    "ml": {
+      "f1_score": 0.751403271613046,
+      "precision": 0.7615415604651534,
+      "recall": 0.7515596020907098,
+      "accuracy": 0.7515596020907098
+    },
+    "nn": {
+      "f1_score": 0.6074756164437524,
+      "precision": 0.6309147876905834,
+      "recall": 0.6326926319339066,
+      "accuracy": 0.6326926319339066
+    }
+  },
+  "generalization": {
+    "ml_cv_test_gap": -0.21167696500217248,
+    "nn_cv_test_gap": -0.05369435786216881
+  }
+}

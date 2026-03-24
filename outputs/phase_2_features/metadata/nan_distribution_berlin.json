@@ -1,0 +1,927 @@
+[
+  {
+    "feature": "IRECI_11",
+    "nan_count": 478791,
+    "nan_percentage": 53.811191994254635
+  },
+  {
+    "feature": "NDVIre_11",
+    "nan_count": 478787,
+    "nan_percentage": 53.81074243532814
+  },
+  {
+    "feature": "NDre1_11",
+    "nan_count": 478782,
+    "nan_percentage": 53.81018048667001
+  },
+  {
+    "feature": "RTVIcore_11",
+    "nan_count": 478782,
+    "nan_percentage": 53.81018048667001
+  },
+  {
+    "feature": "CIre_11",
+    "nan_count": 478782,
+    "nan_percentage": 53.81018048667001
+  },
+  {
+    "feature": "B6_11",
+    "nan_count": 478782,
+    "nan_percentage": 53.81018048667001
+  },
+  {
+    "feature": "B7_11",
+    "nan_count": 478780,
+    "nan_percentage": 53.80995570720677
+  },
+  {
+    "feature": "NDVI_11",
+    "nan_count": 478779,
+    "nan_percentage": 53.809843317475135
+  },
+  {
+    "feature": "B8_11",
+    "nan_count": 478779,
+    "nan_percentage": 53.809843317475135
+  },
+  {
+    "feature": "GNDVI_11",
+    "nan_count": 478779,
+    "nan_percentage": 53.809843317475135
+  },
+  {
+    "feature": "EVI_11",
+    "nan_count": 478779,
+    "nan_percentage": 53.809843317475135
+  },
+  {
+    "feature": "MSI_11",
+    "nan_count": 478779,
+    "nan_percentage": 53.809843317475135
+  },
+  {
+    "feature": "NDWI_11",
+    "nan_count": 478779,
+    "nan_percentage": 53.809843317475135
+  },
+  {
+    "feature": "NDII_11",
+    "nan_count": 478779,
+    "nan_percentage": 53.809843317475135
+  },
+  {
+    "feature": "kNDVI_11",
+    "nan_count": 478779,
+    "nan_percentage": 53.809843317475135
+  },
+  {
+    "feature": "B5_11",
+    "nan_count": 478778,
+    "nan_percentage": 53.809730927743516
+  },
+  {
+    "feature": "VARI_11",
+    "nan_count": 478774,
+    "nan_percentage": 53.80928136881702
+  },
+  {
+    "feature": "B11_11",
+    "nan_count": 478774,
+    "nan_percentage": 53.80928136881702
+  },
+  {
+    "feature": "B12_11",
+    "nan_count": 478774,
+    "nan_percentage": 53.80928136881702
+  },
+  {
+    "feature": "B8A_11",
+    "nan_count": 478774,
+    "nan_percentage": 53.80928136881702
+  },
+  {
+    "feature": "B2_11",
+    "nan_count": 478774,
+    "nan_percentage": 53.80928136881702
+  },
+  {
+    "feature": "B4_11",
+    "nan_count": 478774,
+    "nan_percentage": 53.80928136881702
+  },
+  {
+    "feature": "B3_11",
+    "nan_count": 478774,
+    "nan_percentage": 53.80928136881702
+  },
+  {
+    "feature": "B2_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "B4_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "B8A_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "B11_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "NDVI_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "B12_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "VARI_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "NDre1_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "GNDVI_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "EVI_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "NDWI_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "MSI_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "kNDVI_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "NDII_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "IRECI_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "RTVIcore_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "CIre_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "NDVIre_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "B5_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "B6_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "B8_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "B7_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "B3_10",
+    "nan_count": 45688,
+    "nan_percentage": 5.134862058462891
+  },
+  {
+    "feature": "B8_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "B6_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "B5_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "B7_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "B2_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "B4_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "B3_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "B12_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "NDVI_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "B11_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "B8A_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "NDWI_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "MSI_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "kNDVI_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "NDII_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "VARI_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "NDre1_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "GNDVI_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "EVI_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "IRECI_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "RTVIcore_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "CIre_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "NDVIre_04",
+    "nan_count": 22476,
+    "nan_percentage": 2.5260716079936074
+  },
+  {
+    "feature": "B8A_05",
+    "nan_count": 3535,
+    "nan_percentage": 0.39729770129281905
+  },
+  {
+    "feature": "NDVIre_05",
+    "nan_count": 3535,
+    "nan_percentage": 0.39729770129281905
+  },
+  {
+    "feature": "IRECI_05",
+    "nan_count": 3535,
+    "nan_percentage": 0.39729770129281905
+  },
+  {
+    "feature": "B6_05",
+    "nan_count": 3535,
+    "nan_percentage": 0.39729770129281905
+  },
+  {
+    "feature": "B2_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "B3_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "B4_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "RTVIcore_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "NDII_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "kNDVI_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "MSI_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "NDWI_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "CIre_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "GNDVI_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "NDre1_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "VARI_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "EVI_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "B5_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "B8_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "B7_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "B12_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "NDVI_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "B11_05",
+    "nan_count": 3534,
+    "nan_percentage": 0.3971853115611945
+  },
+  {
+    "feature": "kNDVI_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "CIre_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "NDII_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "NDWI_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "MSI_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "NDVI_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "B12_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "B8A_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "B11_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "GNDVI_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "NDVIre_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "IRECI_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "RTVIcore_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "B6_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "B5_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "B7_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "B4_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "B8_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "EVI_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "B2_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "B3_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "VARI_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "NDre1_08",
+    "nan_count": 2800,
+    "nan_percentage": 0.3146912485487676
+  },
+  {
+    "feature": "B4_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "B7_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "B3_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "B2_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "B5_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "B6_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "NDre1_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "VARI_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "EVI_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "GNDVI_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "B11_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "B8A_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "B12_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "NDVI_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "RTVIcore_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "IRECI_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "NDVIre_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "CIre_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "MSI_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "NDWI_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "NDII_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "B8_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "kNDVI_07",
+    "nan_count": 2170,
+    "nan_percentage": 0.24388571762529487
+  },
+  {
+    "feature": "kNDVI_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "NDWI_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "NDII_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "CIre_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "NDVIre_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "IRECI_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "MSI_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "B6_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "B4_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "B2_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "B3_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "B7_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "B5_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "B8_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "RTVIcore_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "NDVI_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "B12_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "B8A_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "B11_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "GNDVI_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "EVI_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "VARI_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "NDre1_06",
+    "nan_count": 631,
+    "nan_percentage": 0.07091792065509728
+  },
+  {
+    "feature": "NDre1_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "B8_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "B5_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "B7_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "B3_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "B2_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "B4_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "B6_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "RTVIcore_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "VARI_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "EVI_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "GNDVI_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "B11_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "B8A_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "B12_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "NDVI_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "MSI_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "IRECI_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "NDVIre_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "CIre_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "NDII_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "NDWI_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "kNDVI_09",
+    "nan_count": 387,
+    "nan_percentage": 0.04349482613870466
+  },
+  {
+    "feature": "CHM_1m",
+    "nan_count": 0,
+    "nan_percentage": 0.0
+  }
+]

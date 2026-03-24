@@ -1,0 +1,124 @@
+{
+  "notebook": "02c_final_preparation",
+  "execution_start": "2026-03-17T15:53:48.190237",
+  "execution_end": "2026-03-17T16:07:34.085719",
+  "steps": [
+    {
+      "name": "Data Loading",
+      "status": "success",
+      "start_time": "2026-03-17T15:53:49.606372",
+      "end_time": "2026-03-17T15:55:38.957993",
+      "records": 983782,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Add is_conifer Column",
+      "status": "success",
+      "start_time": "2026-03-17T15:55:38.964387",
+      "end_time": "2026-03-17T15:55:39.772861",
+      "records": 983782,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Load Configurations",
+      "status": "success",
+      "start_time": "2026-03-17T15:55:39.781512",
+      "end_time": "2026-03-17T15:55:42.144060",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Remove Redundant Features",
+      "status": "success",
+      "start_time": "2026-03-17T15:55:42.150216",
+      "end_time": "2026-03-17T15:55:42.993808",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Outlier Detection",
+      "status": "success",
+      "start_time": "2026-03-17T15:55:43.002122",
+      "end_time": "2026-03-17T15:56:48.486396",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Create Spatial Blocks",
+      "status": "success",
+      "start_time": "2026-03-17T15:56:48.495534",
+      "end_time": "2026-03-17T15:56:51.524967",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Create Baseline Splits",
+      "status": "success",
+      "start_time": "2026-03-17T15:56:51.532284",
+      "end_time": "2026-03-17T15:57:00.325099",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Validate Baseline Splits",
+      "status": "success",
+      "start_time": "2026-03-17T15:57:00.333142",
+      "end_time": "2026-03-17T15:57:00.961679",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Create Filtered Splits",
+      "status": "success",
+      "start_time": "2026-03-17T15:57:00.971053",
+      "end_time": "2026-03-17T15:58:54.341765",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Validate Filtered Splits",
+      "status": "success",
+      "start_time": "2026-03-17T15:58:54.348836",
+      "end_time": "2026-03-17T15:58:54.812790",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Export Datasets",
+      "status": "success",
+      "start_time": "2026-03-17T15:58:54.820623",
+      "end_time": "2026-03-17T16:04:29.711427",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Export Summary Metadata",
+      "status": "success",
+      "start_time": "2026-03-17T16:04:29.722792",
+      "end_time": "2026-03-17T16:04:29.969891",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Export Parquet Files",
+      "status": "success",
+      "start_time": "2026-03-17T16:04:29.983979",
+      "end_time": "2026-03-17T16:07:31.488481",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

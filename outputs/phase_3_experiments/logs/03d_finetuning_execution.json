@@ -1,0 +1,97 @@
+{
+  "notebook": "03d_finetuning",
+  "execution_start": "2026-03-24T10:27:21.115065",
+  "execution_end": "2026-03-24T10:48:21.475942",
+  "steps": [
+    {
+      "name": "Load Models & Metadata",
+      "status": "success",
+      "start_time": "2026-03-24T10:27:25.102789",
+      "end_time": "2026-03-24T10:27:42.996726",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Load Leipzig Data",
+      "status": "success",
+      "start_time": "2026-03-24T10:27:43.013152",
+      "end_time": "2026-03-24T10:28:02.722126",
+      "records": 119815,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "ML Fine-Tuning",
+      "status": "success",
+      "start_time": "2026-03-24T10:28:02.736274",
+      "end_time": "2026-03-24T10:33:09.900085",
+      "records": 4,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "NN Fine-Tuning",
+      "status": "success",
+      "start_time": "2026-03-24T10:33:09.914387",
+      "end_time": "2026-03-24T10:40:24.815532",
+      "records": 4,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "From-Scratch Baselines",
+      "status": "success",
+      "start_time": "2026-03-24T10:40:24.825793",
+      "end_time": "2026-03-24T10:46:35.023826",
+      "records": 4,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "McNemar Tests",
+      "status": "success",
+      "start_time": "2026-03-24T10:46:35.037849",
+      "end_time": "2026-03-24T10:46:35.624963",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Power-Law Curve Fitting",
+      "status": "success",
+      "start_time": "2026-03-24T10:46:35.635014",
+      "end_time": "2026-03-24T10:46:36.577165",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Per-Genus Recovery",
+      "status": "success",
+      "start_time": "2026-03-24T10:46:36.587249",
+      "end_time": "2026-03-24T10:46:36.667375",
+      "records": 68,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Hypothesis H4",
+      "status": "success",
+      "start_time": "2026-03-24T10:46:36.681337",
+      "end_time": "2026-03-24T10:46:38.428079",
+      "records": 11,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Save Results",
+      "status": "success",
+      "start_time": "2026-03-24T10:46:38.438013",
+      "end_time": "2026-03-24T10:46:38.646636",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

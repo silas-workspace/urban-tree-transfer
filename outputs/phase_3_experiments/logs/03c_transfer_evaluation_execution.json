@@ -1,0 +1,97 @@
+{
+  "notebook": "03c_transfer_evaluation",
+  "execution_start": "2026-03-24T10:14:23.570799",
+  "execution_end": "2026-03-24T10:19:08.949800",
+  "steps": [
+    {
+      "name": "Load Berlin Models",
+      "status": "success",
+      "start_time": "2026-03-24T10:14:25.020860",
+      "end_time": "2026-03-24T10:14:33.441057",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Load Leipzig Data",
+      "status": "success",
+      "start_time": "2026-03-24T10:14:33.451029",
+      "end_time": "2026-03-24T10:14:43.490118",
+      "records": 30480,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Zero-Shot ML Evaluation",
+      "status": "success",
+      "start_time": "2026-03-24T10:14:43.496471",
+      "end_time": "2026-03-24T10:15:36.516391",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Transfer Gap Analysis",
+      "status": "success",
+      "start_time": "2026-03-24T10:15:36.523098",
+      "end_time": "2026-03-24T10:15:36.523389",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Leipzig From-Scratch Baseline",
+      "status": "success",
+      "start_time": "2026-03-24T10:15:36.530403",
+      "end_time": "2026-03-24T10:18:19.968915",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Feature Stability",
+      "status": "success",
+      "start_time": "2026-03-24T10:18:19.977646",
+      "end_time": "2026-03-24T10:18:20.295935",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Per-Genus Robustness",
+      "status": "success",
+      "start_time": "2026-03-24T10:18:20.304154",
+      "end_time": "2026-03-24T10:18:20.309089",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Hypothesis Testing",
+      "status": "success",
+      "start_time": "2026-03-24T10:18:20.320542",
+      "end_time": "2026-03-24T10:18:20.975499",
+      "records": 3,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "NN Champion Evaluation",
+      "status": "success",
+      "start_time": "2026-03-24T10:18:20.984393",
+      "end_time": "2026-03-24T10:19:08.905799",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Save Results",
+      "status": "success",
+      "start_time": "2026-03-24T10:19:08.915301",
+      "end_time": "2026-03-24T10:19:08.931483",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

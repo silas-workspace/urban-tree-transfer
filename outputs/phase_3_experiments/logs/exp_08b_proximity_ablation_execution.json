@@ -1,0 +1,43 @@
+{
+  "notebook": "exp_08b_proximity_ablation",
+  "execution_start": "2026-03-21T09:31:53.880850",
+  "execution_end": "2026-03-21T10:09:36.839998",
+  "steps": [
+    {
+      "name": "Load CHM Decision",
+      "status": "success",
+      "start_time": "2026-03-21T09:31:54.562190",
+      "end_time": "2026-03-21T09:31:54.967534",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Proximity Ablation Experiment",
+      "status": "success",
+      "start_time": "2026-03-21T09:31:54.979437",
+      "end_time": "2026-03-21T10:09:36.797234",
+      "records": 2,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Decision Logic",
+      "status": "success",
+      "start_time": "2026-03-21T10:09:36.807415",
+      "end_time": "2026-03-21T10:09:36.810133",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Update Setup Decisions",
+      "status": "success",
+      "start_time": "2026-03-21T10:09:36.817033",
+      "end_time": "2026-03-21T10:09:36.834180",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "notebook": "exp_02_chm_assessment",
+  "execution_start": "2026-03-17T11:53:39.450192",
+  "execution_end": "2026-03-17T11:56:38.977284",
+  "steps": [
+    {
+      "name": "Data Loading & Validation",
+      "status": "success",
+      "start_time": "2026-03-17T11:53:40.462509",
+      "end_time": "2026-03-17T11:56:07.509253",
+      "records": 1072999,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Discriminative Power (ANOVA eta-squared)",
+      "status": "success",
+      "start_time": "2026-03-17T11:56:07.520578",
+      "end_time": "2026-03-17T11:56:19.255653",
+      "records": 2,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Cross-City Consistency (Cohen's d)",
+      "status": "success",
+      "start_time": "2026-03-17T11:56:19.266168",
+      "end_time": "2026-03-17T11:56:33.530874",
+      "records": 30,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Feature Engineering Validation",
+      "status": "success",
+      "start_time": "2026-03-17T11:56:33.536942",
+      "end_time": "2026-03-17T11:56:37.116294",
+      "records": 1072999,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Plant Year Threshold Analysis",
+      "status": "success",
+      "start_time": "2026-03-17T11:56:37.122149",
+      "end_time": "2026-03-17T11:56:38.580104",
+      "records": 317,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Genus Inventory & Classification",
+      "status": "success",
+      "start_time": "2026-03-17T11:56:38.587232",
+      "end_time": "2026-03-17T11:56:38.772212",
+      "records": 30,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Output Validation",
+      "status": "success",
+      "start_time": "2026-03-17T11:56:38.778289",
+      "end_time": "2026-03-17T11:56:38.779181",
+      "records": 4,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "JSON Output",
+      "status": "success",
+      "start_time": "2026-03-17T11:56:38.788204",
+      "end_time": "2026-03-17T11:56:38.952354",
+      "records": 1,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

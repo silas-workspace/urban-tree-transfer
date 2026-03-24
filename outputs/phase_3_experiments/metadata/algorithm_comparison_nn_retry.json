@@ -1,0 +1,83 @@
+{
+  "algorithms": [
+    {
+      "algorithm": "majority",
+      "type": "baseline",
+      "val_f1_mean": 0.18154181873872272,
+      "val_f1_std": 0.0,
+      "train_f1_mean": 0.18154181873872272,
+      "train_val_gap": 0.0
+    },
+    {
+      "algorithm": "stratified_random",
+      "type": "baseline",
+      "val_f1_mean": 0.18778841860704823,
+      "val_f1_std": 0.0,
+      "train_f1_mean": 0.18778841860704823,
+      "train_val_gap": 0.0
+    },
+    {
+      "algorithm": "random_forest",
+      "type": "ml",
+      "val_f1_mean": 0.47489720188219237,
+      "val_f1_std": 0.006450886014937546,
+      "train_f1_mean": 0.8732801290940175,
+      "train_val_gap": 0.39838292721182517,
+      "best_params": {
+        "n_estimators": 200,
+        "max_depth": 30,
+        "min_samples_split": 5,
+        "min_samples_leaf": 2
+      }
+    },
+    {
+      "algorithm": "xgboost",
+      "type": "ml",
+      "val_f1_mean": 0.5102848242986904,
+      "val_f1_std": 0.004689769585733879,
+      "train_f1_mean": 0.6485974747996507,
+      "train_val_gap": 0.1383126505009603,
+      "best_params": {
+        "n_estimators": 400,
+        "max_depth": 6,
+        "learning_rate": 0.1,
+        "subsample": 0.8,
+        "colsample_bytree": 1.0,
+        "reg_lambda": 2.0
+      }
+    }
+  ],
+  "ml_champion": {
+    "algorithm": "xgboost",
+    "type": "ml",
+    "val_f1_mean": 0.5102848242986904,
+    "val_f1_std": 0.004689769585733879,
+    "train_f1_mean": 0.6485974747996507,
+    "train_val_gap": 0.1383126505009603,
+    "best_params": {
+      "n_estimators": 400,
+      "max_depth": 6,
+      "learning_rate": 0.1,
+      "subsample": 0.8,
+      "colsample_bytree": 1.0,
+      "reg_lambda": 2.0
+    }
+  },
+  "nn_champion": {},
+  "metadata": {
+    "completed_at": "2026-03-23T11:04:54.784437+00:00",
+    "based_on": "algorithm_comparison.json",
+    "nn_retry_only": true,
+    "n_algorithms_tested": 4,
+    "n_viable": 1,
+    "selection_criteria": {
+      "min_val_f1": 0.5,
+      "max_train_val_gap": 0.35
+    },
+    "n_nn_successful": 0,
+    "nn_skip_reasons": {
+      "cnn_1d": "Input feature size smaller than temporal feature count.",
+      "tabnet": "pytorch-tabnet is required for model_name='tabnet'."
+    }
+  }
+}

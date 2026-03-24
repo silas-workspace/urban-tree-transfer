@@ -1,0 +1,403 @@
+{
+  "model_name": "cnn_1d",
+  "best_score": 0.5537812585815836,
+  "best_value": 0.5537812585815836,
+  "best_params": {
+    "conv_filters": [
+      64,
+      128,
+      128
+    ],
+    "kernel_size": 5,
+    "dropout": 0.4187021504122962,
+    "dense_units": [
+      128,
+      64
+    ],
+    "learning_rate": 0.0012037040399239633,
+    "batch_size": 64,
+    "epochs": 60,
+    "early_stopping_patience": 8
+  },
+  "n_trials": 18,
+  "trials": [
+    {
+      "value": 0.5534564235428218,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 5,
+        "dropout": 0.379597545259111,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0003626341140709585,
+        "batch_size": 32,
+        "epochs": 50,
+        "early_stopping_patience": 15
+      },
+      "train_val_gap": 0.06132350433709921
+    },
+    {
+      "value": 0.5511406511881888,
+      "params": {
+        "conv_filters": [
+          32,
+          64,
+          128
+        ],
+        "kernel_size": 3,
+        "dropout": 0.2550213529560302,
+        "dense_units": [
+          256,
+          128
+        ],
+        "learning_rate": 0.0014094460521979241,
+        "batch_size": 64,
+        "epochs": 59,
+        "early_stopping_patience": 10
+      },
+      "train_val_gap": 0.046429607906244286
+    },
+    {
+      "value": 0.5510839071266502,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 3,
+        "dropout": 0.3542703315240835,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0019011255853240276,
+        "batch_size": 128,
+        "epochs": 79,
+        "early_stopping_patience": 14
+      },
+      "train_val_gap": 0.0510259869473767
+    },
+    {
+      "value": 0.5467110093298889,
+      "params": {
+        "conv_filters": [
+          32,
+          64,
+          128
+        ],
+        "kernel_size": 5,
+        "dropout": 0.33204574812188037,
+        "dense_units": [
+          256,
+          128
+        ],
+        "learning_rate": 0.0002962878591226115,
+        "batch_size": 32,
+        "epochs": 59,
+        "early_stopping_patience": 12
+      },
+      "train_val_gap": 0.05166669551867109
+    },
+    {
+      "value": 0.5433803591214729,
+      "params": {
+        "conv_filters": [
+          32,
+          64,
+          128
+        ],
+        "kernel_size": 5,
+        "dropout": 0.43253984700833437,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0018741199406710385,
+        "batch_size": 32,
+        "epochs": 51,
+        "early_stopping_patience": 10
+      },
+      "train_val_gap": 0.04530455142455381
+    },
+    {
+      "value": 0.5481977066391305,
+      "params": {
+        "conv_filters": [
+          32,
+          64,
+          128
+        ],
+        "kernel_size": 5,
+        "dropout": 0.3070259980080768,
+        "dense_units": [
+          256,
+          128
+        ],
+        "learning_rate": 0.0005945878299293354,
+        "batch_size": 128,
+        "epochs": 73,
+        "early_stopping_patience": 9
+      },
+      "train_val_gap": 0.04700731438027972
+    },
+    {
+      "value": 0.5537812585815836,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 5,
+        "dropout": 0.4187021504122962,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0012037040399239633,
+        "batch_size": 64,
+        "epochs": 60,
+        "early_stopping_patience": 8
+      },
+      "train_val_gap": 0.05829115251078332
+    },
+    {
+      "value": 0.5509870396545855,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 5,
+        "dropout": 0.39126724140656394,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0005348638886272448,
+        "batch_size": 64,
+        "epochs": 73,
+        "early_stopping_patience": 11
+      },
+      "train_val_gap": 0.05134356796519346
+    },
+    {
+      "value": 0.5522045611723977,
+      "params": {
+        "conv_filters": [
+          32,
+          64,
+          128
+        ],
+        "kernel_size": 3,
+        "dropout": 0.23236742809799135,
+        "dense_units": [
+          256,
+          128
+        ],
+        "learning_rate": 0.0010801967470137146,
+        "batch_size": 64,
+        "epochs": 62,
+        "early_stopping_patience": 14
+      },
+      "train_val_gap": 0.04127248180403231
+    },
+    {
+      "value": 0.5513976362598871,
+      "params": {
+        "conv_filters": [
+          32,
+          64,
+          128
+        ],
+        "kernel_size": 3,
+        "dropout": 0.24836638617620133,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0019735305182291855,
+        "batch_size": 32,
+        "epochs": 77,
+        "early_stopping_patience": 12
+      },
+      "train_val_gap": 0.05224062639188298
+    },
+    {
+      "value": 0.5456160846789405,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 4,
+        "dropout": 0.4908611332363598,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0027426385037416902,
+        "batch_size": 64,
+        "epochs": 67,
+        "early_stopping_patience": 8
+      },
+      "train_val_gap": 0.04307464755039825
+    },
+    {
+      "value": 0.5513591118725909,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 4,
+        "dropout": 0.4345654346345576,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.001000392063646278,
+        "batch_size": 32,
+        "epochs": 51,
+        "early_stopping_patience": 15
+      },
+      "train_val_gap": 0.04704511869670769
+    },
+    {
+      "value": 0.5519031949285919,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 4,
+        "dropout": 0.4158169382875467,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0008917722757544066,
+        "batch_size": 64,
+        "epochs": 54,
+        "early_stopping_patience": 8
+      },
+      "train_val_gap": 0.05724951632506858
+    },
+    {
+      "value": 0.5440467815832811,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 5,
+        "dropout": 0.49215379509439405,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.002571589145488264,
+        "batch_size": 32,
+        "epochs": 66,
+        "early_stopping_patience": 14
+      },
+      "train_val_gap": 0.05225112971855328
+    },
+    {
+      "value": 0.5508889325549816,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 5,
+        "dropout": 0.3780473975166071,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0014878353165039817,
+        "batch_size": 128,
+        "epochs": 56,
+        "early_stopping_patience": 13
+      },
+      "train_val_gap": 0.042624566582911916
+    },
+    {
+      "value": 0.547414621688559,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 4,
+        "dropout": 0.30615370905230577,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0002973374475051822,
+        "batch_size": 64,
+        "epochs": 62,
+        "early_stopping_patience": 15
+      },
+      "train_val_gap": 0.05367936196922729
+    },
+    {
+      "value": 0.5455190223812606,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 5,
+        "dropout": 0.45801648467890005,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0023309705731936626,
+        "batch_size": 32,
+        "epochs": 55,
+        "early_stopping_patience": 11
+      },
+      "train_val_gap": 0.04037835419249647
+    },
+    {
+      "value": 0.553039801584945,
+      "params": {
+        "conv_filters": [
+          64,
+          128,
+          128
+        ],
+        "kernel_size": 4,
+        "dropout": 0.3887985998089446,
+        "dense_units": [
+          128,
+          64
+        ],
+        "learning_rate": 0.0011774317184587173,
+        "batch_size": 64,
+        "epochs": 50,
+        "early_stopping_patience": 9
+      },
+      "train_val_gap": 0.049992232565401196
+    }
+  ]
+}

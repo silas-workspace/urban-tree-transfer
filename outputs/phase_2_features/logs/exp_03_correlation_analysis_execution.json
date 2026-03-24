@@ -1,0 +1,79 @@
+{
+  "notebook": "exp_03_correlation_analysis",
+  "execution_start": "2026-03-17T12:51:10.977953",
+  "execution_end": "2026-03-17T12:55:09.852429",
+  "steps": [
+    {
+      "name": "Data Loading & Sampling",
+      "status": "success",
+      "start_time": "2026-03-17T12:51:11.214963",
+      "end_time": "2026-03-17T12:54:19.174808",
+      "records": 20000,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "CHM Correlation Analysis",
+      "status": "success",
+      "start_time": "2026-03-17T12:54:19.239853",
+      "end_time": "2026-03-17T12:54:19.264217",
+      "records": 3,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Spectral Bands Correlation Analysis",
+      "status": "success",
+      "start_time": "2026-03-17T12:54:19.273966",
+      "end_time": "2026-03-17T12:54:24.591626",
+      "records": 10,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Vegetation Indices Correlation Analysis",
+      "status": "success",
+      "start_time": "2026-03-17T12:54:24.606150",
+      "end_time": "2026-03-17T12:54:32.863348",
+      "records": 13,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Cross-city Consistency",
+      "status": "success",
+      "start_time": "2026-03-17T12:54:32.936815",
+      "end_time": "2026-03-17T12:54:32.968559",
+      "records": 5,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "VIF Validation",
+      "status": "success",
+      "start_time": "2026-03-17T12:54:32.980179",
+      "end_time": "2026-03-17T12:54:59.980750",
+      "records": 144,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Spearman Supplementary Check",
+      "status": "success",
+      "start_time": "2026-03-17T12:55:00.044244",
+      "end_time": "2026-03-17T12:55:09.454103",
+      "records": 39,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "JSON Output",
+      "status": "success",
+      "start_time": "2026-03-17T12:55:09.470775",
+      "end_time": "2026-03-17T12:55:09.820051",
+      "records": 40,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

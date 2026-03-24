@@ -1,0 +1,43 @@
+{
+  "notebook": "03a_setup_fixation",
+  "execution_start": "2026-03-22T08:14:14.720847",
+  "execution_end": "2026-03-22T08:15:18.802660",
+  "steps": [
+    {
+      "name": "Load Setup Decisions",
+      "status": "success",
+      "start_time": "2026-03-22T08:14:15.349103",
+      "end_time": "2026-03-22T08:14:15.676741",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Apply Setup Decisions",
+      "status": "success",
+      "start_time": "2026-03-22T08:14:15.692277",
+      "end_time": "2026-03-22T08:14:45.966946",
+      "records": 5,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Create CNN1D Datasets",
+      "status": "success",
+      "start_time": "2026-03-22T08:14:45.978892",
+      "end_time": "2026-03-22T08:15:15.995095",
+      "records": 5,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Validation",
+      "status": "success",
+      "start_time": "2026-03-22T08:15:16.006989",
+      "end_time": "2026-03-22T08:15:18.793760",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

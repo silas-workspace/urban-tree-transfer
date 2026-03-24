@@ -1,0 +1,34 @@
+{
+  "notebook": "exp_01_temporal_analysis",
+  "execution_start": "2026-03-17T11:53:28.410957",
+  "execution_end": "2026-03-17T11:58:10.334686",
+  "steps": [
+    {
+      "name": "Data Loading & Validation",
+      "status": "success",
+      "start_time": "2026-03-17T11:53:29.075122",
+      "end_time": "2026-03-17T11:57:50.985731",
+      "records": 333344,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "JM Distance Computation",
+      "status": "success",
+      "start_time": "2026-03-17T11:57:51.007764",
+      "end_time": "2026-03-17T11:58:09.325294",
+      "records": 9598,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Cross-City JM Consistency Analysis",
+      "status": "success",
+      "start_time": "2026-03-17T11:58:09.975476",
+      "end_time": "2026-03-17T11:58:09.990024",
+      "records": 12,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

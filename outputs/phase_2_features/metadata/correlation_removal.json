@@ -1,0 +1,519 @@
+{
+  "analysis_date": "2026-03-17T12:55:00.028885+00:00",
+  "sample_size_per_city": 10000,
+  "correlation_threshold": 0.95,
+  "correlation_metric": "pearson",
+  "feature_groups": {
+    "chm": {
+      "analyzed": [
+        "CHM_1m",
+        "CHM_1m_zscore",
+        "CHM_1m_percentile"
+      ],
+      "removed": [],
+      "retained": [
+        "CHM_1m",
+        "CHM_1m_percentile",
+        "CHM_1m_zscore"
+      ],
+      "rationale": "All three serve different purposes (absolute, standardized, rank-based)"
+    },
+    "spectral_bands": {
+      "analyzed": [
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "B7",
+        "B8",
+        "B8A",
+        "B11",
+        "B12"
+      ],
+      "removed": [
+        "B6",
+        "B7"
+      ],
+      "retained": [
+        "B11",
+        "B12",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B8",
+        "B8A"
+      ],
+      "rationale_per_feature": {
+        "B6": "Highly correlated with B7 (r_berlin=0.96, r_leipzig=0.97).",
+        "B7": "Highly correlated with B8A (r_berlin=0.98, r_leipzig=0.98)."
+      }
+    },
+    "vegetation_indices": {
+      "analyzed": [
+        "NDVI",
+        "EVI",
+        "GNDVI",
+        "VARI",
+        "NDre1",
+        "NDVIre",
+        "CIre",
+        "IRECI",
+        "RTVIcore",
+        "NDWI",
+        "MSI",
+        "NDII",
+        "kNDVI"
+      ],
+      "removed": [
+        "GNDVI",
+        "NDII",
+        "kNDVI"
+      ],
+      "retained": [
+        "CIre",
+        "EVI",
+        "IRECI",
+        "MSI",
+        "NDVI",
+        "NDVIre",
+        "NDWI",
+        "NDre1",
+        "RTVIcore",
+        "VARI"
+      ],
+      "rationale_per_feature": {
+        "GNDVI": "Highly correlated with NDVI (r_berlin=0.97, r_leipzig=0.97).",
+        "NDII": "Highly correlated with NDWI (r_berlin=0.96, r_leipzig=0.96).",
+        "kNDVI": "Highly correlated with NDVI (r_berlin=0.99, r_leipzig=0.99)."
+      }
+    }
+  },
+  "temporal_removal": {
+    "explanation": "Features removed across ALL temporal instances",
+    "removed_temporal_features": [
+      "B6_04",
+      "B6_05",
+      "B6_06",
+      "B6_07",
+      "B6_08",
+      "B6_09",
+      "B6_10",
+      "B6_11",
+      "B7_04",
+      "B7_05",
+      "B7_06",
+      "B7_07",
+      "B7_08",
+      "B7_09",
+      "B7_10",
+      "B7_11",
+      "GNDVI_04",
+      "GNDVI_05",
+      "GNDVI_06",
+      "GNDVI_07",
+      "GNDVI_08",
+      "GNDVI_09",
+      "GNDVI_10",
+      "GNDVI_11",
+      "NDII_04",
+      "NDII_05",
+      "NDII_06",
+      "NDII_07",
+      "NDII_08",
+      "NDII_09",
+      "NDII_10",
+      "NDII_11",
+      "kNDVI_04",
+      "kNDVI_05",
+      "kNDVI_06",
+      "kNDVI_07",
+      "kNDVI_08",
+      "kNDVI_09",
+      "kNDVI_10",
+      "kNDVI_11"
+    ],
+    "total_removed": 40
+  },
+  "cross_city_consistency": {
+    "redundant_in_berlin": [
+      "B6",
+      "B7",
+      "B8A",
+      "GNDVI",
+      "MSI",
+      "NDII",
+      "NDVI",
+      "NDWI",
+      "kNDVI"
+    ],
+    "redundant_in_leipzig": [
+      "B6",
+      "B7",
+      "B8A",
+      "CIre",
+      "GNDVI",
+      "NDII",
+      "NDVI",
+      "NDWI",
+      "NDre1",
+      "kNDVI"
+    ],
+    "removed": [
+      "B6",
+      "B7",
+      "GNDVI",
+      "NDII",
+      "kNDVI"
+    ],
+    "city_specific_kept": [
+      "B8A",
+      "CIre",
+      "MSI",
+      "NDVI",
+      "NDWI",
+      "NDre1"
+    ],
+    "agreement_rate": 0.45454545454545453,
+    "interpretation": "Below target consistency"
+  },
+  "feature_reduction_summary": {
+    "before": {
+      "chm": 3,
+      "spectral_bands": 80,
+      "vegetation_indices": 104,
+      "total": 187
+    },
+    "after": {
+      "chm": 3,
+      "spectral_bands": 64,
+      "vegetation_indices": 80,
+      "total": 147
+    },
+    "reduction_pct": 21.39
+  },
+  "validation": {
+    "max_vif_retained_features": 1300.89,
+    "vif_threshold": 10.0,
+    "vif_check_passed": false
+  },
+  "spearman_supplement": {
+    "divergent_pairs": [
+      {
+        "group": "spectral_bands",
+        "feature_a": "B12",
+        "feature_b": "B6",
+        "pearson_r": 0.1115,
+        "spearman_r": -0.0075,
+        "divergence": 0.1191
+      },
+      {
+        "group": "spectral_bands",
+        "feature_a": "B12",
+        "feature_b": "B7",
+        "pearson_r": -0.0284,
+        "spearman_r": -0.14,
+        "divergence": 0.1116
+      },
+      {
+        "group": "spectral_bands",
+        "feature_a": "B12",
+        "feature_b": "B8A",
+        "pearson_r": -0.0566,
+        "spearman_r": -0.1642,
+        "divergence": 0.1076
+      },
+      {
+        "group": "spectral_bands",
+        "feature_a": "B2",
+        "feature_b": "B6",
+        "pearson_r": 0.0455,
+        "spearman_r": -0.0934,
+        "divergence": 0.1389
+      },
+      {
+        "group": "spectral_bands",
+        "feature_a": "B2",
+        "feature_b": "B7",
+        "pearson_r": -0.0825,
+        "spearman_r": -0.2151,
+        "divergence": 0.1326
+      },
+      {
+        "group": "spectral_bands",
+        "feature_a": "B2",
+        "feature_b": "B8",
+        "pearson_r": -0.0886,
+        "spearman_r": -0.194,
+        "divergence": 0.1053
+      },
+      {
+        "group": "spectral_bands",
+        "feature_a": "B2",
+        "feature_b": "B8A",
+        "pearson_r": -0.1226,
+        "spearman_r": -0.2483,
+        "divergence": 0.1257
+      },
+      {
+        "group": "spectral_bands",
+        "feature_a": "B3",
+        "feature_b": "B6",
+        "pearson_r": 0.1979,
+        "spearman_r": 0.0977,
+        "divergence": 0.1001
+      },
+      {
+        "group": "spectral_bands",
+        "feature_a": "B4",
+        "feature_b": "B6",
+        "pearson_r": 0.0374,
+        "spearman_r": -0.1049,
+        "divergence": 0.1423
+      },
+      {
+        "group": "spectral_bands",
+        "feature_a": "B4",
+        "feature_b": "B7",
+        "pearson_r": -0.1008,
+        "spearman_r": -0.2346,
+        "divergence": 0.1338
+      },
+      {
+        "group": "spectral_bands",
+        "feature_a": "B4",
+        "feature_b": "B8A",
+        "pearson_r": -0.1365,
+        "spearman_r": -0.262,
+        "divergence": 0.1255
+      },
+      {
+        "group": "spectral_bands",
+        "feature_a": "B5",
+        "feature_b": "B6",
+        "pearson_r": 0.3535,
+        "spearman_r": 0.2518,
+        "divergence": 0.1017
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "EVI",
+        "pearson_r": 0.5628,
+        "spearman_r": 0.8018,
+        "divergence": 0.2389
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "GNDVI",
+        "pearson_r": 0.6856,
+        "spearman_r": 0.8679,
+        "divergence": 0.1823
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "IRECI",
+        "pearson_r": 0.6489,
+        "spearman_r": 0.8351,
+        "divergence": 0.1862
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "MSI",
+        "pearson_r": -0.6356,
+        "spearman_r": -0.8747,
+        "divergence": 0.2391
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "NDII",
+        "pearson_r": 0.7198,
+        "spearman_r": 0.8917,
+        "divergence": 0.1719
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "NDVI",
+        "pearson_r": 0.6885,
+        "spearman_r": 0.8738,
+        "divergence": 0.1853
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "NDVIre",
+        "pearson_r": 0.4958,
+        "spearman_r": 0.6066,
+        "divergence": 0.1108
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "NDWI",
+        "pearson_r": 0.6929,
+        "spearman_r": 0.8549,
+        "divergence": 0.162
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "NDre1",
+        "pearson_r": 0.77,
+        "spearman_r": 0.9492,
+        "divergence": 0.1791
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "RTVIcore",
+        "pearson_r": 0.7078,
+        "spearman_r": 0.8485,
+        "divergence": 0.1406
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "VARI",
+        "pearson_r": 0.5785,
+        "spearman_r": 0.7624,
+        "divergence": 0.184
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "CIre",
+        "feature_b": "kNDVI",
+        "pearson_r": 0.705,
+        "spearman_r": 0.8713,
+        "divergence": 0.1662
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "EVI",
+        "feature_b": "GNDVI",
+        "pearson_r": 0.6517,
+        "spearman_r": 0.7914,
+        "divergence": 0.1397
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "EVI",
+        "feature_b": "IRECI",
+        "pearson_r": 0.671,
+        "spearman_r": 0.8401,
+        "divergence": 0.1691
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "EVI",
+        "feature_b": "MSI",
+        "pearson_r": -0.6036,
+        "spearman_r": -0.8071,
+        "divergence": 0.2035
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "EVI",
+        "feature_b": "NDII",
+        "pearson_r": 0.6713,
+        "spearman_r": 0.8149,
+        "divergence": 0.1436
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "EVI",
+        "feature_b": "NDVI",
+        "pearson_r": 0.6689,
+        "spearman_r": 0.8072,
+        "divergence": 0.1383
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "EVI",
+        "feature_b": "NDWI",
+        "pearson_r": 0.658,
+        "spearman_r": 0.8014,
+        "divergence": 0.1434
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "EVI",
+        "feature_b": "NDre1",
+        "pearson_r": 0.6731,
+        "spearman_r": 0.8126,
+        "divergence": 0.1395
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "EVI",
+        "feature_b": "RTVIcore",
+        "pearson_r": 0.7553,
+        "spearman_r": 0.9149,
+        "divergence": 0.1596
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "EVI",
+        "feature_b": "VARI",
+        "pearson_r": 0.5275,
+        "spearman_r": 0.7163,
+        "divergence": 0.1888
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "EVI",
+        "feature_b": "kNDVI",
+        "pearson_r": 0.6721,
+        "spearman_r": 0.8061,
+        "divergence": 0.134
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "GNDVI",
+        "feature_b": "IRECI",
+        "pearson_r": 0.7806,
+        "spearman_r": 0.8807,
+        "divergence": 0.1001
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "GNDVI",
+        "feature_b": "VARI",
+        "pearson_r": 0.6032,
+        "spearman_r": 0.7105,
+        "divergence": 0.1073
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "IRECI",
+        "feature_b": "MSI",
+        "pearson_r": -0.6227,
+        "spearman_r": -0.7685,
+        "divergence": 0.1459
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "MSI",
+        "feature_b": "VARI",
+        "pearson_r": -0.5937,
+        "spearman_r": -0.7432,
+        "divergence": 0.1495
+      },
+      {
+        "group": "vegetation_indices",
+        "feature_a": "NDVI",
+        "feature_b": "VARI",
+        "pearson_r": 0.7323,
+        "spearman_r": 0.8397,
+        "divergence": 0.1073
+      }
+    ],
+    "max_divergence": 0.2391,
+    "note": "Pearson remains primary metric; Spearman as supplementary check"
+  }
+}

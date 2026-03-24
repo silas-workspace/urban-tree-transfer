@@ -1,0 +1,16 @@
+{
+  "notebook": "02b_data_quality",
+  "execution_start": "2026-03-17T12:26:49.948717",
+  "execution_end": "2026-03-17T12:44:02.900732",
+  "steps": [
+    {
+      "name": "Data Quality Pipeline",
+      "status": "success",
+      "start_time": "2026-03-17T12:26:51.637610",
+      "end_time": "2026-03-17T12:42:37.027933",
+      "records": 983782,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

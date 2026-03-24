@@ -1,0 +1,110 @@
+{
+  "zscore": {
+    "threshold": 3.0,
+    "min_feature_count": 10,
+    "justification": "Standard 3-sigma threshold"
+  },
+  "mahalanobis": {
+    "alpha": 0.001,
+    "justification": "Common practice for multivariate outlier detection"
+  },
+  "iqr": {
+    "multiplier": 1.5,
+    "justification": "Standard Tukey box plot threshold"
+  },
+  "flagging_strategy": {
+    "columns_added": [
+      "outlier_zscore",
+      "outlier_mahalanobis",
+      "outlier_iqr",
+      "outlier_severity"
+    ],
+    "severity_levels": {
+      "high": "flagged by all 3 methods",
+      "medium": "flagged by 2 methods",
+      "low": "flagged by 1 method",
+      "none": "flagged by 0 methods"
+    },
+    "removal_strategy": "none - all trees retained for ablation studies"
+  },
+  "method_overlap": {
+    "zscore_only": 26297,
+    "mahalanobis_only": 2162,
+    "iqr_only": 12547,
+    "zscore_and_mahalanobis": 4902,
+    "zscore_and_iqr": 453,
+    "mahalanobis_and_iqr": 30,
+    "all_three": 71
+  },
+  "flagging_rates": {
+    "high": 7.2170460528857e-05,
+    "medium": 0.005473773661237957,
+    "low": 0.04168199865417339,
+    "none": 0.9527720572240598
+  },
+  "per_city_statistics": {
+    "berlin": {
+      "total_trees": 830153,
+      "high": 64,
+      "medium": 4943,
+      "low": 32958
+    },
+    "leipzig": {
+      "total_trees": 153629,
+      "high": 7,
+      "medium": 442,
+      "low": 8048
+    }
+  },
+  "biological_context_analysis": {
+    "age_correlation": {
+      "high_severity_median_plant_year": 1991,
+      "non_outlier_median_plant_year": 1980,
+      "mann_whitney_u": 21458502.0,
+      "p_value": 0.999998479889768,
+      "interpretation": "No significant age correlation - likely data quality issues"
+    },
+    "tree_type_association": {
+      "interpretation": "Insufficient tree type categories"
+    },
+    "spatial_clustering": {
+      "ripleys_k": {
+        "50m": {
+          "observed": 101222172.64363278,
+          "expected": 7853.981633974483,
+          "ratio": 12888.007301388305
+        },
+        "100m": {
+          "observed": 101222172.64363278,
+          "expected": 31415.926535897932,
+          "ratio": 3222.001825347076
+        },
+        "200m": {
+          "observed": 101222172.64363278,
+          "expected": 125663.70614359173,
+          "ratio": 805.500456336769
+        }
+      },
+      "interpretation": "High-severity outliers spatially clustered (likely parks/monuments)"
+    },
+    "genus_patterns": {
+      "top_outlier_genera": {
+        "FAGUS": 0.00036094567767550983,
+        "SORBUS": 0.0003087849312953528,
+        "ROBINIA": 0.00019267292394924444,
+        "BETULA": 0.00019156476485425114,
+        "TILIA": 0.0001656807638496846
+      },
+      "mean_rate": 6.174601198138613e-05,
+      "std_rate": 0.00010260847074855655,
+      "interpretation": "Outlier rates relatively uniform across genera"
+    },
+    "recommendation": "High-severity outliers show biological context (age/location). Consider flagging as 'biological_extreme' for Phase 3 ablation studies."
+  },
+  "validation": {
+    "genus_impact": "some genera exceed 2x average flagging rate",
+    "false_positive_estimate": "< 0.3% for high severity",
+    "sensitivity_analysis": "threshold variations tested - 3.0/0.001/1.5 optimal",
+    "ablation_study_ready": true
+  }
+}

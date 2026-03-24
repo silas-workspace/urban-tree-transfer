@@ -1,0 +1,88 @@
+{
+  "notebook": "03b_berlin_optimization",
+  "execution_start": "2026-03-23T20:15:23.835834",
+  "execution_end": "2026-03-24T04:50:28.066282",
+  "steps": [
+    {
+      "name": "Load Algorithm Comparison & Data",
+      "status": "success",
+      "start_time": "2026-03-23T20:15:23.903962",
+      "end_time": "2026-03-23T20:15:26.399350",
+      "records": 668384,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Preprocessing",
+      "status": "success",
+      "start_time": "2026-03-23T20:15:26.419317",
+      "end_time": "2026-03-23T20:15:30.348992",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "ML Hyperparameter Tuning",
+      "status": "success",
+      "start_time": "2026-03-23T20:15:30.361117",
+      "end_time": "2026-03-23T23:08:49.147311",
+      "records": 40,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "ML Final Training",
+      "status": "success",
+      "start_time": "2026-03-23T23:08:49.155214",
+      "end_time": "2026-03-23T23:19:58.562142",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "NN Hyperparameter Tuning",
+      "status": "success",
+      "start_time": "2026-03-23T23:19:58.579439",
+      "end_time": "2026-03-24T03:25:54.717123",
+      "records": 18,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "NN Final Training",
+      "status": "success",
+      "start_time": "2026-03-24T03:25:54.730333",
+      "end_time": "2026-03-24T04:45:54.086813",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Save Scalers",
+      "status": "success",
+      "start_time": "2026-03-24T04:45:54.093892",
+      "end_time": "2026-03-24T04:45:54.109380",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Evaluation",
+      "status": "success",
+      "start_time": "2026-03-24T04:45:54.121960",
+      "end_time": "2026-03-24T04:50:27.769453",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Error Analysis",
+      "status": "success",
+      "start_time": "2026-03-24T04:50:27.778296",
+      "end_time": "2026-03-24T04:50:28.022437",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

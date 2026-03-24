@@ -1,0 +1,24 @@
+{
+  "notebook": "03c_transfer_evaluation",
+  "completed_at": "2026-03-24T10:19:08.949669+00:00",
+  "runtime_seconds": 285.37882232666016,
+  "runtime_minutes": 4.756313705444336,
+  "champions": {
+    "ml": "xgboost",
+    "nn": "cnn_1d"
+  },
+  "best_transfer_model": "nn",
+  "transfer_gap": {
+    "berlin_f1": 0.751403271613046,
+    "leipzig_f1": 0.37732351240634354,
+    "absolute_drop": 0.37407975920670244,
+    "relative_drop": 0.49784153641447576,
+    "transfer_efficiency": 0.5021584635855243
+  },
+  "robustness_summary": {
+    "robust": 0,
+    "medium": 0,
+    "poor": 17
+  },
+  "hypothesis_tests": 3
+}

@@ -1,0 +1,70 @@
+{
+  "notebook": "exp_05_spatial_autocorrelation",
+  "execution_start": "2026-03-17T13:09:28.923377",
+  "execution_end": "2026-03-17T15:35:51.517933",
+  "steps": [
+    {
+      "name": "Moran's I Calculation",
+      "status": "success",
+      "start_time": "2026-03-17T13:24:45.763553",
+      "end_time": "2026-03-17T15:14:05.050465",
+      "records": 140,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Autocorrelation Decay Analysis",
+      "status": "success",
+      "start_time": "2026-03-17T15:25:50.495874",
+      "end_time": "2026-03-17T15:25:50.525097",
+      "records": 10,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Optimal Block Size Determination",
+      "status": "success",
+      "start_time": "2026-03-17T15:25:54.623545",
+      "end_time": "2026-03-17T15:25:54.650012",
+      "records": 5,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Cross-City Validation",
+      "status": "success",
+      "start_time": "2026-03-17T15:26:50.197588",
+      "end_time": "2026-03-17T15:26:50.199002",
+      "records": 2,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Block Feasibility & Sensitivity",
+      "status": "success",
+      "start_time": "2026-03-17T15:26:55.952232",
+      "end_time": "2026-03-17T15:29:14.416663",
+      "records": 2,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Post-Split Spatial Independence Validation",
+      "status": "success",
+      "start_time": "2026-03-17T15:29:44.104965",
+      "end_time": "2026-03-17T15:35:51.408098",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Save JSON Config",
+      "status": "success",
+      "start_time": "2026-03-17T15:35:51.433339",
+      "end_time": "2026-03-17T15:35:51.455009",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

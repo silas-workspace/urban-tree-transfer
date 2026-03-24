@@ -1,0 +1,43 @@
+{
+  "notebook": "exp_08c_outlier_ablation",
+  "execution_start": "2026-03-21T10:24:25.837717",
+  "execution_end": "2026-03-21T11:12:31.905982",
+  "steps": [
+    {
+      "name": "Load Prior Decisions",
+      "status": "success",
+      "start_time": "2026-03-21T10:24:26.548671",
+      "end_time": "2026-03-21T10:24:26.883179",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Outlier Ablation Experiment",
+      "status": "success",
+      "start_time": "2026-03-21T10:24:26.894108",
+      "end_time": "2026-03-21T11:12:31.869282",
+      "records": 3,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Decision Logic",
+      "status": "success",
+      "start_time": "2026-03-21T11:12:31.878932",
+      "end_time": "2026-03-21T11:12:31.881971",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "name": "Update Setup Decisions",
+      "status": "success",
+      "start_time": "2026-03-21T11:12:31.888205",
+      "end_time": "2026-03-21T11:12:31.900461",
+      "records": null,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}

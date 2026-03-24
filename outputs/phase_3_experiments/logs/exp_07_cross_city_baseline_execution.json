@@ -1,0 +1,16 @@
+{
+  "notebook": "exp_07_cross_city_baseline",
+  "execution_start": "2026-03-17T16:09:44.902006",
+  "execution_end": "2026-03-17T16:10:35.766827",
+  "steps": [
+    {
+      "name": "Data Loading",
+      "status": "success",
+      "start_time": "2026-03-17T16:09:47.092943",
+      "end_time": "2026-03-17T16:10:35.761162",
+      "records": 722837,
+      "warnings": [],
+      "errors": []
+    }
+  ]
+}
