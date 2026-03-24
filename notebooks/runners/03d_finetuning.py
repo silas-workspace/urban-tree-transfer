@@ -99,6 +99,7 @@ from urban_tree_transfer.experiments import (
     data_loading,
     evaluation,
     models,
+    preprocessing,
     training,
     transfer,
 )

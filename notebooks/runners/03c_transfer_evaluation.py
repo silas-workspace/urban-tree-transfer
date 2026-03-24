@@ -703,14 +703,20 @@ try:
 
         print(f"\n{hyp['id']}: {hyp['description']}")
         result = transfer.test_hypothesis(hyp, genus_data=test_data)
+        if hyp_id == "H2" and result.get("conclusion") == "Insufficient data for Mann-Whitney U test":
+            for key in ("statistic", "p_value", "effect_size"):
+                result.setdefault(key, None)
         hypothesis_results.append(result)
 
-        if "statistic" in result:
-            print(f"  Statistic:   {result['statistic']:.3f}")
-        if "p_value" in result:
-            print(f"  p-value:     {result['p_value']:.4f}")
-        if "effect_size" in result:
-            print(f"  Effect size: {result['effect_size']:.3f}")
+        statistic = result.get("statistic")
+        if statistic is not None:
+            print(f"  Statistic:   {statistic:.3f}")
+        p_value = result.get("p_value")
+        if p_value is not None:
+            print(f"  p-value:     {p_value:.4f}")
+        effect_size = result.get("effect_size")
+        if effect_size is not None:
+            print(f"  Effect size: {effect_size:.3f}")
         print(f"  Result:      {result['conclusion']}")
 
     hypothesis_path = METADATA_DIR / "hypothesis_tests.json"
@@ -814,6 +820,13 @@ try:
         )
 
     hypothesis_results = json.loads(hypothesis_path.read_text())
+
+    # Backward compatibility for older H2 outputs saved without numeric fields.
+    for result in hypothesis_results:
+        if result.get("id") == "H2" and result.get("conclusion") == "Insufficient data for Mann-Whitney U test":
+            for key in ("statistic", "p_value", "effect_size"):
+                result.setdefault(key, None)
+
     required_hypothesis_keys = {
         "id",
         "description",
