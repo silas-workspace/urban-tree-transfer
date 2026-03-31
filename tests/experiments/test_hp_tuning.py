@@ -99,7 +99,9 @@ def test_run_optuna_search_writes_checkpoint(sample_dataset, tmp_path: Path) -> 
     assert checkpoint["best_params"] == summary["best_params"]
 
 
-def test_build_objective_routes_xgboost_learning_rate_to_model_params(sample_dataset, monkeypatch) -> None:
+def test_build_objective_routes_xgboost_learning_rate_to_model_params(
+    sample_dataset, monkeypatch
+) -> None:
     _ = pytest.importorskip("optuna")
 
     x = sample_dataset[["NDVI_06", "NDVI_07", "EVI_06"]].values
@@ -129,7 +131,9 @@ def test_build_objective_routes_xgboost_learning_rate_to_model_params(sample_dat
         return {"val_f1_mean": 0.5, "train_val_gap": 0.1}
 
     monkeypatch.setattr("urban_tree_transfer.experiments.hp_tuning.create_model", fake_create_model)
-    monkeypatch.setattr("urban_tree_transfer.experiments.hp_tuning.train_with_cv", fake_train_with_cv)
+    monkeypatch.setattr(
+        "urban_tree_transfer.experiments.hp_tuning.train_with_cv", fake_train_with_cv
+    )
 
     objective = build_objective(
         model_name="xgboost",
@@ -148,7 +152,9 @@ def test_build_objective_routes_xgboost_learning_rate_to_model_params(sample_dat
     assert "learning_rate" not in captured["fit_params"]
 
 
-def test_build_objective_routes_cnn_training_params_to_fit_params(sample_dataset, monkeypatch) -> None:
+def test_build_objective_routes_cnn_training_params_to_fit_params(
+    sample_dataset, monkeypatch
+) -> None:
     _ = pytest.importorskip("optuna")
 
     x = sample_dataset[["NDVI_06", "NDVI_07", "EVI_06"]].values
@@ -178,7 +184,9 @@ def test_build_objective_routes_cnn_training_params_to_fit_params(sample_dataset
         return {"val_f1_mean": 0.5, "train_val_gap": 0.1}
 
     monkeypatch.setattr("urban_tree_transfer.experiments.hp_tuning.create_model", fake_create_model)
-    monkeypatch.setattr("urban_tree_transfer.experiments.hp_tuning.train_with_cv", fake_train_with_cv)
+    monkeypatch.setattr(
+        "urban_tree_transfer.experiments.hp_tuning.train_with_cv", fake_train_with_cv
+    )
 
     objective = build_objective(
         model_name="cnn_1d",

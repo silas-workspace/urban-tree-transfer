@@ -159,7 +159,9 @@ def test_load_parquet_dataset_retries_transient_errors(tmp_path: Path, monkeypat
             raise OSError(107, "Transport endpoint is not connected")
         return expected_df
 
-    monkeypatch.setattr("urban_tree_transfer.experiments.data_loading.pd.read_parquet", fake_read_parquet)
+    monkeypatch.setattr(
+        "urban_tree_transfer.experiments.data_loading.pd.read_parquet", fake_read_parquet
+    )
     monkeypatch.setattr("urban_tree_transfer.experiments.data_loading.time.sleep", lambda _: None)
 
     result = load_parquet_dataset(path)
