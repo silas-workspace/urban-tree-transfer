@@ -66,7 +66,7 @@ if not token:
     )
 
 # Install package from private GitHub repo
-repo_url = f"git+https://{token}@github.com/silas-workspace/urban-tree-transfer.git"
+repo_url = f"git+https://{token}@github.com/spignotti/urban-tree-transfer.git"
 subprocess.run(["pip", "install", repo_url, "-q"], check=True)
 
 # Install PyTorch separately (required for neural network models)
